@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dash-config.h"
+#include "config/super7coin-config.h"
 #endif
 
 #include "optionsdialog.h"
@@ -92,11 +92,11 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     }
     
     /* Theme selector */
-    ui->theme->addItem(QString("DASH-light"), QVariant("light"));
-    ui->theme->addItem(QString("DASH-light-hires"), QVariant("light-hires"));
-    ui->theme->addItem(QString("DASH-blue"), QVariant("drkblue"));
-    ui->theme->addItem(QString("DASH-Crownium"), QVariant("crownium"));
-    ui->theme->addItem(QString("DASH-traditional"), QVariant("trad"));
+    ui->theme->addItem(QString("S7C-light"), QVariant("light"));
+    ui->theme->addItem(QString("S7C-light-hires"), QVariant("light-hires"));
+    ui->theme->addItem(QString("S7C-blue"), QVariant("drkblue"));
+    ui->theme->addItem(QString("S7C-Crownium"), QVariant("crownium"));
+    ui->theme->addItem(QString("S7C-traditional"), QVariant("trad"));
     
     /* Language selector */
     QDir translations(":translations");

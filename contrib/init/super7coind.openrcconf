@@ -1,0 +1,33 @@
+# /etc/conf.d/super7coind: config file for /etc/init.d/super7coind
+
+# Config file location
+#BITCOIND_CONFIGFILE="/etc/super7coincore/super7coin.conf"
+
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/super7coind"
+
+# What filename to give the pidfile
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/super7coind.pid"
+
+# Where to write super7coind data (be mindful that the blockchain is large)
+#BITCOIND_DATADIR="/var/lib/super7coind"
+
+# User and group to own super7coind process
+#BITCOIND_USER="super7coincore"
+#BITCOIND_GROUP="super7coincore"
+
+# Path to super7coind executable
+#BITCOIND_BIN="/usr/bin/super7coind"
+
+# Nice value to run super7coind under
+#BITCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+BITCOIND_OPTS="-disablewallet"
+
+# The timeout in seconds OpenRC will wait for bitcoind to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+BITCOIND_SIGTERM_TIMEOUT=60

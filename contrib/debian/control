@@ -1,8 +1,8 @@
-Source: dash
+Source: super7coin
 Section: utils
 Priority: optional
-Maintainer: Holger Schinzel <holger@dash.org>
-Uploaders: Holger Schinzel <holger@dash.org>
+Maintainer: Holger Schinzel <holger@super7coin.org>
+Uploaders: Holger Schinzel <holger@super7coin.org>
 Build-Depends: debhelper,
  devscripts,
  automake,
@@ -24,45 +24,45 @@ Build-Depends: debhelper,
  libprotobuf-dev, protobuf-compiler,
  python
 Standards-Version: 3.9.2
-Homepage: https://www.dash.org/
-Vcs-Git: git://github.com/dashpay/dash.git
-Vcs-Browser: https://github.com/dashpay/dash
+Homepage: https://www.super7coin.org/
+Vcs-Git: git://github.com/super7coinpay/super7coin.git
+Vcs-Browser: https://github.com/super7coinpay/super7coin
 
-Package: dashd
+Package: super7coind
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - daemon
- Dash is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Dash uses peer-to-peer
+ Super7Coin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Dash Core
+ and issuing money are carried out collectively by the network. Super7Coin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides the daemon, dashd, and the CLI tool
- dash-cli to interact with the daemon.
+ This package provides the daemon, super7coind, and the CLI tool
+ super7coin-cli to interact with the daemon.
 
-Package: dash-qt
+Package: super7coin-qt
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - Qt GUI
- Dash is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Dash uses peer-to-peer
+ Super7Coin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Dash Core
+ and issuing money are carried out collectively by the network. Super7Coin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides Dash-Qt, a GUI for Dash based on Qt.
+ This package provides Super7Coin-Qt, a GUI for Super7Coin based on Qt.
 
-Package: dash-tx
+Package: super7coin-tx
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer digital currency - standalone transaction tool
- Dash is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Dash uses peer-to-peer
+ Super7Coin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Dash Core
+ and issuing money are carried out collectively by the network. Super7Coin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides dash-tx, a command-line transaction creation
- tool which can be used without a dash daemon.  Some means of
+ This package provides super7coin-tx, a command-line transaction creation
+ tool which can be used without a super7coin daemon.  Some means of
  exchanging minimal transaction data with peers is still required.

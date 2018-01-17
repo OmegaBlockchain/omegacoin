@@ -1,0 +1,22 @@
+[Unit]
+Description=Super7Coin's distributed currency daemon
+After=network.target
+
+[Service]
+User=super7coincore
+Group=super7coincore
+
+Type=forking
+PIDFile=/var/lib/super7coind/super7coind.pid
+ExecStart=/usr/bin/super7coind -daemon -pid=/var/lib/super7coind/super7coind.pid \
+-conf=/etc/super7coincore/super7coin.conf -datadir=/var/lib/super7coind -disablewallet
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target

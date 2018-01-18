@@ -51,7 +51,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "Super fast, anonymous, masternode, safe.";
+    const char* pszTimestamp = "Super7 offers you a truly decentralized proof-of-stake addition to your crypto portfolio";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
@@ -73,7 +73,7 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 0; // Note: actual number of blocks per calendar year with DGW v3 is ~200700 (for example 449750 - 249050)
-        consensus.nMasternodePaymentsStartBlock = 777; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
+        consensus.nMasternodePaymentsStartBlock = 1; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
         consensus.nMasternodePaymentsIncreaseBlock = 0; // actual historical value
         consensus.nMasternodePaymentsIncreasePeriod = 0; // 17280 - actual historical value
         consensus.nInstantSendKeepLock = 24;
@@ -117,10 +117,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0001].nThreshold = 3226; // 80% of 4032
 
         // The best chain should have at least this much work.
-        //consensus.nMinimumChainWork = uint256S("0x"); // 782700
+        consensus.nMinimumChainWork = uint256S("0x"); // 782700
 
         // By default assume that the signatures in ancestors of this block are valid.
-        //consensus.defaultAssumeValid = uint256S("0x"); // 782700
+        consensus.defaultAssumeValid = uint256S("0x"); // 782700
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -137,10 +137,10 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1516249114, 3192383, 0x1e0ffff0, 1, 0 * COIN);
+        genesis = CreateGenesisBlock(1516249744, 829719, 0x1e0ffff0, 1, 1 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x0000095f081821b68f18d6f8004ad91bc30189e5605a6081d311dca1686777d4"));
-        assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000001fea2e7fe18e1cb0b55c0a3e70aa90ea7d9ccb697209588a5ab1ccfc7be"));
+        assert(genesis.hashMerkleRoot == uint256S("0xb5d173440932681e566ba14524c7e089f39314068cad6f04f593207286c9ef9c"));
 
 
         vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));
@@ -242,10 +242,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0001].nThreshold = 50; // 50% of 100
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000000924e924a21715"); // 37900
+        consensus.nMinimumChainWork = uint256S("0x"); // 37900
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x0000000004f5aef732d572ff514af99a995702c92e4452c7af10858231668b1f"); // 37900
+        consensus.defaultAssumeValid = uint256S("0x"); // 37900
 
         pchMessageStart[0] = 0xce;
         pchMessageStart[1] = 0xe2;
@@ -258,10 +258,10 @@ public:
         nPruneAfterHeight = 1000;
 
 
-        genesis = CreateGenesisBlock(1516249114, 3192383, 0x1e0ffff0, 1, 0 * COIN);
+        genesis = CreateGenesisBlock(1516249744, 829719, 0x1e0ffff0, 1, 1 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x0000095f081821b68f18d6f8004ad91bc30189e5605a6081d311dca1686777d4"));
-        assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000001fea2e7fe18e1cb0b55c0a3e70aa90ea7d9ccb697209588a5ab1ccfc7be"));
+        assert(genesis.hashMerkleRoot == uint256S("0xb5d173440932681e566ba14524c7e089f39314068cad6f04f593207286c9ef9c"));
 
         vFixedSeeds.clear();
         vSeeds.clear();

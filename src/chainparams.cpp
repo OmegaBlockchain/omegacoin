@@ -94,12 +94,12 @@ public:
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Super7Coin: 1 day
         consensus.nPowTargetSpacing = 60; // Super7Coin: 2.5 minutes
-        //consensus.fPowAllowMinDifficultyBlocks = false;
-        //consensus.fPowNoRetargeting = false;
+        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.fPowNoRetargeting = false;
         //consensus.nPowKGWHeight = 15200;
         //consensus.nPowDGWHeight = 34140;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
-        //consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
+        consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
@@ -117,10 +117,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0001].nThreshold = 3226; // 80% of 4032
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x"); // 782700
+        //consensus.nMinimumChainWork = uint256S("0x"); // 782700
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x"); // 782700
+        //consensus.defaultAssumeValid = uint256S("0x"); // 782700
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -137,7 +137,7 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1516248543, 1849324, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1516248543, 1849324, 0x1e0ffff0, 1, 0 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         assert(consensus.hashGenesisBlock == uint256S("0x00000a0ac27536819e446a858fb7ec526acb1426d262d1a7186128b3ff07d70c"));
         assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));

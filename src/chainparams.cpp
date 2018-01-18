@@ -139,8 +139,10 @@ public:
 
         genesis = CreateGenesisBlock(1516249744, 829719, 0x1e0ffff0, 1, 1 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000001fea2e7fe18e1cb0b55c0a3e70aa90ea7d9ccb697209588a5ab1ccfc7be"));
-        assert(genesis.hashMerkleRoot == uint256S("0xb5d173440932681e566ba14524c7e089f39314068cad6f04f593207286c9ef9c"));
+              printf("genesis.GetHash = %s\n", genesis.GetHash().ToString().c_str());
+              printf("merkle = %s\n", genesis.hashMerkleRoot.ToString().c_str());
+        //assert(consensus.hashGenesisBlock == uint256S("0x000001fea2e7fe18e1cb0b55c0a3e70aa90ea7d9ccb697209588a5ab1ccfc7be"));
+        //assert(genesis.hashMerkleRoot == uint256S("0xb5d173440932681e566ba14524c7e089f39314068cad6f04f593207286c9ef9c"));
 
 
         vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));

@@ -369,10 +369,10 @@ public:
         nPruneAfterHeight = 1000;
 
 
-        genesis = CreateGenesisBlock(1516249114, 3192383, 0x1e0ffff0, 1, 0 * COIN);
+        genesis = CreateGenesisBlock(1516249744, 829719, 0x1e0ffff0, 1, 1 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x0000095f081821b68f18d6f8004ad91bc30189e5605a6081d311dca1686777d4"));
-        assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000001fea2e7fe18e1cb0b55c0a3e70aa90ea7d9ccb697209588a5ab1ccfc7be"));
+        assert(genesis.hashMerkleRoot == uint256S("0xb5d173440932681e566ba14524c7e089f39314068cad6f04f593207286c9ef9c"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.

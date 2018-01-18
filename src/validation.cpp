@@ -1234,39 +1234,31 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     CAmount nSubsidyBase;
 
     if(nPrevHeight <= 7) {nSubsidyBase = 111111;}
+    if(nPrevHeight >= 7) {nSubsidyBase = 14;}
+    if(nPrevHeight > 76) {nSubsidyBase = 21;}
+    if(nPrevHeight > 776) {nSubsidyBase = 28;}
+    if(nPrevHeight > 7776) {nSubsidyBase = 35;}
+    if(nPrevHeight > 77776) {nSubsidyBase = 28;}
+    if(nPrevHeight > 777776) {nSubsidyBase = 14;}
     if(nPrevHeight == 76) {nSubsidyBase = 77;}
     if(nPrevHeight == 776) {nSubsidyBase = 777;}
     if(nPrevHeight == 7776) {nSubsidyBase = 7777;}
     if(nPrevHeight == 77776) {nSubsidyBase = 77777;}
-    if(nPrevHeight > 7) {nSubsidyBase = 14;}
-    if(nPrevHeight > 77) {nSubsidyBase = 21;}
-    if(nPrevHeight > 777) {nSubsidyBase = 28;}
-    if(nPrevHeight > 7777) {nSubsidyBase = 35;}
-    if(nPrevHeight > 77777) {nSubsidyBase = 28;}
-    if(nPrevHeight > 777777) {nSubsidyBase = 14;}
 
         // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
        CAmount nSubsidy = nSubsidyBase * COIN;
   
-      // yearly decline of production by ~7.1% per year, projected ~18M coins max by year 2050+.
-      for (int i = consensusParams.nSubsidyHalvingInterval; i <= nPrevHeight; i += consensusParams.nSubsidyHalvingInterval) {
-          nSubsidy -= nSubsidy/14;
-      }
-  
-      // Hard fork to reduce the block reward by 10 extra percent (allowing budget/superblocks)
-      CAmount nSuperblockPart = (nPrevHeight > consensusParams.nBudgetPaymentsStartBlock) ? nSubsidy/10 : 0;
-  
-       return fSuperblockPartOnly ? nSuperblockPart : nSubsidy - nSuperblockPart;
+       return nSubsidy;
    }
 
 CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 {
     CAmount ret = blockValue * 0.5; // start at 50%
 
-    if(nHeight > 777)                        ret += blockValue * 0.55;
-    if(nHeight > 7777)                  ret += blockValue * 0.60;
-    if(nHeight > 77777)                  ret += blockValue * 0.70;
-    if(nHeight > 777777)                  ret += blockValue * 0.75;
+    if(nHeight > 776)                        ret += blockValue * 0.55;
+    if(nHeight > 7776)                  ret += blockValue * 0.60;
+    if(nHeight > 77776)                  ret += blockValue * 0.70;
+    if(nHeight > 777776)                  ret += blockValue * 0.75;
  
     return ret;
 }

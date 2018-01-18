@@ -117,10 +117,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0001].nThreshold = 3226; // 80% of 4032
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000100a308553b4863b755"); // 782700
+        consensus.nMinimumChainWork = uint256S("0x"); // 782700
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x000000000000001c172f518793c3b9e83f202284615592f87fe3506ce964dcd4"); // 782700
+        consensus.defaultAssumeValid = uint256S("0x"); // 782700
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -137,9 +137,9 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1516227508, 947260, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1516248543, 1849324, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000007318a49ca954cf0675628f71f432bcd7789f3170d33a17b261d9b99c075"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000a0ac27536819e446a858fb7ec526acb1426d262d1a7186128b3ff07d70c"));
         assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
 
 
@@ -257,9 +257,10 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1516227508, 947260, 0x1e0ffff0, 1, 50 * COIN);
+
+        genesis = CreateGenesisBlock(1516248543, 1849324, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000007318a49ca954cf0675628f71f432bcd7789f3170d33a17b261d9b99c075"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000a0ac27536819e446a858fb7ec526acb1426d262d1a7186128b3ff07d70c"));
         assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
 
         vFixedSeeds.clear();
@@ -367,9 +368,10 @@ public:
         nDefaultPort = 19994;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1516227508, 947260, 0x1e0ffff0, 1, 50 * COIN);
+
+        genesis = CreateGenesisBlock(1516248543, 1849324, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x000007318a49ca954cf0675628f71f432bcd7789f3170d33a17b261d9b99c075"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000a0ac27536819e446a858fb7ec526acb1426d262d1a7186128b3ff07d70c"));
         assert(genesis.hashMerkleRoot == uint256S("0xe495e9f3d9235be1552986908814a0da33f5361b0324f8c3e89a0f22b2ea2cd4"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.

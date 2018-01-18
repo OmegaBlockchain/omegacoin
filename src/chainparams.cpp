@@ -51,7 +51,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "Super7 offers you a truly decentralized proof-of-stake addition to your crypto portfolio";
+    const char* pszTimestamp = "Super7 offers you a truly decentralized transaction";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
@@ -137,12 +137,12 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1516249744, 829719, 0x1e0ffff0, 1, 1 * COIN);
+        genesis = CreateGenesisBlock(1516250435, 2091763, 0x1e0ffff0, 1, 1 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
               //printf("genesis.GetHash = %s\n", genesis.GetHash().ToString().c_str());
               //printf("merkle = %s\n", genesis.hashMerkleRoot.ToString().c_str());
-        assert(consensus.hashGenesisBlock == uint256S("0x9956c07833ff3082d23d2c12f4d65e84a47a6f66278776582d3278f5a46b2b3b"));
-        assert(genesis.hashMerkleRoot == uint256S("0xbebfcf8882c25caa3f070fbe27e5fc12b8f0f7f4603afc7d96a48e24ddc56f6b"));
+        assert(consensus.hashGenesisBlock == uint256S("0x000001ce7f523a52d2497575f51a55f4883e8d15fc4595bf09fc464e258e9ab2"));
+        assert(genesis.hashMerkleRoot == uint256S("0xbe3200f3c2b1a08d0757e873a42876f23c841a05a5c73bbabf80bc12ccf11c6d"));
 
 
         vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));

@@ -1233,51 +1233,34 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     double dDiff;
     CAmount nSubsidyBase;
     
-    if(nPrevHeight <= 7) {nSubsidyBase = 111111;}
-    
-    // lv 1
-    if(nPrevHeight >= 7) {nSubsidyBase = 1;}
-    if(nPrevHeight == 76) {nSubsidyBase = 77;}
-    // lv 2
-    if(nPrevHeight > 76) {nSubsidyBase = 2;}
-    if(nPrevHeight == 776) {nSubsidyBase = 777;}
-    // lv 3
-    if(nPrevHeight > 776) {nSubsidyBase = 3;}
-    // final level
-    if(nPrevHeight > 7776) {nSubsidyBase = 0;}
-    
     // Premine
-//    if(nPrevHeight <= 7) {nSubsidyBase = 111111;}
-//    
-//    if(nPrevHeight >= 7) {nSubsidyBase = 1;}
-//    
-//         // Super Block +77
-//        if(nPrevHeight == 76) {nSubsidyBase = 77;}
-//    
-//    if(nPrevHeight > 76) {nSubsidyBase = 3;}
-//    
-//         // Super Block +777
-//         if(nPrevHeight == 776) {nSubsidyBase = 777;}
-//    
-//    if(nPrevHeight > 776) {nSubsidyBase = 7;}
-//    
-//         // Super Block +7777 and Start of Masternode 50%
-//         if(nPrevHeight == 7776) {nSubsidyBase = 7777;}
-//    
-//    if(nPrevHeight > 7776) {nSubsidyBase = 20;}
-//    
-//         // Super Block +77777 
-//         if(nPrevHeight == 77776) {nSubsidyBase = 77777;}
-//    
-//    if(nPrevHeight > 77776) {nSubsidyBase = 14;}
-//    
-//    // End of mining
-//    if(nPrevHeight > 777776) {nSubsidyBase = 0;}
+    if(nPrevHeight <= 7) {nSubsidyBase = 11111;}
     
-
-
-
-
+    if(nPrevHeight >= 7) {nSubsidyBase = 1;}
+    
+         // Super Block +77
+        if(nPrevHeight == 76) {nSubsidyBase = 77;}
+    
+    if(nPrevHeight > 76) {nSubsidyBase = 3;}
+    
+         // Super Block +777 - Start of Masternode 30%
+         if(nPrevHeight == 776) {nSubsidyBase = 777;}
+    
+    if(nPrevHeight > 776) {nSubsidyBase = 10;}
+    
+         // Super Block +7777 - Start of Masternode 50%
+         if(nPrevHeight == 7776) {nSubsidyBase = 7777;}
+    
+    if(nPrevHeight > 7776) {nSubsidyBase = 10;}
+    
+         // Super Block +77777 - Start of Masternode 70%
+         if(nPrevHeight == 77776) {nSubsidyBase = 77777;}
+    
+    if(nPrevHeight > 77776) {nSubsidyBase = 10;}
+    
+    // End of mining
+    if(nPrevHeight > 777776) {nSubsidyBase = 0;}
+   
 
         // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
        CAmount nSubsidy = nSubsidyBase * COIN;
@@ -1289,13 +1272,9 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 {
     CAmount ret = blockValue * 0; // start at 0%
 
-    if(nHeight > 500)                        ret = blockValue * 0.50;
-    if(nHeight > 1000)                        ret = blockValue * 0.70;
-    
-    
-    // if(nHeight > 7776)                  ret = blockValue * 0.60;
-    // if(nHeight > 77776)                  ret = blockValue * 0.70;
-    // if(nHeight > 777776)                  ret = blockValue * 0.75;
+    if(nHeight > 776)                        ret = blockValue * 0.30;
+    if(nHeight > 7776)                        ret = blockValue * 0.50;
+    if(nHeight > 77776)                        ret = blockValue * 0.70;
  
     return ret;
 }

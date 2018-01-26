@@ -143,15 +143,13 @@ public:
         assert(genesis.hashMerkleRoot == uint256S("0xed1884492c0161ce8ec04403401f6eb17af67bc8bd6af337a0d2348087dd68e9"));
 
         
-        
-
-        vSeeds.push_back(CDNSSeedData("46.101.129.204", "46.101.129.204"));
-        vSeeds.push_back(CDNSSeedData("165.227.129.12", "165.227.129.12"));
-        //vSeeds.push_back(CDNSSeedData("n3.super7node.org", "n3.super7node.org"));
-        //vSeeds.push_back(CDNSSeedData("n4.super7node.org", "n4.super7node.org"));
-        //vSeeds.push_back(CDNSSeedData("n5.super7node.org", "n5.super7node.org"));
-        //vSeeds.push_back(CDNSSeedData("n6.super7node.org", "n6.super7node.org"));
-        //vSeeds.push_back(CDNSSeedData("n7.super7node.org", "n7.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n2.super7node.org", "n2.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n3.super7node.org", "n3.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n4.super7node.org", "n4.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n5.super7node.org", "n5.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n6.super7node.org", "n6.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("n7.super7node.org", "n7.super7node.org"));
 
 
         // Super7Coin addresses start with 'X'

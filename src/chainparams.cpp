@@ -73,7 +73,7 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 210240; // Note: actual number of blocks per calendar year with DGW v3 is ~200700 (for example 449750 - 249050)
-        consensus.nMasternodePaymentsStartBlock = 777; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
+        consensus.nMasternodePaymentsStartBlock = 776; // not true, but it's ok as long as it's less then nMasternodePaymentsIncreaseBlock
         consensus.nMasternodePaymentsIncreaseBlock = 1569325056; // actual historical value
         consensus.nMasternodePaymentsIncreasePeriod = 1569325056; // 17280 - actual historical value
         consensus.nInstantSendKeepLock = 24;
@@ -92,8 +92,8 @@ public:
         consensus.BIP34Height = 1;
         consensus.BIP34Hash = uint256S("0x000007d91d1254d60e2dd1ae580383070a4ddffa4c64c2eeb4a2f9ecc0414343");
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
-        consensus.nPowTargetTimespan = 120; // Super7Coin: 1 day
-        consensus.nPowTargetSpacing = 3; // Super7Coin: 2.5 minutes
+        consensus.nPowTargetTimespan = 420; // Super7Coin: each 7 minute
+        consensus.nPowTargetSpacing = 7; // Super7Coin: 1 minute
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         //consensus.nPowKGWHeight = 15200;

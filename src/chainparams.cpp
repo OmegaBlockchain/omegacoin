@@ -51,7 +51,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "S7 - 26/jan/2018";
+    const char* pszTimestamp = "S7 - 26/jan/2018 ";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
@@ -142,6 +142,8 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x0000050bd9068d0cb20fad1fae3f56ac8c1a895b0a9b09869e3bf4db8a0bb9f1"));
         assert(genesis.hashMerkleRoot == uint256S("0xed1884492c0161ce8ec04403401f6eb17af67bc8bd6af337a0d2348087dd68e9"));
 
+        
+        
 
         vSeeds.push_back(CDNSSeedData("46.101.129.204", "46.101.129.204"));
         vSeeds.push_back(CDNSSeedData("165.227.129.12", "165.227.129.12"));

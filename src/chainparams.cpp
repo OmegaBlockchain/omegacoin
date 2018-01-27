@@ -93,7 +93,7 @@ public:
         consensus.BIP34Hash = uint256S("0x000007d91d1254d60e2dd1ae580383070a4ddffa4c64c2eeb4a2f9ecc0414343");
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 420; // Super7Coin: each 7 minute
-        consensus.nPowTargetSpacing = 60; // Super7Coin: 1 minute
+        consensus.nPowTargetSpacing = 5; // Super7Coin: 1 minute
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         //consensus.nPowKGWHeight = 15200;
@@ -142,14 +142,16 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x0000050bd9068d0cb20fad1fae3f56ac8c1a895b0a9b09869e3bf4db8a0bb9f1"));
         assert(genesis.hashMerkleRoot == uint256S("0xed1884492c0161ce8ec04403401f6eb17af67bc8bd6af337a0d2348087dd68e9"));
 
-        
-        vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n2.super7node.org", "n2.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n3.super7node.org", "n3.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n4.super7node.org", "n4.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n5.super7node.org", "n5.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n6.super7node.org", "n6.super7node.org"));
-        vSeeds.push_back(CDNSSeedData("n7.super7node.org", "n7.super7node.org"));
+        vSeeds.push_back(CDNSSeedData("46.101.129.204", "46.101.129.204"));
+        vSeeds.push_back(CDNSSeedData("165.227.129.12", "165.227.129.12"));
+
+       //vSeeds.push_back(CDNSSeedData("n1.super7node.org", "n1.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n2.super7node.org", "n2.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n3.super7node.org", "n3.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n4.super7node.org", "n4.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n5.super7node.org", "n5.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n6.super7node.org", "n6.super7node.org"));
+       //vSeeds.push_back(CDNSSeedData("n7.super7node.org", "n7.super7node.org"));
 
 
         // Super7Coin addresses start with 'X'

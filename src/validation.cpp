@@ -1235,7 +1235,7 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     
     if(nPrevHeight <= 1)
     {
-        nSubsidyBase = 580000; //  PREMINE 1 BLOCKS, 0.5%
+        nSubsidyBase = 290000; //  PREMINE 1 BLOCKS, 0.5%
     }
     else if(nPrevHeight < 1000)
     {

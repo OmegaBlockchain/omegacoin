@@ -5,7 +5,7 @@ Block Spacing: 80 Seconds Stake Minimum Age: 8 Hours
 Port: 7777 RPC Port: 7778
 
 
-BUILD LINUX (see the Wiki for dependencies)
+BUILD LINUX (https://github.com/omegacoinnetwork/omegacoin/blob/master/doc/build-unix.md)
 
 git clone https://github.com/omegacoinnetwork/omegacoin
 

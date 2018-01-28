@@ -1,10 +1,10 @@
-// Copyright (c) 2014-2017 The Super7Coin Core developers
+// Copyright (c) 2014-2017 The OmegaCoin Core developers
 
 #include "governance-validators.h"
 #include "univalue.h"
 #include "utilstrencodings.h"
 
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include <boost/test/unit_test.hpp>
 

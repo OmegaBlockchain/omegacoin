@@ -4,7 +4,7 @@
 
 #include "compressor.h"
 #include "util.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include <stdint.h>
 

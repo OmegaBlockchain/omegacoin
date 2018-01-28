@@ -1,8 +1,8 @@
-Source: super7coin
+Source: omegacoin
 Section: utils
 Priority: optional
-Maintainer: Holger Schinzel <holger@super7coin.org>
-Uploaders: Holger Schinzel <holger@super7coin.org>
+Maintainer: Holger Schinzel <holger@omegacoin.org>
+Uploaders: Holger Schinzel <holger@omegacoin.org>
 Build-Depends: debhelper,
  devscripts,
  automake,
@@ -24,45 +24,45 @@ Build-Depends: debhelper,
  libprotobuf-dev, protobuf-compiler,
  python
 Standards-Version: 3.9.2
-Homepage: https://www.super7coin.org/
-Vcs-Git: git://github.com/super7coinpay/super7coin.git
-Vcs-Browser: https://github.com/super7coinpay/super7coin
+Homepage: https://www.omegacoin.org/
+Vcs-Git: git://github.com/omegacoinpay/omegacoin.git
+Vcs-Browser: https://github.com/omegacoinpay/omegacoin
 
-Package: super7coind
+Package: omegacoind
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - daemon
- Super7Coin is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
+ OmegaCoin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. OmegaCoin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Super7Coin Core
+ and issuing money are carried out collectively by the network. OmegaCoin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides the daemon, super7coind, and the CLI tool
- super7coin-cli to interact with the daemon.
+ This package provides the daemon, omegacoind, and the CLI tool
+ omegacoin-cli to interact with the daemon.
 
-Package: super7coin-qt
+Package: omegacoin-qt
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer network based digital currency - Qt GUI
- Super7Coin is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
+ OmegaCoin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. OmegaCoin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Super7Coin Core
+ and issuing money are carried out collectively by the network. OmegaCoin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides Super7Coin-Qt, a GUI for Super7Coin based on Qt.
+ This package provides OmegaCoin-Qt, a GUI for OmegaCoin based on Qt.
 
-Package: super7coin-tx
+Package: omegacoin-tx
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: peer-to-peer digital currency - standalone transaction tool
- Super7Coin is an experimental new digital currency that enables anonymous, instant
- payments to anyone, anywhere in the world. Super7Coin uses peer-to-peer
+ OmegaCoin is an experimental new digital currency that enables anonymous, instant
+ payments to anyone, anywhere in the world. OmegaCoin uses peer-to-peer
  technology to operate with no central authority: managing transactions
- and issuing money are carried out collectively by the network. Super7Coin Core
+ and issuing money are carried out collectively by the network. OmegaCoin Core
  is the name of the open source software which enables the use of this currency.
  .
- This package provides super7coin-tx, a command-line transaction creation
- tool which can be used without a super7coin daemon.  Some means of
+ This package provides omegacoin-tx, a command-line transaction creation
+ tool which can be used without a omegacoin daemon.  Some means of
  exchanging minimal transaction data with peers is still required.

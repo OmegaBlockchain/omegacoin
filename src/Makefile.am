@@ -49,8 +49,8 @@ EXTRA_LIBRARIES += libbitcoin_zmq.a
 endif
 
 if BUILD_BITCOIN_LIBS
-lib_LTLIBRARIES = libsuper7coinconsensus.la
-LIBBITCOIN_CONSENSUS=libsuper7coinconsensus.la
+lib_LTLIBRARIES = libomegacoinconsensus.la
+LIBBITCOIN_CONSENSUS=libomegacoinconsensus.la
 else
 LIBBITCOIN_CONSENSUS=
 endif
@@ -60,15 +60,15 @@ TESTS =
 BENCHMARKS =
 
 if BUILD_BITCOIND
-  bin_PROGRAMS += super7coind
+  bin_PROGRAMS += omegacoind
 endif
 
 if BUILD_BITCOIN_UTILS
-  bin_PROGRAMS += super7coin-cli super7coin-tx
+  bin_PROGRAMS += omegacoin-cli omegacoin-tx
 endif
 
 .PHONY: FORCE check-symbols check-security
-# super7coin core #
+# omegacoin core #
 BITCOIN_CORE_H = \
   addrdb.h \
   activemasternode.h \
@@ -207,7 +207,7 @@ obj/build.h: FORCE
 	  $(abs_top_srcdir)
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
-# server: shared between super7coind and super7coin-qt
+# server: shared between omegacoind and omegacoin-qt
 libbitcoin_server_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(MINIUPNPC_CPPFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
 libbitcoin_server_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_server_a_SOURCES = \
@@ -280,7 +280,7 @@ libbitcoin_zmq_a_SOURCES = \
 endif
 
 
-# wallet: shared between super7coind and super7coin-qt, but only linked
+# wallet: shared between omegacoind and omegacoin-qt, but only linked
 # when wallet enabled
 libbitcoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -343,7 +343,7 @@ crypto_libbitcoin_crypto_a_SOURCES += \
   crypto/sph_skein.h \
   crypto/sph_types.h
 
-# common: shared between super7coind, and super7coin-qt and non-server tools
+# common: shared between omegacoind, and omegacoin-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_common_a_SOURCES = \
@@ -403,7 +403,7 @@ if GLIBC_BACK_COMPAT
 libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp
 endif
 
-# cli: shared between super7coin-cli and super7coin-qt
+# cli: shared between omegacoin-cli and omegacoin-qt
 libbitcoin_cli_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_cli_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_cli_a_SOURCES = \
@@ -414,16 +414,16 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind binary #
-super7coind_SOURCES = super7coind.cpp
-super7coind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-super7coind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-super7coind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+omegacoind_SOURCES = omegacoind.cpp
+omegacoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+omegacoind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+omegacoind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-super7coind_SOURCES += super7coind-res.rc
+omegacoind_SOURCES += omegacoind-res.rc
 endif
 
-super7coind_LDADD = \
+omegacoind_LDADD = \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_COMMON) \
   $(LIBUNIVALUE) \
@@ -434,56 +434,56 @@ super7coind_LDADD = \
   $(LIBSECP256K1)
 
 if ENABLE_ZMQ
-super7coind_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)
+omegacoind_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)
 endif
 
 if ENABLE_WALLET
-super7coind_LDADD += libbitcoin_wallet.a
+omegacoind_LDADD += libbitcoin_wallet.a
 endif
 
-super7coind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS)
+omegacoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS)
 
-# super7coin-cli binary #
-super7coin_cli_SOURCES = super7coin-cli.cpp
-super7coin_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
-super7coin_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-super7coin_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# omegacoin-cli binary #
+omegacoin_cli_SOURCES = omegacoin-cli.cpp
+omegacoin_cli_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(EVENT_CFLAGS)
+omegacoin_cli_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+omegacoin_cli_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-super7coin_cli_SOURCES += super7coin-cli-res.rc
+omegacoin_cli_SOURCES += omegacoin-cli-res.rc
 endif
 
-super7coin_cli_LDADD = \
+omegacoin_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_UTIL)
-super7coin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
+omegacoin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(EVENT_LIBS)
 #
 
-# super7coin-tx binary #
-super7coin_tx_SOURCES = super7coin-tx.cpp
-super7coin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
-super7coin_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-super7coin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+# omegacoin-tx binary #
+omegacoin_tx_SOURCES = omegacoin-tx.cpp
+omegacoin_tx_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+omegacoin_tx_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+omegacoin_tx_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-super7coin_tx_SOURCES += super7coin-tx-res.rc
+omegacoin_tx_SOURCES += omegacoin-tx-res.rc
 endif
 
-super7coin_tx_LDADD = \
+omegacoin_tx_LDADD = \
   $(LIBUNIVALUE) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO) \
   $(LIBSECP256K1)
 
-super7coin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+omegacoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
 #
 
-# super7coinconsensus library #
+# omegacoinconsensus library #
 if BUILD_BITCOIN_LIBS
-include_HEADERS = script/super7coinconsensus.h
-libsuper7coinconsensus_la_SOURCES = \
+include_HEADERS = script/omegacoinconsensus.h
+libomegacoinconsensus_la_SOURCES = \
   crypto/hmac_sha512.cpp \
   crypto/ripemd160.cpp \
   crypto/sha1.cpp \
@@ -492,20 +492,20 @@ libsuper7coinconsensus_la_SOURCES = \
   hash.cpp \
   primitives/transaction.cpp \
   pubkey.cpp \
-  script/super7coinconsensus.cpp \
+  script/omegacoinconsensus.cpp \
   script/interpreter.cpp \
   script/script.cpp \
   uint256.cpp \
   utilstrencodings.cpp
 
 if GLIBC_BACK_COMPAT
-  libsuper7coinconsensus_la_SOURCES += compat/glibc_compat.cpp
+  libomegacoinconsensus_la_SOURCES += compat/glibc_compat.cpp
 endif
 
-libsuper7coinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
-libsuper7coinconsensus_la_LIBADD = $(LIBSECP256K1)
-libsuper7coinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
-libsuper7coinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libomegacoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS)
+libomegacoinconsensus_la_LIBADD = $(LIBSECP256K1)
+libomegacoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libomegacoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
 endif
 #

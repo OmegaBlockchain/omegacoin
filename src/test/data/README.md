@@ -1,7 +1,7 @@
 Description
 ------------
 
-This directory contains data-driven tests for various aspects of Super7Coin.
+This directory contains data-driven tests for various aspects of OmegaCoin.
 
 License
 --------

@@ -146,7 +146,7 @@ Gavin Andresen
 Giel van Schijndel
 Gregory Maxwell
 Jeff Garzik
-Luke Super7Coinjr
+Luke OmegaCoinjr
 Matt Corallo
 Michael Ford
 Michael Hendricks

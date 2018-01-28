@@ -21,8 +21,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef S7C_BIP39_H
-#define S7C_BIP39_H
+#ifndef OMEGA_BIP39_H
+#define OMEGA_BIP39_H
 
 #include "support/allocators/secure.h"
 

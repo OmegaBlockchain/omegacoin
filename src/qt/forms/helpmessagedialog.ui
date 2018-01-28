@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string notr="true">Super7Coin Core - Command-line options</string>
+   <string notr="true">OmegaCoin Core - Command-line options</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <property name="spacing">
@@ -76,7 +76,7 @@
         <bool>false</bool>
        </property>
        <property name="pixmap">
-        <pixmap resource="../super7coin.qrc">:/images/drkblue/about</pixmap>
+        <pixmap resource="../omegacoin.qrc">:/images/drkblue/about</pixmap>
        </property>
        <property name="scaledContents">
         <bool>false</bool>
@@ -172,7 +172,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../super7coin.qrc"/>
+  <include location="../omegacoin.qrc"/>
  </resources>
  <connections>
   <connection>

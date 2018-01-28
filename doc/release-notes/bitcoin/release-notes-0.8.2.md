@@ -116,7 +116,7 @@ Gregory Maxwell
 Jeff Garzik
 Jonas Schnelli
 Larry Gilbert
-Luke Super7Coinjr
+Luke OmegaCoinjr
 Matt Corallo
 Michael Ford
 Mike Hearn

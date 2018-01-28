@@ -6,13 +6,13 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/super7coin
-src/super7coind
-src/super7coin-cli
-src/super7coin-tx
-src/test/test_super7coin
-src/qt/test/test_super7coin-qt
-src/bench/bench_super7coin
+src/omegacoin
+src/omegacoind
+src/omegacoin-cli
+src/omegacoin-tx
+src/test/test_omegacoin
+src/qt/test/test_omegacoin-qt
+src/bench/bench_omegacoin
 
 # autoreconf
 Makefile.in
@@ -35,8 +35,8 @@ config.log
 config.status
 configure
 libtool
-src/config/super7coin-config.h
-src/config/super7coin-config.h.in
+src/config/omegacoin-config.h
+src/config/omegacoin-config.h.in
 src/config/stamp-h1
 share/setup.nsi
 share/qt/Info.plist
@@ -62,7 +62,7 @@ libconftest.dylib*
 *.o
 *.o-*
 *.patch
-.super7coin
+.omegacoin
 *.a
 *.pb.cc
 *.pb.h
@@ -81,12 +81,12 @@ libconftest.dylib*
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-super7coin-qt
-Super7Coin-Qt.app
+omegacoin-qt
+OmegaCoin-Qt.app
 
 # Unit-tests
 Makefile.test
-super7coin-qt_test
+omegacoin-qt_test
 src/test/buildenv.py
 
 # Resources cpp
@@ -100,7 +100,7 @@ build
 *.gcno
 *.gcda
 /*.info
-test_super7coin.coverage/
+test_omegacoin.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -123,12 +123,12 @@ share/BitcoindComparisonTool.jar
 .autotools
 /doc/doxygen/
 
-libsuper7coinconsensus.pc
-src/qt/super7coin-qt.bash
+libomegacoinconsensus.pc
+src/qt/omegacoin-qt.bash
 qa/pull-tester/tests-config.sh
 
 #development symlinks
-super7coin-cli
-super7coind
-super7coin-qt
+omegacoin-cli
+omegacoind
+omegacoin-qt
 make

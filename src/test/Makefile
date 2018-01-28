@@ -1,6 +1,6 @@
 all:
-	$(MAKE) -C .. super7coin_test
+	$(MAKE) -C .. omegacoin_test
 clean:
-	$(MAKE) -C .. super7coin_test_clean
+	$(MAKE) -C .. omegacoin_test_clean
 check:
-	$(MAKE) -C .. super7coin_test_check
+	$(MAKE) -C .. omegacoin_test_check

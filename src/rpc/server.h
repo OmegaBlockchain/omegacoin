@@ -123,7 +123,7 @@ public:
 };
 
 /**
- * Super7Coin RPC command dispatcher.
+ * OmegaCoin RPC command dispatcher.
  */
 class CRPCTable
 {

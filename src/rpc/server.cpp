@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The Super7Coin Core developers
+// Copyright (c) 2014-2017 The OmegaCoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -243,11 +243,11 @@ UniValue stop(const UniValue& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "stop\n"
-            "\nStop Super7Coin Core server.");
+            "\nStop OmegaCoin Core server.");
     // Event loop will exit after current HTTP requests have been handled, so
     // this reply will get back to the client.
     StartShutdown();
-    return "Super7Coin Core server stopping";
+    return "OmegaCoin Core server stopping";
 }
 
 /**
@@ -343,20 +343,20 @@ static const CRPCCommand vRPCCommands[] =
     { "hidden",             "resendwallettransactions", &resendwallettransactions, true},
 #endif
 
-    /* Super7Coin features */
-    { "super7coin",               "masternode",             &masternode,             true  },
-    { "super7coin",               "masternodelist",         &masternodelist,         true  },
-    { "super7coin",               "masternodebroadcast",    &masternodebroadcast,    true  },
-    { "super7coin",               "gobject",                &gobject,                true  },
-    { "super7coin",               "getgovernanceinfo",      &getgovernanceinfo,      true  },
-    { "super7coin",               "getsuperblockbudget",    &getsuperblockbudget,    true  },
-    { "super7coin",               "voteraw",                &voteraw,                true  },
-    { "super7coin",               "mnsync",                 &mnsync,                 true  },
-    { "super7coin",               "spork",                  &spork,                  true  },
-    { "super7coin",               "getpoolinfo",            &getpoolinfo,            true  },
-    { "super7coin",               "sentinelping",           &sentinelping,           true  },
+    /* OmegaCoin features */
+    { "omegacoin",               "masternode",             &masternode,             true  },
+    { "omegacoin",               "masternodelist",         &masternodelist,         true  },
+    { "omegacoin",               "masternodebroadcast",    &masternodebroadcast,    true  },
+    { "omegacoin",               "gobject",                &gobject,                true  },
+    { "omegacoin",               "getgovernanceinfo",      &getgovernanceinfo,      true  },
+    { "omegacoin",               "getsuperblockbudget",    &getsuperblockbudget,    true  },
+    { "omegacoin",               "voteraw",                &voteraw,                true  },
+    { "omegacoin",               "mnsync",                 &mnsync,                 true  },
+    { "omegacoin",               "spork",                  &spork,                  true  },
+    { "omegacoin",               "getpoolinfo",            &getpoolinfo,            true  },
+    { "omegacoin",               "sentinelping",           &sentinelping,           true  },
 #ifdef ENABLE_WALLET
-    { "super7coin",               "privatesend",            &privatesend,            false },
+    { "omegacoin",               "privatesend",            &privatesend,            false },
 
     /* Wallet */
     { "wallet",             "keepass",                &keepass,                true },
@@ -580,7 +580,7 @@ std::vector<std::string> CRPCTable::listCommands() const
 
 std::string HelpExampleCli(const std::string& methodname, const std::string& args)
 {
-    return "> super7coin-cli " + methodname + " " + args + "\n";
+    return "> omegacoin-cli " + methodname + " " + args + "\n";
 }
 
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)

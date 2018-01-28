@@ -1,6 +1,6 @@
 ### TestGen ###
 
-Utilities to generate test vectors for the data-driven Super7Coin tests.
+Utilities to generate test vectors for the data-driven OmegaCoin tests.
 
 Usage: 
 

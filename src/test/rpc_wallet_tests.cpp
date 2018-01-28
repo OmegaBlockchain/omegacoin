@@ -9,7 +9,7 @@
 #include "validation.h"
 #include "wallet/wallet.h"
 
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/test/unit_test.hpp>

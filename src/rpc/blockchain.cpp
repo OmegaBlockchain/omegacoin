@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The Super7Coin Core developers
+// Copyright (c) 2014-2017 The OmegaCoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -679,8 +679,8 @@ UniValue gettxout(const UniValue& params, bool fHelp)
             "     \"hex\" : \"hex\",        (string) \n"
             "     \"reqSigs\" : n,          (numeric) Number of required signatures\n"
             "     \"type\" : \"pubkeyhash\", (string) The type, eg pubkeyhash\n"
-            "     \"addresses\" : [          (array of string) array of super7coin addresses\n"
-            "        \"super7coinaddress\"     (string) super7coin address\n"
+            "     \"addresses\" : [          (array of string) array of omegacoin addresses\n"
+            "        \"omegacoinaddress\"     (string) omegacoin address\n"
             "        ,...\n"
             "     ]\n"
             "  },\n"

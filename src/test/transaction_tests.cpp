@@ -4,7 +4,7 @@
 
 #include "data/tx_invalid.json.h"
 #include "data/tx_valid.json.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include "clientversion.h"
 #include "consensus/validation.h"

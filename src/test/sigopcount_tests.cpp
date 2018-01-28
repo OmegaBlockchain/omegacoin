@@ -7,7 +7,7 @@
 #include "script/script.h"
 #include "script/standard.h"
 #include "uint256.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include <vector>
 

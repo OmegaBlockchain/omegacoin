@@ -1,37 +1,37 @@
-Super7Coin Core 0.12.1
+OmegaCoin Core 0.12.1
 =====================
 
-This is the official reference wallet for Super7Coin digital currency and comprises the backbone of the Super7Coin peer-to-peer network. You can [download Super7Coin Core](https://www.super7coin.org/downloads/) or [build it yourself](#building) using the guides below.
+This is the official reference wallet for OmegaCoin digital currency and comprises the backbone of the OmegaCoin peer-to-peer network. You can [download OmegaCoin Core](https://www.omegacoin.org/downloads/) or [build it yourself](#building) using the guides below.
 
 Running
 ---------------------
-The following are some helpful notes on how to run Super7Coin on your native platform.
+The following are some helpful notes on how to run OmegaCoin on your native platform.
 
 ### Unix
 
 Unpack the files into a directory and run:
 
-- `bin/super7coin-qt` (GUI) or
-- `bin/super7coind` (headless)
+- `bin/omegacoin-qt` (GUI) or
+- `bin/omegacoind` (headless)
 
 ### Windows
 
-Unpack the files into a directory, and then run super7coin-qt.exe.
+Unpack the files into a directory, and then run omegacoin-qt.exe.
 
 ### OS X
 
-Drag Super7Coin-Qt to your applications folder, and then run Super7Coin-Qt.
+Drag OmegaCoin-Qt to your applications folder, and then run OmegaCoin-Qt.
 
 ### Need Help?
 
-* See the [Super7Coin documentation](https://super7coinpay.atlassian.net/wiki/display/DOC)
+* See the [OmegaCoin documentation](https://omegacoinpay.atlassian.net/wiki/display/DOC)
 for help and more information.
-* Ask for help on [#super7coinpay](http://webchat.freenode.net?channels=super7coinpay) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net?channels=super7coinpay).
-* Ask for help on the [Super7CoinTalk](https://super7cointalk.org/) forums.
+* Ask for help on [#omegacoinpay](http://webchat.freenode.net?channels=omegacoinpay) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net?channels=omegacoinpay).
+* Ask for help on the [OmegaCoinTalk](https://omegacointalk.org/) forums.
 
 Building
 ---------------------
-The following are developer notes on how to build Super7Coin Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
+The following are developer notes on how to build OmegaCoin Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
 
 - [OS X Build Notes](build-osx.md)
 - [Unix Build Notes](build-unix.md)
@@ -41,7 +41,7 @@ The following are developer notes on how to build Super7Coin Core on your native
 
 Development
 ---------------------
-The Super7Coin Core repo's [root README](/README.md) contains relevant information on the development process and automated testing.
+The OmegaCoin Core repo's [root README](/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Multiwallet Qt Development](multiwallet-qt.md)
@@ -57,8 +57,8 @@ The Super7Coin Core repo's [root README](/README.md) contains relevant informati
 - [Dnsseed Policy](dnsseed-policy.md)
 
 ### Resources
-* Discuss on the [Super7CoinTalk](https://super7cointalk.org/) forums, in the Development & Technical Discussion board.
-* Discuss on [#super7coinpay](http://webchat.freenode.net/?channels=super7coinpay) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net/?channels=super7coinpay).
+* Discuss on the [OmegaCoinTalk](https://omegacointalk.org/) forums, in the Development & Technical Discussion board.
+* Discuss on [#omegacoinpay](http://webchat.freenode.net/?channels=omegacoinpay) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net/?channels=omegacoinpay).
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)

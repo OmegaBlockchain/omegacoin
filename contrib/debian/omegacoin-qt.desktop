@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=OmegaCoin
+Comment=OmegaCoin P2P Cryptocurrency
+Comment[fr]=OmegaCoin, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=OmegaCoin, eşten eşe kriptografik sanal para birimi
+Exec=omegacoin-qt %u
+Terminal=false
+Type=Application
+Icon=omegacoin128
+MimeType=x-scheme-handler/omegacoin;
+Categories=Office;Finance;

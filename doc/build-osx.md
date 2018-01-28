@@ -1,6 +1,6 @@
 Mac OS X Build Instructions and Notes
 ====================================
-This guide will show you how to build super7coind (headless client) for OSX.
+This guide will show you how to build omegacoind (headless client) for OSX.
 
 Notes
 -----
@@ -36,15 +36,15 @@ Instructions: Homebrew
 
 NOTE: Building with Qt4 is still supported, however, doing so could result in a broken UI. Therefore, building with Qt5 is recommended. Be aware that Qt5 5.7+ requires C++11 compiler support.
 
-### Building Super7Coin Core
+### Building OmegaCoin Core
 
 1. Clone the GitHub tree to get the source code and go into the directory.
 
-        git clone https://github.com/super7coinpay/super7coin.git
-        cd super7coin
+        git clone https://github.com/omegacoinpay/omegacoin.git
+        cd omegacoin
 
-2.  Build Super7Coin Core:
-    This will configure and build the headless super7coin binaries as well as the gui (if Qt is found).
+2.  Build OmegaCoin Core:
+    This will configure and build the headless omegacoin binaries as well as the gui (if Qt is found).
     You can disable the gui build by passing `--without-gui` to configure.
 
         ./autogen.sh
@@ -55,7 +55,7 @@ NOTE: Building with Qt4 is still supported, however, doing so could result in a 
 
         make check
 
-4.  (Optional) You can also install super7coind to your path:
+4.  (Optional) You can also install omegacoind to your path:
 
         make install
 
@@ -67,7 +67,7 @@ Download Qt Creator from https://www.qt.io/download/. Download the "community ed
 1. Make sure you installed everything through Homebrew mentioned above
 2. Do a proper ./configure --enable-debug
 3. In Qt Creator do "New Project" -> Import Project -> Import Existing Project
-4. Enter "super7coin-qt" as project name, enter src/qt as location
+4. Enter "omegacoin-qt" as project name, enter src/qt as location
 5. Leave the file selection as it is
 6. Confirm the "summary page"
 7. In the "Projects" tab select "Manage Kits..."
@@ -77,11 +77,11 @@ Download Qt Creator from https://www.qt.io/download/. Download the "community ed
 
 Creating a release build
 ------------------------
-You can ignore this section if you are building `super7coind` for your own use.
+You can ignore this section if you are building `omegacoind` for your own use.
 
-super7coind/super7coin-cli binaries are not included in the Super7Coin-Qt.app bundle.
+omegacoind/omegacoin-cli binaries are not included in the OmegaCoin-Qt.app bundle.
 
-If you are building `super7coind` or `Super7Coin Core` for others, your build machine should be set up
+If you are building `omegacoind` or `OmegaCoin Core` for others, your build machine should be set up
 as follows for maximum compatibility:
 
 All dependencies should be compiled with these flags:
@@ -90,30 +90,30 @@ All dependencies should be compiled with these flags:
  -arch x86_64
  -isysroot $(xcode-select --print-path)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk
 
-Once dependencies are compiled, see [doc/release-process.md](release-process.md) for how the Super7Coin Core
+Once dependencies are compiled, see [doc/release-process.md](release-process.md) for how the OmegaCoin Core
 bundle is packaged and signed to create the .dmg disk image that is distributed.
 
 Running
 -------
 
-It's now available at `./super7coind`, provided that you are still in the `src`
+It's now available at `./omegacoind`, provided that you are still in the `src`
 directory. We have to first create the RPC configuration file, though.
 
-Run `./super7coind` to get the filename where it should be put, or just try these
+Run `./omegacoind` to get the filename where it should be put, or just try these
 commands:
 
-    echo -e "rpcuser=super7coinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/Super7CoinCore/super7coin.conf"
-    chmod 600 "/Users/${USER}/Library/Application Support/Super7CoinCore/super7coin.conf"
+    echo -e "rpcuser=omegacoinrpc\nrpcpassword=$(xxd -l 16 -p /dev/urandom)" > "/Users/${USER}/Library/Application Support/OmegaCoinCore/omegacoin.conf"
+    chmod 600 "/Users/${USER}/Library/Application Support/OmegaCoinCore/omegacoin.conf"
 
 The next time you run it, it will start downloading the blockchain, but it won't
 output anything while it's doing this. This process may take several hours;
 you can monitor its process by looking at the debug.log file, like this:
 
-    tail -f $HOME/Library/Application\ Support/Super7CoinCore/debug.log
+    tail -f $HOME/Library/Application\ Support/OmegaCoinCore/debug.log
 
 Other commands:
 -------
 
-    ./super7coind -daemon # to start the super7coin daemon.
-    ./super7coin-cli --help  # for a list of command-line options.
-    ./super7coin-cli help    # When the daemon is running, to get a list of RPC commands
+    ./omegacoind -daemon # to start the omegacoin daemon.
+    ./omegacoin-cli --help  # for a list of command-line options.
+    ./omegacoin-cli help    # When the daemon is running, to get a list of RPC commands

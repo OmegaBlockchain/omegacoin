@@ -13,7 +13,7 @@ CCriticalSection cs_vGovernanceKeys;
 	
 	- Users will configure their keys, something like this:
 
-	super7coin.conf:
+	omegacoin.conf:
 
 		addgovkey=PrivKey1:name1 #comments
 		addgovkey=PrivKey2:name2 #comments

@@ -1,0 +1,22 @@
+[Unit]
+Description=OmegaCoin's distributed currency daemon
+After=network.target
+
+[Service]
+User=omegacoincore
+Group=omegacoincore
+
+Type=forking
+PIDFile=/var/lib/omegacoind/omegacoind.pid
+ExecStart=/usr/bin/omegacoind -daemon -pid=/var/lib/omegacoind/omegacoind.pid \
+-conf=/etc/omegacoincore/omegacoin.conf -datadir=/var/lib/omegacoind -disablewallet
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=60s
+TimeoutStartSec=2s
+StartLimitInterval=120s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target

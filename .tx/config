@@ -1,7 +1,7 @@
 [main]
 host = https://www.transifex.com
 
-[super7coin.qt-translation-012x]
-file_filter = src/qt/locale/super7coin_<lang>.ts
-source_file = src/qt/locale/super7coin_en.ts
+[omegacoin.qt-translation-012x]
+file_filter = src/qt/locale/omegacoin_<lang>.ts
+source_file = src/qt/locale/omegacoin_en.ts
 source_lang = en

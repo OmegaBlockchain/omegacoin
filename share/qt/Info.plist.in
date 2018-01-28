@@ -17,7 +17,7 @@
   <string>APPL</string>
 
   <key>CFBundleGetInfoString</key>
-  <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@, Copyright © 2009-@COPYRIGHT_YEAR@ The Bitcoin Core developers, 2014-@COPYRIGHT_YEAR@ The Super7Coin Core developers</string>
+  <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@, Copyright © 2009-@COPYRIGHT_YEAR@ The Bitcoin Core developers, 2014-@COPYRIGHT_YEAR@ The OmegaCoin Core developers</string>
 
   <key>CFBundleShortVersionString</key>
   <string>@CLIENT_VERSION_MAJOR@.@CLIENT_VERSION_MINOR@.@CLIENT_VERSION_REVISION@</string>
@@ -29,16 +29,16 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>Super7Coin-Qt</string>
+  <string>OmegaCoin-Qt</string>
   
   <key>CFBundleName</key>
-  <string>Super7Coin-Qt</string>
+  <string>OmegaCoin-Qt</string>
 
   <key>LSHasLocalizedDisplayName</key>
   <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>org.super7coin.Super7Coin-Qt</string>
+  <string>org.omegacoin.OmegaCoin-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -46,10 +46,10 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>org.super7coin.Super7CoinPayment</string>
+      <string>org.omegacoin.OmegaCoinPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>super7coin</string>
+        <string>omegacoin</string>
       </array>
     </dict>
   </array>
@@ -58,9 +58,9 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>org.super7coin.paymentrequest</string>
+      <string>org.omegacoin.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>Super7Coin payment request</string>
+      <string>OmegaCoin payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
@@ -68,10 +68,10 @@
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.mime-type</key>
-        <string>application/x-super7coin-payment-request</string>
+        <string>application/x-omegacoin-payment-request</string>
         <key>public.filename-extension</key>
         <array>
-          <string>super7coinpaymentrequest</string>
+          <string>omegacoinpaymentrequest</string>
         </array>
       </dict>
     </dict>
@@ -84,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>org.super7coin.paymentrequest</string>
+        <string>org.omegacoin.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "script/script.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #include <boost/test/unit_test.hpp>
 

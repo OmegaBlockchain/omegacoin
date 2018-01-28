@@ -1,0 +1,20 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="bg">locale/omegacoin_bg.qm</file>
+        <file alias="de">locale/omegacoin_de.qm</file>
+        <file alias="en">locale/omegacoin_en.qm</file>
+        <file alias="es">locale/omegacoin_es.qm</file>
+        <file alias="fi">locale/omegacoin_fi.qm</file>
+        <file alias="fr">locale/omegacoin_fr.qm</file>
+        <file alias="it">locale/omegacoin_it.qm</file>
+        <file alias="ja">locale/omegacoin_ja.qm</file>
+        <file alias="pl">locale/omegacoin_pl.qm</file>
+        <file alias="pt">locale/omegacoin_pt.qm</file>
+        <file alias="ru">locale/omegacoin_ru.qm</file>
+        <file alias="sk">locale/omegacoin_sk.qm</file>
+        <file alias="sv">locale/omegacoin_sv.qm</file>
+        <file alias="vi">locale/omegacoin_vi.qm</file>
+        <file alias="zh_CN">locale/omegacoin_zh_CN.qm</file>
+        <file alias="zh_TW">locale/omegacoin_zh_TW.qm</file>
+    </qresource>
+</RCC>

@@ -10,10 +10,10 @@
 
 /**
  * Name of client reported in the 'version' message. Report the same name
- * for both super7coind and super7coin-qt, to make it harder for attackers to
+ * for both omegacoind and omegacoin-qt, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
-const std::string CLIENT_NAME("Super7Coin Core");
+const std::string CLIENT_NAME("OmegaCoin Core");
 
 /**
  * Client version number

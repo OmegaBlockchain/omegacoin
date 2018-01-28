@@ -1,0 +1,6 @@
+usr/local/bin/omegacoin-qt usr/bin
+share/pixmaps/omegacoin32.xpm usr/share/pixmaps
+share/pixmaps/omegacoin16.xpm usr/share/pixmaps
+share/pixmaps/omegacoin128.png usr/share/pixmaps
+debian/omegacoin-qt.desktop usr/share/applications
+debian/omegacoin-qt.protocol usr/share/kde4/services/

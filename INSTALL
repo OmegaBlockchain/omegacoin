@@ -1,7 +1,7 @@
-Building Super7Coin Core
+Building OmegaCoin Core
 
 After you install the usual build tools and C++ development tools,
-Super7Coin Core also needs some build dependencies which are not always provided
+OmegaCoin Core also needs some build dependencies which are not always provided
 by default by the OS package manager
 (in particular BerkeleyDB 4.8 for building with wallet support).
 
@@ -21,10 +21,10 @@ use the autogen script to prepare the build environment.
     make
 
 Precompiled binaries are available at github, see
-https://github.com/super7coinpay/super7coin-binaries
+https://github.com/omegacoinpay/omegacoin-binaries
 
 Always verify the signatures and checksums.
 
-See doc/build-*.md for instructions on building super7coind,
+See doc/build-*.md for instructions on building omegacoind,
 the intended-for-services, no-graphical-interface,
-reference implementation of Super7Coin.
+reference implementation of OmegaCoin.

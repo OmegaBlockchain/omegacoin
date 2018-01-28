@@ -9,8 +9,8 @@
 #include <vector>
 
 /**
- * CBaseChainParams defines the base parameters (shared between super7coin-cli and super7coind)
- * of a given instance of the Super7Coin system.
+ * CBaseChainParams defines the base parameters (shared between omegacoin-cli and omegacoind)
+ * of a given instance of the OmegaCoin system.
  */
 class CBaseChainParams
 {

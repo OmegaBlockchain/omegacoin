@@ -8,7 +8,7 @@
 #include "uint256.h"
 #include "undo.h"
 #include "utilstrencodings.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 #include "validation.h"
 #include "consensus/validation.h"
 

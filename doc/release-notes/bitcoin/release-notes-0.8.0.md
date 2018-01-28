@@ -61,7 +61,7 @@ contrib/spendfrom is a python-language command-line utility that demonstrates
 how to use the "raw transactions" JSON-RPC api to send coins received from particular
 addresses (also known as "coin control").
 
-New/changed settings (command-line or super7coin.conf file)
+New/changed settings (command-line or omegacoin.conf file)
 --------------------------------------------------------
 
 dbcache : controls LevelDB memory usage.
@@ -117,7 +117,7 @@ Forrest Voight
 Gavin Andresen
 Gregory Maxwell
 Jeff Garzik
-Luke Super7Coinjr
+Luke OmegaCoinjr
 Matt Corallo
 Mike Cassano
 Mike Hearn

@@ -1,0 +1,3 @@
+debian/manpages/omegacoind.1
+debian/manpages/omegacoin.conf.5
+debian/manpages/omegacoin-cli.1

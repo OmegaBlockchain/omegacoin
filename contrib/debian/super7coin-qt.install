@@ -1,6 +1,0 @@
-usr/local/bin/super7coin-qt usr/bin
-share/pixmaps/super7coin32.xpm usr/share/pixmaps
-share/pixmaps/super7coin16.xpm usr/share/pixmaps
-share/pixmaps/super7coin128.png usr/share/pixmaps
-debian/super7coin-qt.desktop usr/share/applications
-debian/super7coin-qt.protocol usr/share/kde4/services/

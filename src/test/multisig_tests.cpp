@@ -10,7 +10,7 @@
 #include "script/interpreter.h"
 #include "script/sign.h"
 #include "uint256.h"
-#include "test/test_super7coin.h"
+#include "test/test_omegacoin.h"
 
 #ifdef ENABLE_WALLET
 #include "wallet/wallet_ismine.h"

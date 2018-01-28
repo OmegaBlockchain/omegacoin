@@ -137,7 +137,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../super7coin.qrc"/>
+  <include location="../omegacoin.qrc"/>
  </resources>
  <connections/>
 </ui>

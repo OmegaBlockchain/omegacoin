@@ -1,7 +1,7 @@
-// Copyright (c) 2014-2017 The Super7Coin Core developers
+// Copyright (c) 2014-2017 The OmegaCoin Core developers
 // Distributed under the MIT software license, see the accompanying
-#ifndef S7C_HDCHAIN_H
-#define S7C_HDCHAIN_H
+#ifndef OMEGA_HDCHAIN_H
+#define OMEGA_HDCHAIN_H
 
 #include "key.h"
 #include "sync.h"
@@ -149,4 +149,4 @@ public:
     std::string GetKeyPath() const;
 };
 
-#endif // S7C_HDCHAIN_H
+#endif // OMEGA_HDCHAIN_H

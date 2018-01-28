@@ -16,9 +16,9 @@ Create a new wallet address for each Masternode.
 
 Close your QT Wallet.
 
-### Send 1000 S7C to New Addresses
+### Send 1000 OMEGA to New Addresses
 
-Send exactly 1000 S7C to each new address created above.
+Send exactly 1000 OMEGA to each new address created above.
 
 ### Create New Masternode Private Keys
 
@@ -38,9 +38,9 @@ Remember... this is local. Make sure your QT is not running.
 
 Create the `masternode.conf` file in the same directory as your `wallet.dat`.
 
-Copy the masternode private key and correspondig collateral output transaction that holds the 1000 S7C.
+Copy the masternode private key and correspondig collateral output transaction that holds the 1000 OMEGA.
 
-*Note: The masternode priviate key is **not** the same as a wallet private key. **Never** put your wallet private key in the masternode.conf file. That is almost equivalent to putting your 1000 S7C on the remote server and defeats the purpose of a hot/cold setup.*
+*Note: The masternode priviate key is **not** the same as a wallet private key. **Never** put your wallet private key in the masternode.conf file. That is almost equivalent to putting your 1000 OMEGA on the remote server and defeats the purpose of a hot/cold setup.*
 
 ### Get the collateral output
 
@@ -53,7 +53,7 @@ Issue the following:
 Make note of the hash (which is your collateral_output) and index.
 
 ### Enter your Masternode details into your masternode.conf file
-[From the super7coin github repo](https://github.com/super7coinpay/super7coin/blob/master/doc/masternode_conf.md)
+[From the omegacoin github repo](https://github.com/omegacoinpay/omegacoin/blob/master/doc/masternode_conf.md)
 
 `masternode.conf` format is a space seperated text file. Each line consisting of an alias, IP address followed by port, masternode private key, collateral output transaction id and collateral output index.
 
@@ -68,16 +68,16 @@ mn01 127.0.0.1:7777 93HaYBVUCYjEMeeH1Y4sBGLALQZE1Yc1K64xiqgX37tGBDQL8Xg 2bcd3c84
 mn02 127.0.0.2:7777 93WaAb3htPJEV8E9aQcN23Jt97bPex7YvWfgMDTUdWJvzmrMqey aa9f1034d973377a5e733272c3d0eced1de22555ad45d6b24abadff8087948d4 0
 ```
 
-## Update super7coin.conf on server
+## Update omegacoin.conf on server
 
-If you generated a new masternode private key, you will need to update the remote `super7coin.conf` files.
+If you generated a new masternode private key, you will need to update the remote `omegacoin.conf` files.
 
 Shut down the daemon and then edit the file.
 
-```nano .super7coincore/super7coin.conf```
+```nano .omegacoincore/omegacoin.conf```
 
 ### Edit the masternodeprivkey
-If you generated a new masternode private key, you will need to update the `masternodeprivkey` value in your remote `super7coin.conf` file.
+If you generated a new masternode private key, you will need to update the `masternodeprivkey` value in your remote `omegacoin.conf` file.
 
 ## Start your Masternodes
 
@@ -87,9 +87,9 @@ If your remote server is not running, start your remote daemon as you normally w
 
 You can confirm that remote server is on the correct block by issuing
 
-```super7coin-cli getinfo```
+```omegacoin-cli getinfo```
 
-and comparing with the official explorer at https://explorer.super7coin.org/chain/Super7Coin
+and comparing with the official explorer at https://explorer.omegacoin.org/chain/OmegaCoin
 
 ### Local
 
@@ -116,11 +116,11 @@ Example ```masternode start-alias mn01```
 Issue command `masternode status`
 It should return you something like that:
 ```
-super7coin-cli masternode status
+omegacoin-cli masternode status
 {
     "outpoint" : "<collateral_output>-<collateral_output_index>",
     "service" : "<ipaddress>:<port>",
-    "pubkey" : "<1000 S7C address>",
+    "pubkey" : "<1000 OMEGA address>",
     "status" : "Masternode successfully started"
 }
 ```
@@ -128,6 +128,6 @@ Command output should have "_Masternode successfully started_" in its `status` f
 
 ### Local
 
-Search your Masternodes on https://super7coinninja.pl/masternodes.html
+Search your Masternodes on https://omegacoinninja.pl/masternodes.html
 
 _Hint: Bookmark it, you definitely will be using this site a lot._

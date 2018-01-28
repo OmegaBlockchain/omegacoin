@@ -1233,35 +1233,51 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     double dDiff;
     CAmount nSubsidyBase;
     
-    // Premine
-    if(nPrevHeight <= 7) {nSubsidyBase = 11111;}
+    if(nPrevHeight <= 1)
+    {
+        nSubsidyBase = 580000; //  PREMINE 1 BLOCKS, 0.5%
+    }
+    else if(nPrevHeight < 1000)
+    {
+        nSubsidyBase = 10;
+    }
+		else if(nPrevHeight < 10000)
+    {
+        nSubsidyBase = 20;
+    }
+		else if(nPrevHeight < 20000)
+    {
+        nSubsidyBase = 40;
+    }
+		else if(nPrevHeight < 30000)
+    {
+        nSubsidyBase = 50;
+    } 
+		else if(nPrevHeight < 50000)
+    {
+        nSubsidyBase = 75;
+    }  
+		else if(nPrevHeight < 60000)
+    {
+        nSubsidyBase = 100;
+    }  
+		else if(nPrevHeight < 75000)
+    {
+        nSubsidyBase = 135;
+    }
+		else if(nPrevHeight < 95000)
+    {
+        nSubsidyBase = 170;
+    } 
+		else if(nPrevHeight < 100000)
+    {
+        nSubsidyBase = 195;
+    }     
+    else
+    {
+        nSubsidyBase = 195;
+    }
     
-    if(nPrevHeight >= 7) {nSubsidyBase = 1;}
-    
-         // Super Block +77
-        if(nPrevHeight == 76) {nSubsidyBase = 77;}
-    
-    if(nPrevHeight > 76) {nSubsidyBase = 3;}
-    
-         // Super Block +777 - Start of Masternode 30%
-         if(nPrevHeight == 776) {nSubsidyBase = 777;}
-    
-    if(nPrevHeight > 776) {nSubsidyBase = 10;}
-    
-         // Super Block +7777 - Start of Masternode 50%
-         if(nPrevHeight == 7776) {nSubsidyBase = 7777;}
-    
-    if(nPrevHeight > 7776) {nSubsidyBase = 10;}
-    
-         // Super Block +77777 - Start of Masternode 70%
-         if(nPrevHeight == 77776) {nSubsidyBase = 77777;}
-    
-    if(nPrevHeight > 77776) {nSubsidyBase = 10;}
-    
-    // End of mining
-    if(nPrevHeight > 777776) {nSubsidyBase = 0;}
-   
-
         // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
        CAmount nSubsidy = nSubsidyBase * COIN;
   
@@ -1270,11 +1286,10 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 
 CAmount GetMasternodePayment(int nHeight, CAmount blockValue)
 {
-    CAmount ret = blockValue * 0;
-    if(nHeight > 776)                        ret = blockValue * 0.30;
-    if(nHeight > 7776)                        ret = blockValue * 0.50;
-    if(nHeight > 77776)                        ret = blockValue * 0.70;
- 
+    CAmount ret = blockValue * 80;
+    if(nHeight > 33000)                        ret = blockValue * 0.50;
+    if(nHeight > 66000)                        ret = blockValue * 0.30;
+    
     return ret;
 }
 

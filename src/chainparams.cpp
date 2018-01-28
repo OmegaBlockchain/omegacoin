@@ -93,7 +93,7 @@ public:
         consensus.BIP34Hash = uint256S("0x000007d91d1254d60e2dd1ae580383070a4ddffa4c64c2eeb4a2f9ecc0414343");
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 600; // OmegaCoin: each 10 minute
-        consensus.nPowTargetSpacing = 5; // OmegaCoin: 1 minute
+        consensus.nPowTargetSpacing = 80; // OmegaCoin: 80 seconds
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         //consensus.nPowKGWHeight = 15200;

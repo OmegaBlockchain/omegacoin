@@ -51,7 +51,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "Time to launch the real Omega 28 2018";
+    const char* pszTimestamp = "The Omega Coin Network is launching finally 29 2018!";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
@@ -93,7 +93,7 @@ public:
         consensus.BIP34Hash = uint256S("0x000007d91d1254d60e2dd1ae580383070a4ddffa4c64c2eeb4a2f9ecc0414343");
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 600; // OmegaCoin: each 10 minute
-        consensus.nPowTargetSpacing = 80; // OmegaCoin: 80 seconds
+        consensus.nPowTargetSpacing = 60; // OmegaCoin: 80 seconds
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         //consensus.nPowKGWHeight = 15200;
@@ -137,14 +137,13 @@ public:
         nDelayGetHeadersTime = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 
-        genesis = CreateGenesisBlock(1517167144, 1353082, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1517261059, 151808, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00000b1e0291ac586513916aa1ad5ead49618f03baa42043891e814d15b563f7"));
-        assert(genesis.hashMerkleRoot == uint256S("0x938cb795d9f804a07835dcd4eef4a25916228eaaad735903b0d618b0d4df3dfc"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000fceaceef992e454290d3f9a6d03bbaf003e7444445a54b96356e2493680"));
+        assert(genesis.hashMerkleRoot == uint256S("0x5cb0af5255f225ef890db96d8cd0a277a9c2a64b51d0ea3edfa66f3d5ee62355"));
 
-        vSeeds.push_back(CDNSSeedData("node1.omegacoin.network", "node1.omegacoin.network"));
-        vSeeds.push_back(CDNSSeedData("node2.omegacoin.network", "node2.omegacoin.network"));
-        vSeeds.push_back(CDNSSeedData("node3.omegacoin.network", "node3.omegacoin.network"));
+        vSeeds.push_back(CDNSSeedData("51.255.161.7", "51.255.161.7"));
+        vSeeds.push_back(CDNSSeedData("66.70.190.40", "66.70.190.40"));
 
         // OmegaCoin addresses start with 'X'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,115);
@@ -174,16 +173,11 @@ public:
 
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of           
-            ( 0, uint256S("0x00000b1e0291ac586513916aa1ad5ead49618f03baa42043891e814d15b563f7"))
-            ( 10, uint256S("0x00000000182fc53f956dfa754820a82c2cd7c212269269674b7fc7c0fb354801"))
-            ( 50, uint256S("0x0000000013b517019433e414ef6011401dc1321b8f6b4013f0160c7c234ef2c3"))
-            ( 100, uint256S("0x0000000005b5bccd56d9fcc66c971f0f29383ee177cd7de90a30ea7da0e4ef92"))    
-            ( 200, uint256S("0x0000000015446416126a08672a351630aaa73d17803429f202160a94ef88ce0b"))
-            ( 300, uint256S("0x0000000000015383d7187c65fee715862d9f82a08623d9a87a326c87e2130b3c")),            
-            1517185185, // * UNIX timestamp of last checkpoint block
-            319,    // * total number of transactions between genesis and last checkpoint
+            ( 0, uint256S("0x00000fceaceef992e454290d3f9a6d03bbaf003e7444445a54b96356e2493680")),            
+            1517261059, // * UNIX timestamp of last checkpoint block
+            1,    // * total number of transactions between genesis and last checkpoint
                         //   (the tx=... number in the SetBestChain debug.log lines)
-            10000        // * estimated number of transactions per day after checkpoint
+            5000        // * estimated number of transactions per day after checkpoint
         };
     }
 };
@@ -258,10 +252,10 @@ public:
 
 
 
-        genesis = CreateGenesisBlock(1517167144, 1353082, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1517261059, 151808, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00000b1e0291ac586513916aa1ad5ead49618f03baa42043891e814d15b563f7"));
-        assert(genesis.hashMerkleRoot == uint256S("0x938cb795d9f804a07835dcd4eef4a25916228eaaad735903b0d618b0d4df3dfc"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000fceaceef992e454290d3f9a6d03bbaf003e7444445a54b96356e2493680"));
+        assert(genesis.hashMerkleRoot == uint256S("0x5cb0af5255f225ef890db96d8cd0a277a9c2a64b51d0ea3edfa66f3d5ee62355"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -370,10 +364,10 @@ public:
 
 
 
-        genesis = CreateGenesisBlock(1517167144, 1353082, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1517261059, 151808, 0x1e0ffff0, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00000b1e0291ac586513916aa1ad5ead49618f03baa42043891e814d15b563f7"));
-        assert(genesis.hashMerkleRoot == uint256S("0x938cb795d9f804a07835dcd4eef4a25916228eaaad735903b0d618b0d4df3dfc"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00000fceaceef992e454290d3f9a6d03bbaf003e7444445a54b96356e2493680"));
+        assert(genesis.hashMerkleRoot == uint256S("0x5cb0af5255f225ef890db96d8cd0a277a9c2a64b51d0ea3edfa66f3d5ee62355"));
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.

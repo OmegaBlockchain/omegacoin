@@ -260,8 +260,8 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("omegacoindot.io",  "testnet-seed.omegacoindot.io"));
-        vSeeds.push_back(CDNSSeedData("masternode.io", "test.dnsseed.masternode.io"));
+        vSeeds.push_back(CDNSSeedData("159.89.101.252",  "159.89.101.252"));
+        vSeeds.push_back(CDNSSeedData("207.154.249.8", "207.154.249.8"));
 
         // Testnet OmegaCoin addresses start with 'y'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,140);

@@ -1232,6 +1232,13 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 {
     double dDiff;
     CAmount nSubsidyBase;
+
+    if (nPrevHeight <= 4500 && Params().NetworkIDString() == CBaseChainParams::MAIN) {
+        /* a bug which caused diff to not be correctly calculated */
+        dDiff = (double)0x0000ffff / (double)(nPrevBits & 0x00ffffff);
+    } else {
+        dDiff = ConvertBitsToDouble(nPrevBits);
+    }
     
     if(nPrevHeight < 1)
     {
@@ -1272,16 +1279,43 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
 		else if(nPrevHeight < 100000)
     {
         nSubsidyBase = 195;
-    }     
+    }
+        else if(nPrevHeight < 110000)
+    {
+        nSubsidyBase = 120;
+    }
+        else if(nPrevHeight < 145000)
+    {
+        nSubsidyBase = 60;
+    }
+        else if(nPrevHeight < 170000)
+    {
+        nSubsidyBase = 30;
+    }
+        else if(nPrevHeight < 195000)
+    {
+        nSubsidyBase = 25;
+    }
     else
     {
-        nSubsidyBase = 195;
+        //Moore's law like correction for current network difficulty
+        nSubsidyBase = (2222222.0 / (pow((dDiff+2600.0)/9.0,2.0)));
+        if(nSubsidyBase > 25) nSubsidyBase = 25;
+        else if(nSubsidyBase < 5) nSubsidyBase = 5;
     }
-    
-        // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
+
+       // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
        CAmount nSubsidy = nSubsidyBase * COIN;
-  
-       return nSubsidy;
+
+       // yearly decline of production by 25.9% per year, projected ~18.9M coins max by year 2025+.
+       for (int i = consensusParams.nSubsidyHalvingInterval; i <= nPrevHeight; i += consensusParams.nSubsidyHalvingInterval) {
+         nSubsidy -= nSubsidy/3.8556;
+       }
+
+       // reduce the block reward by 10 extra percent (allowing budget/superblocks)
+       CAmount nSuperblockPart = (nPrevHeight > consensusParams.nBudgetPaymentsStartBlock) ? nSubsidy/10 : 0;
+
+       return fSuperblockPartOnly ? nSuperblockPart : nSubsidy - nSuperblockPart;
    }
 
 CAmount GetMasternodePayment(int nHeight, CAmount blockValue)

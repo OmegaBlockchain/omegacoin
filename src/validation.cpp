@@ -1276,40 +1276,36 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
     {
         nSubsidyBase = 170;
     } 
-		else if(nPrevHeight < 100000)
+		else if(nPrevHeight < 110000)
     {
         nSubsidyBase = 195;
     }
-        else if(nPrevHeight < 110000)
+        else if(nPrevHeight < 130000)
     {
-        nSubsidyBase = 120;
-    }
-        else if(nPrevHeight < 145000)
-    {
-        nSubsidyBase = 60;
+        nSubsidyBase = 81;
     }
         else if(nPrevHeight < 170000)
     {
-        nSubsidyBase = 30;
+        nSubsidyBase = 41;
     }
-        else if(nPrevHeight < 195000)
+        else if(nPrevHeight < 200000)
     {
-        nSubsidyBase = 25;
+        nSubsidyBase = 21;
     }
     else
     {
         //Moore's law like correction for current network difficulty
         nSubsidyBase = (2222222.0 / (pow((dDiff+2600.0)/9.0,2.0)));
-        if(nSubsidyBase > 25) nSubsidyBase = 25;
+        if(nSubsidyBase > 21) nSubsidyBase = 21;
         else if(nSubsidyBase < 5) nSubsidyBase = 5;
     }
 
        // LogPrintf("height %u diff %4.2f reward %d\n", nPrevHeight, dDiff, nSubsidyBase);
        CAmount nSubsidy = nSubsidyBase * COIN;
 
-       // yearly decline of production by 25.9% per year, projected ~18.9M coins max by year 2025+.
+       // yearly decline of production by 30.3% per year, projected ~19.1M coins max by year 2025+.
        for (int i = consensusParams.nSubsidyHalvingInterval; i <= nPrevHeight; i += consensusParams.nSubsidyHalvingInterval) {
-         nSubsidy -= nSubsidy/3.8556;
+         nSubsidy -= nSubsidy/3.3;
        }
 
        // reduce the block reward by 10 extra percent (allowing budget/superblocks)

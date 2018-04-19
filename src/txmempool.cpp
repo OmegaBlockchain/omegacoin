@@ -8,6 +8,7 @@
 #include "clientversion.h"
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
+#include "instantx.h"
 #include "validation.h"
 #include "policy/fees.h"
 #include "random.h"
@@ -1010,6 +1011,11 @@ int CTxMemPool::Expire(int64_t time) {
     indexed_transaction_set::nth_index<2>::type::iterator it = mapTx.get<2>().begin();
     setEntries toremove;
     while (it != mapTx.get<2>().end() && it->GetTime() < time) {
+        // locked txes do not expire until mined and have sufficient confirmations
+        if (instantsend.IsLockedInstantSendTransaction(it->GetTx().GetHash())) {
+            it++;
+            continue;
+        }
         toremove.insert(mapTx.project<0>(it));
         it++;
     }

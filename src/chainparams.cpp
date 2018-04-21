@@ -78,7 +78,7 @@ public:
         consensus.nMasternodePaymentsIncreaseBlock = 1569325056; // actual historical value
         consensus.nMasternodePaymentsIncreasePeriod = 1569325056; // 17280 - actual historical value
         consensus.nInstantSendKeepLock = 24;
-        consensus.nBudgetPaymentsStartBlock = 100000; // set to actual historical value on the hardfork moment(differs from 33001-66000 block height advertised on the http://omegacoin.network/index-2.html)
+        consensus.nBudgetPaymentsStartBlock = 115000; // set to actual historical value on the hardfork moment(differs from 33001-66000 block height advertised on the http://omegacoin.network/index-2.html)
         consensus.nBudgetPaymentsCycleBlocks = 16616; // ~(60*24*30)/2.6, actual number of blocks per month is 200700 / 12 = 16725
         consensus.nBudgetPaymentsWindowBlocks = 100;
         consensus.nBudgetProposalEstablishingTime = 60*60*24;

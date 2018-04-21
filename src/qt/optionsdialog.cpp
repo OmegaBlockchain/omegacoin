@@ -93,10 +93,10 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     
     /* Theme selector */
     ui->theme->addItem(QString("OMEGA-light"), QVariant("light"));
-    ui->theme->addItem(QString("OMEGA-light-hires"), QVariant("light-hires"));
-    ui->theme->addItem(QString("OMEGA-blue"), QVariant("drkblue"));
-    ui->theme->addItem(QString("OMEGA-Crownium"), QVariant("crownium"));
-    ui->theme->addItem(QString("OMEGA-traditional"), QVariant("trad"));
+//    ui->theme->addItem(QString("OMEGA-light-hires"), QVariant("light-hires"));
+//    ui->theme->addItem(QString("OMEGA-blue"), QVariant("drkblue"));
+//    ui->theme->addItem(QString("OMEGA-Crownium"), QVariant("crownium"));
+//    ui->theme->addItem(QString("OMEGA-traditional"), QVariant("trad"));
     
     /* Language selector */
     QDir translations(":translations");

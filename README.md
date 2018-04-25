@@ -1,25 +1,16 @@
-Omega coin is a powerful mode-based PoW + PoS-based cryptocurrency.
 
-Block Spacing: 80 Seconds Stake Minimum Age: 8 Hours
+![alt text](https://i.imgur.com/jMNyorX.png "Omega Network Logo")
 
-Port: 7777 RPC Port: 7778
+# OMEGA NETWORK
+Omega coin is a powerful masternode-based PoW cryptocurrency.
 
-
-BUILD LINUX (https://github.com/omegacoinnetwork/omegacoin/blob/master/doc/build-unix.md)
---------------------
-
-git clone https://github.com/omegacoinnetwork/omegacoin
-
-cd omegacoin
-
-./autogen.sh
-
-./configure
-
-make
-
-make install
-
-strip omegacoind
-
-sudo cp omegacoind /usr/local/bin
+### SPECIFICATIONS
+| Specification | Value |
+|:-----------|:-----------|
+| Block Spacing | `80 seconds` |
+| Coin Maturity | `100 confirmations` |
+| Masternode Requirement | `1000 OMEGA` |
+| Masternode Reward | `80% ~ 30%` |
+| Total Coin Supply | `20.000.000 OMEGA` |
+| Port | `7777` |
+| RPC Port | `7778` |

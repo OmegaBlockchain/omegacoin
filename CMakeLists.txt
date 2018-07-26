@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(omegacoin)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 include_directories(src)
 include_directories(src/bench)
 include_directories(src/compat)
+include_directories(src/config)
 include_directories(src/consensus)
 include_directories(src/crypto)
 include_directories(src/drafted)
@@ -17,9 +18,11 @@ include_directories(src/leveldb/port)
 include_directories(src/leveldb/port/win)
 include_directories(src/leveldb/table)
 include_directories(src/leveldb/util)
+include_directories(src/obj)
 include_directories(src/policy)
 include_directories(src/primitives)
 include_directories(src/qt)
+include_directories(src/qt/forms)
 include_directories(src/qt/test)
 include_directories(src/rpc)
 include_directories(src/script)
@@ -34,6 +37,8 @@ include_directories(src/secp256k1/src/modules/schnorr)
 include_directories(src/support)
 include_directories(src/support/allocators)
 include_directories(src/test)
+include_directories(src/test/data)
+include_directories(src/univalue)
 include_directories(src/univalue/include)
 include_directories(src/univalue/lib)
 include_directories(src/wallet)
@@ -51,6 +56,7 @@ add_executable(omegacoin
         src/compat/glibcxx_sanity.cpp
         src/compat/sanity.h
         src/compat/strnlen.cpp
+        src/config/omegacoin-config.h
         src/consensus/consensus.h
         src/consensus/merkle.cpp
         src/consensus/merkle.h
@@ -226,6 +232,7 @@ add_executable(omegacoin
         src/leveldb/util/testharness.h
         src/leveldb/util/testutil.cc
         src/leveldb/util/testutil.h
+        src/obj/build.h
         src/policy/fees.cpp
         src/policy/fees.h
         src/policy/policy.cpp
@@ -236,8 +243,31 @@ add_executable(omegacoin
         src/primitives/block.h
         src/primitives/transaction.cpp
         src/primitives/transaction.h
+        src/qt/forms/ui_addressbookpage.h
+        src/qt/forms/ui_askpassphrasedialog.h
+        src/qt/forms/ui_coincontroldialog.h
+        src/qt/forms/ui_darksendconfig.h
+        src/qt/forms/ui_debugwindow.h
+        src/qt/forms/ui_editaddressdialog.h
+        src/qt/forms/ui_helpmessagedialog.h
+        src/qt/forms/ui_intro.h
+        src/qt/forms/ui_masternodelist.h
+        src/qt/forms/ui_modaloverlay.h
+        src/qt/forms/ui_openuridialog.h
+        src/qt/forms/ui_optionsdialog.h
+        src/qt/forms/ui_overviewpage.h
+        src/qt/forms/ui_receivecoinsdialog.h
+        src/qt/forms/ui_receiverequestdialog.h
+        src/qt/forms/ui_sendcoinsdialog.h
+        src/qt/forms/ui_sendcoinsentry.h
+        src/qt/forms/ui_signverifymessagedialog.h
+        src/qt/forms/ui_transactiondescdialog.h
         src/qt/test/compattests.cpp
         src/qt/test/compattests.h
+        src/qt/test/moc_compattests.cpp
+        src/qt/test/moc_paymentservertests.cpp
+        src/qt/test/moc_trafficgraphdatatests.cpp
+        src/qt/test/moc_uritests.cpp
         src/qt/test/paymentrequestdata.h
         src/qt/test/paymentservertests.cpp
         src/qt/test/paymentservertests.h
@@ -285,6 +315,53 @@ add_executable(omegacoin
         src/qt/macnotificationhandler.mm
         src/qt/masternodelist.cpp
         src/qt/masternodelist.h
+        src/qt/moc_addressbookpage.cpp
+        src/qt/moc_addresstablemodel.cpp
+        src/qt/moc_askpassphrasedialog.cpp
+        src/qt/moc_bantablemodel.cpp
+        src/qt/moc_bitcoinaddressvalidator.cpp
+        src/qt/moc_bitcoinamountfield.cpp
+        src/qt/moc_bitcoingui.cpp
+        src/qt/moc_bitcoinunits.cpp
+        src/qt/moc_clientmodel.cpp
+        src/qt/moc_coincontroldialog.cpp
+        src/qt/moc_coincontroltreewidget.cpp
+        src/qt/moc_csvmodelwriter.cpp
+        src/qt/moc_darksendconfig.cpp
+        src/qt/moc_editaddressdialog.cpp
+        src/qt/moc_guiutil.cpp
+        src/qt/moc_intro.cpp
+        src/qt/moc_macdockiconhandler.cpp
+        src/qt/moc_macnotificationhandler.cpp
+        src/qt/moc_masternodelist.cpp
+        src/qt/moc_modaloverlay.cpp
+        src/qt/moc_notificator.cpp
+        src/qt/moc_openuridialog.cpp
+        src/qt/moc_optionsdialog.cpp
+        src/qt/moc_optionsmodel.cpp
+        src/qt/moc_overviewpage.cpp
+        src/qt/moc_paymentserver.cpp
+        src/qt/moc_peertablemodel.cpp
+        src/qt/moc_qvalidatedlineedit.cpp
+        src/qt/moc_qvaluecombobox.cpp
+        src/qt/moc_receivecoinsdialog.cpp
+        src/qt/moc_receiverequestdialog.cpp
+        src/qt/moc_recentrequeststablemodel.cpp
+        src/qt/moc_rpcconsole.cpp
+        src/qt/moc_sendcoinsdialog.cpp
+        src/qt/moc_sendcoinsentry.cpp
+        src/qt/moc_signverifymessagedialog.cpp
+        src/qt/moc_splashscreen.cpp
+        src/qt/moc_trafficgraphwidget.cpp
+        src/qt/moc_transactiondesc.cpp
+        src/qt/moc_transactiondescdialog.cpp
+        src/qt/moc_transactionfilterproxy.cpp
+        src/qt/moc_transactiontablemodel.cpp
+        src/qt/moc_transactionview.cpp
+        src/qt/moc_utilitydialog.cpp
+        src/qt/moc_walletframe.cpp
+        src/qt/moc_walletmodel.cpp
+        src/qt/moc_walletview.cpp
         src/qt/modaloverlay.cpp
         src/qt/modaloverlay.h
         src/qt/networkstyle.cpp
@@ -301,6 +378,8 @@ add_executable(omegacoin
         src/qt/optionsmodel.h
         src/qt/overviewpage.cpp
         src/qt/overviewpage.h
+        src/qt/paymentrequest.pb.cc
+        src/qt/paymentrequest.pb.h
         src/qt/paymentrequestplus.cpp
         src/qt/paymentrequestplus.h
         src/qt/paymentserver.cpp
@@ -309,6 +388,8 @@ add_executable(omegacoin
         src/qt/peertablemodel.h
         src/qt/platformstyle.cpp
         src/qt/platformstyle.h
+        src/qt/qrc_omegacoin.cpp
+        src/qt/qrc_omegacoin_locale.cpp
         src/qt/qvalidatedlineedit.cpp
         src/qt/qvalidatedlineedit.h
         src/qt/qvaluecombobox.cpp
@@ -420,6 +501,7 @@ add_executable(omegacoin
         src/secp256k1/src/ecmult_gen.h
         src/secp256k1/src/ecmult_gen_impl.h
         src/secp256k1/src/ecmult_impl.h
+        src/secp256k1/src/ecmult_static_context.h
         src/secp256k1/src/field.h
         src/secp256k1/src/field_10x26.h
         src/secp256k1/src/field_10x26_impl.h
@@ -433,6 +515,7 @@ add_executable(omegacoin
         src/secp256k1/src/group_impl.h
         src/secp256k1/src/hash.h
         src/secp256k1/src/hash_impl.h
+        src/secp256k1/src/libsecp256k1-config.h
         src/secp256k1/src/num.h
         src/secp256k1/src/num_gmp.h
         src/secp256k1/src/num_gmp_impl.h
@@ -454,6 +537,15 @@ add_executable(omegacoin
         src/support/cleanse.h
         src/support/pagelocker.cpp
         src/support/pagelocker.h
+        src/test/data/alertTests.raw.h
+        src/test/data/base58_encode_decode.json.h
+        src/test/data/base58_keys_invalid.json.h
+        src/test/data/base58_keys_valid.json.h
+        src/test/data/bip39_vectors.json.h
+        src/test/data/script_tests.json.h
+        src/test/data/sighash.json.h
+        src/test/data/tx_invalid.json.h
+        src/test/data/tx_valid.json.h
         src/test/accounting_tests.cpp
         src/test/addrman_tests.cpp
         src/test/alert_tests.cpp
@@ -506,6 +598,7 @@ add_executable(omegacoin
         src/test/sigopcount_tests.cpp
         src/test/skiplist_tests.cpp
         src/test/streams_tests.cpp
+        src/test/subsidy_tests.cpp
         src/test/test_omegacoin.cpp
         src/test/test_omegacoin.h
         src/test/timedata_tests.cpp
@@ -523,6 +616,7 @@ add_executable(omegacoin
         src/univalue/lib/univalue_utffilter.h
         src/univalue/lib/univalue_write.cpp
         src/univalue/test/unitester.cpp
+        src/univalue/univalue-config.h
         src/wallet/test/wallet_tests.cpp
         src/wallet/crypter.cpp
         src/wallet/crypter.h
@@ -716,4 +810,4 @@ add_executable(omegacoin
         src/validationinterface.h
         src/version.h
         src/versionbits.cpp
-        src/versionbits.h src/test/subsidy_tests.cpp src/test/subsidy_tests.h)
+        src/versionbits.h)

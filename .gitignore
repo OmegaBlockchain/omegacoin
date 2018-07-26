@@ -132,3 +132,10 @@ omegacoin-cli
 omegacoind
 omegacoin-qt
 make
+
+#ignore clion workspace generated files
+.idea
+
+#if wallet user configuration folder is set to .omegacoincore inside codebase
+#for easier use of mainnet logs
+.omegacoincore/

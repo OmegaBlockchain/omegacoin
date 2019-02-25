@@ -1,12 +1,4 @@
 #/bin/bash
-
-cd ~
-echo "****************************************************************************"
-echo "* Ubuntu 16.04 is the recommended opearting system for this install.       *"
-echo "*                                                                          *"
-echo "* This script will install and configure your Omega Coin masternodes.      *"
-echo "****************************************************************************"
-echo && echo && echo
 clear
 echo "Do you want to install all needed dependencies (no if you did it before)? [y/n]"
 read DOSETUP

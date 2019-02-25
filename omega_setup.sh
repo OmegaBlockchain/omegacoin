@@ -65,7 +65,7 @@ fi
 
 echo "IP Done"
 echo ""
-echo "Enter masternode private key for node $ALIAS , Go To your Windows Wallet Tools > Debug Console , Type masternode genkey"
+echo "Enter masternode private key for node $ALIAS"
 read PRIVKEY
 
 CONF_DIR=~/.omegacoincore/
@@ -101,5 +101,4 @@ echo "echo "" >> $CONF_DIR/$CONF_FILE
 echo "port=$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
-
 omegacoind -daemon

@@ -97,8 +97,8 @@ echo "addnode=80.211.47.13:7777" >> $CONF_DIR/$CONF_FILE
 echo "addnode=80.211.96.202:7777" >> $CONF_DIR/$CONF_FILE
 echo "addnode=139.99.193.57:7777" >> $CONF_DIR/$CONF_FILE
 echo "addnode=212.237.24.140:7777" >> $CONF_DIR/$CONF_FILE
-echo "echo "" >> $CONF_DIR/$CONF_FILE
 echo "port=$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
+
 omegacoind -daemon

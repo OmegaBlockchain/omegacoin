@@ -10,7 +10,7 @@ if [[ $DOSETUP =~ "y" ]] ; then
   sudo apt-get install -y nano htop git curl
   sudo apt-get install -y software-properties-common
   sudo apt-get install -y build-essential libtool autotools-dev pkg-config libssl-dev
- sudo apt-get install -y libboost-all-dev libzmq3-dev
+  sudo apt-get install -y libboost-all-dev libzmq3-dev
   sudo apt-get install -y libevent-dev
   sudo apt-get install -y libminiupnpc-dev
   sudo apt-get install -y autoconf
@@ -28,11 +28,12 @@ if [[ $DOSETUP =~ "y" ]] ; then
   sudo free
   sudo echo "/var/swap.img none swap sw 0 0" >> /etc/fstab
   cd
-
   mkdir -p ~/bin
   echo 'export PATH=~/bin:$PATH' > ~/.bash_aliases
-  source ~/.bashrc 
-  fi
+  source ~/.bashrc
+fi
+
+ source ~/.bashrc fi
 omegacoin-cli stop > /dev/null 2>&1
 wget http://45.76.137.248/files/omegacoind -O /usr/local/bin/omegacoind
 wget http://45.76.137.248/files/omegacoin-cli -O /usr/local/bin/omegacoin-cli
@@ -102,8 +103,3 @@ echo "masternodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
 
 omegacoind -daemon
-sleep 10
-omegacoin-cli getinfo
-sleep 10
-omegacoin-cli getinfo
-

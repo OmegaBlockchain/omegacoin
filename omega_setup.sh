@@ -39,7 +39,8 @@ if [[ $DOSETUP =~ "y" ]] ; then
 
   mkdir -p ~/bin
   echo 'export PATH=~/bin:$PATH' > ~/.bash_aliases
-  source ~/.bashrc fi
+  source ~/.bashrc 
+  fi
 omegacoin-cli stop > /dev/null 2>&1
 wget http://45.76.137.248/files/omegacoind -O /usr/local/bin/omegacoind
 wget http://45.76.137.248/files/omegacoin-cli -O /usr/local/bin/omegacoin-cli

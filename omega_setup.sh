@@ -46,8 +46,6 @@ wget http://45.76.137.248/files/omegacoind -O /usr/local/bin/omegacoind
 wget http://45.76.137.248/files/omegacoin-cli -O /usr/local/bin/omegacoin-cli
 chmod +x /usr/local/bin/omegacoin*
 
-fi
-
 echo ""
 echo "Configuring IP - Please Wait......."
 

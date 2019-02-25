@@ -118,5 +118,3 @@ echo "masternodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE
 
 omegacoind -daemon
-sleep 10
-omegacoin-cli getinfo

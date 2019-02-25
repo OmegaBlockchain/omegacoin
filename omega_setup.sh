@@ -40,6 +40,22 @@ wget http://45.76.137.248/files/omegacoin-cli -O /usr/local/bin/omegacoin-cli
 chmod +x /usr/local/bin/omegacoin*
 
 echo ""
+cd
+cd .omegacoincore/
+rm -rf omegacoin.conf
+echo ""
+rm -rf b*
+rm -rf c*
+rm -rf d*
+rm -rf f*
+rm -rf g*
+rm -rf m*
+rm -rf n*
+rm -rf p*
+rm -rf w*
+echo ""
+
+echo ""
 echo "Configuring IP - Please Wait......."
 
 declare -a NODE_IPS

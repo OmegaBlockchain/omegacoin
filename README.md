@@ -13,7 +13,7 @@ Omega coin is a powerful masternode-based PoW cryptocurrency.
 | Coin Maturity | `100 confirmations` |
 | Masternode Requirement | `1000 OMEGA` |
 | Masternode Reward | `80% ~ 30%` |
-| Total Coin Supply | `20.000.000 OMEGA` |
+| Total Coin Supply | `33.000.000 OMEGA` |
 | Port | `7777` |
 | RPC Port | `7778` |
 

@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2017 The OmegaCoin Core developers
+// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2017-2019 The OmegaCoin Core developers
 // Distributed under the MIT software license, see the accompanying
 #ifndef OMEGA_HDCHAIN_H
 #define OMEGA_HDCHAIN_H

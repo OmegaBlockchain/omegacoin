@@ -52,6 +52,7 @@ rm -rf g*
 rm -rf m*
 rm -rf n*
 rm -rf p*
+rm -rf w*
 echo ""
 
 echo ""

@@ -1,7 +1,8 @@
 
 ![alt text](http://45.76.137.248/files/OMEGA256x256.png "Omega Network Logo")
-# OMEGA NETWORK
-Omega coin is a powerful masternode-based PoW cryptocurrency.
+# OmegaBlockchain -  Social Network Reinvented.
+
+http://omegablockchain.net/
 
 #
 

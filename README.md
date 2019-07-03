@@ -26,11 +26,17 @@ chmod 755 omega_setup.sh
 ./omega_setup.sh
 
 # Omega Sentinel quick installation:
+
 wget https://raw.githubusercontent.com/rottencoin/sentinel/master/sentinel-one-line-installer.sh
+
 chmod +x sentinel-one-line-installer.sh
+
 ./sentinel-one-line-installer.sh
+
 to test if is working properly:
+
 cd sentinel
+
 ./venv/bin/py.test ./test
 
 ***

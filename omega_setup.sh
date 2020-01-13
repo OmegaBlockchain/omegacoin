@@ -22,7 +22,7 @@ if [[ $DOSETUP =~ "y" ]] ; then
   cd /var
   sudo touch swap.img
   sudo chmod 600 swap.img
-  sudo dd if=/dev/zero of=/var/swap.img bs=1024k count=4000
+  sudo dd if=/dev/zero of=/var/swap.img bs=1024k count=1000
   sudo mkswap /var/swap.img
   sudo swapon /var/swap.img
   sudo free
@@ -36,7 +36,7 @@ fi
  source ~/.bashrc fi
 omegacoin-cli stop > /dev/null 2>&1
 wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.5.1/omegacoind -O /usr/local/bin/omegacoind
-wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.5.1/omegacoin-cli -O /usr/local/bin/omegacoin-cli
+wget hhttps://github.com/RottenCoin/omegacoin/releases/download/0.12.5.1/omegacoin-cli -O /usr/local/bin/omegacoin-cli
 chmod +x /usr/local/bin/omegacoin*
 
 echo ""

@@ -1,5 +1,5 @@
 
-![alt text](http://45.76.137.248/files/OMEGA256x256.png "Omega Network Logo")
+![alt text](http://omegablockchain.net/wp-content/uploads/2020/01/OMEGA256x256circle.png "Omega Network Logo")
 # OmegaBlockchain -  Social Network Reinvented.
 
 http://omegablockchain.net/

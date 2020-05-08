@@ -1464,20 +1464,12 @@ void CMasternodeMan::UpdateLastPaid(const CBlockIndex* pindex)
 
 void CMasternodeMan::UpdateWatchdogVoteTime(const COutPoint& outpoint, uint64_t nVoteTime)
 {
-    LOCK(cs);
-    CMasternode* pmn = Find(outpoint);
-    if(!pmn) {
-        return;
-    }
-    pmn->UpdateWatchdogVoteTime(nVoteTime);
     nLastWatchdogVoteTime = GetTime();
 }
 
 bool CMasternodeMan::IsWatchdogActive()
 {
-    LOCK(cs);
-    // Check if any masternodes have voted recently, otherwise return false
-    return (GetTime() - nLastWatchdogVoteTime) <= MASTERNODE_WATCHDOG_MAX_SECONDS;
+    return true;
 }
 
 bool CMasternodeMan::AddGovernanceVote(const COutPoint& outpoint, uint256 nGovernanceObjectHash)

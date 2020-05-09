@@ -143,11 +143,14 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0x0000041a9498884aa2506b9dc832af53de1cbee3dca196a8d7b4319ee3a0f27c"));
         assert(genesis.hashMerkleRoot == uint256S("0xf1c12dcba82d19825180cba39bcc19781d3474c486073977a8dbbcc35901c042"));
 
+        vSeeds.push_back(CDNSSeedData("01.dnsseed.omegablockchain.net", "01.dnsseed.omegablockchain.net"));
+        vSeeds.push_back(CDNSSeedData("02.dnsseed.omegablockchain.net", "02.dnsseed.omegablockchain.net"));
+        vSeeds.push_back(CDNSSeedData("03.dnsseed.omegablockchain.net", "03.dnsseed.omegablockchain.net")); 
         vSeeds.push_back(CDNSSeedData("173.212.254.163", "173.212.254.163"));
         vSeeds.push_back(CDNSSeedData("167.86.106.67", "167.86.106.67"));
         vSeeds.push_back(CDNSSeedData("167.86.91.191", "167.86.91.191"));
         vSeeds.push_back(CDNSSeedData("144.91.97.155", "144.91.97.155"));
-        vSeeds.push_back(CDNSSeedData("167.99.43.91", "167.99.43.91"));
+        vSeeds.push_back(CDNSSeedData("207.180.202.182", "207.180.202.182"));
         vSeeds.push_back(CDNSSeedData("207.148.123.138", "207.148.123.138"));
 
         // OmegaCoin addresses start with 'X'

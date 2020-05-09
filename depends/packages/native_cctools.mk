@@ -1,5 +1,5 @@
 package=native_cctools
-$(package)_version=ee31ae567931c426136c94aad457c7b51d844beb
+$(package)_version=807d6fd1be5d2224872e381870c0a75387fe05e6
 $(package)_download_path=https://github.com/theuni/cctools-port/archive
 $(package)_file_name=$($(package)_version).tar.gz
 $(package)_sha256_hash=ef107e6ab1b3994cb22e14f4f5c59ea0c0b5a988e6b21d42ed9616b018bbcbf9

@@ -36,7 +36,7 @@ fi
  source ~/.bashrc fi
 omegacoin-cli stop > /dev/null 2>&1
 wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.6.0/omegacoind -O /usr/local/bin/omegacoind
-wget hhttps://github.com/RottenCoin/omegacoin/releases/download/0.12.6.0/omegacoin-cli -O /usr/local/bin/omegacoin-cli
+wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.6.0/omegacoin-cli -O /usr/local/bin/omegacoin-cli
 chmod +x /usr/local/bin/omegacoin*
 
 echo ""

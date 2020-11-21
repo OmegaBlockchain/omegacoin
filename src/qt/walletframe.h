@@ -59,6 +59,8 @@ public Q_SLOTS:
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
     void gotoHistoryPage();
+    /** Switch to anonmsg page */
+    void gotoAnonmsgPage();
     /** Switch to masternode page */
     void gotoMasternodePage();
     /** Switch to receive coins page */

@@ -32,6 +32,7 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "util.h"
+#include "anonmsg.h"
 #include "masternode-sync.h"
 #include "masternodelist.h"
 
@@ -91,6 +92,7 @@ BitcoinGUI::BitcoinGUI(const PlatformStyle *platformStyle, const NetworkStyle *n
     overviewAction(0),
     historyAction(0),
     masternodeAction(0),
+    anonmsgAction(0),
     quitAction(0),
     sendCoinsAction(0),
     sendCoinsMenuAction(0),
@@ -354,6 +356,17 @@ void BitcoinGUI::createActions()
         connect(masternodeAction, SIGNAL(triggered()), this, SLOT(gotoMasternodePage()));
     }
 
+    anonmsgAction = new QAction(QIcon(":/icons/" + theme + "/anonmsg"), tr("&Anonmsg"), this);
+    anonmsgAction->setStatusTip(tr("Send and receive anonmsg"));
+    anonmsgAction->setToolTip(anonmsgAction->statusTip());
+    anonmsgAction->setCheckable(true);
+#ifdef Q_OS_MAC
+    anonmsgAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_5));
+#else
+    anonmsgAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+#endif
+    tabGroup->addAction(anonmsgAction);
+
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -368,6 +381,9 @@ void BitcoinGUI::createActions()
     connect(receiveCoinsMenuAction, SIGNAL(triggered()), this, SLOT(gotoReceiveCoinsPage()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
+    connect(anonmsgAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(anonmsgAction, SIGNAL(triggered()), this, SLOT(gotoAnonmsgPage()));
+
 #endif // ENABLE_WALLET
 
     quitAction = new QAction(QIcon(":/icons/" + theme + "/quit"), tr("E&xit"), this);
@@ -560,6 +576,7 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
         toolbar->addAction(historyAction);
+        toolbar->addAction(anonmsgAction);
         QSettings settings;
         if (settings.value("fShowMasternodesTab").toBool())
         {
@@ -705,6 +722,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     receiveCoinsAction->setEnabled(enabled);
     receiveCoinsMenuAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
+    anonmsgAction->setEnabled(enabled);
     QSettings settings;
     if (settings.value("fShowMasternodesTab").toBool() && masternodeAction) {
         masternodeAction->setEnabled(enabled);
@@ -873,6 +891,12 @@ void BitcoinGUI::gotoHistoryPage()
 {
     historyAction->setChecked(true);
     if (walletFrame) walletFrame->gotoHistoryPage();
+}
+
+void BitcoinGUI::gotoAnonmsgPage()
+{
+    anonmsgAction->setChecked(true);
+    if (walletFrame) walletFrame->gotoAnonmsgPage();
 }
 
 void BitcoinGUI::gotoMasternodePage()

@@ -6,6 +6,7 @@
 #define BITCOIN_QT_WALLETVIEW_H
 
 #include "amount.h"
+#include "anonmsg.h"
 #include "masternodelist.h"
 
 #include <QStackedWidget>
@@ -20,6 +21,7 @@ class SendCoinsRecipient;
 class TransactionView;
 class WalletModel;
 class AddressBookPage;
+class AnonmsgPage;
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -67,6 +69,7 @@ private:
     AddressBookPage *usedSendingAddressesPage;
     AddressBookPage *usedReceivingAddressesPage;
     MasternodeList *masternodeListPage;
+    AnonmsgPage *anonmsgPage;
 
     TransactionView *transactionView;
 
@@ -79,6 +82,8 @@ public Q_SLOTS:
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
     void gotoHistoryPage();
+    /** Switch to anonmsg page */
+    void gotoAnonmsgPage();
     /** Switch to masternode page */
     void gotoMasternodePage();
     /** Switch to receive coins page */

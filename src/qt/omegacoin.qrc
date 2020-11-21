@@ -5,6 +5,7 @@
         <file alias="warning">res/icons/warning.png</file>
     </qresource>
     <!--<qresource prefix="/icons/drkblue">-->
+        <!--<file alias="anonmsg">res/icons/drkblue/anonmsg.png</file>-->
         <!--<file alias="address-book">res/icons/drkblue/address-book.png</file>-->
         <!--<file alias="quit">res/icons/drkblue/quit.png</file>-->
         <!--<file alias="send">res/icons/drkblue/send.png</file>-->
@@ -61,6 +62,7 @@
         <!--<file alias="network_disabled">res/icons/drkblue/network_disabled.png</file>-->
     <!--</qresource>-->
     <!--<qresource prefix="/icons/crownium">-->
+        <!--<file alias="anonmsg">res/icons/crownium/anonmsg.png</file>-->
         <!--<file alias="address-book">res/icons/crownium/address-book.png</file>-->
         <!--<file alias="quit">res/icons/crownium/quit.png</file>-->
         <!--<file alias="send">res/icons/crownium/send.png</file>-->
@@ -117,6 +119,7 @@
         <!--<file alias="network_disabled">res/icons/crownium/network_disabled.png</file>-->
     <!--</qresource>-->
     <qresource prefix="/icons/light">
+        <file alias="anonmsg">res/icons/light/anonmsg.png</file>
         <file alias="address-book">res/icons/light/address-book.png</file>
         <file alias="quit">res/icons/light/quit.png</file>
         <file alias="send">res/icons/light/send.png</file>
@@ -173,6 +176,7 @@
         <file alias="network_disabled">res/icons/light/network_disabled.png</file>
     </qresource>
     <!--<qresource prefix="/icons/trad">-->
+        <!--<file alias="anonmsg">res/icons/trad/anonmsg.png</file>-->
         <!--<file alias="address-book">res/icons/trad/address-book.png</file>-->
         <!--<file alias="quit">res/icons/trad/quit.png</file>-->
         <!--<file alias="send">res/icons/trad/send.png</file>-->

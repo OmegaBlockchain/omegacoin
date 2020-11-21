@@ -244,6 +244,7 @@ extern const char *MNGOVERNANCESYNC;
 extern const char *MNGOVERNANCEOBJECT;
 extern const char *MNGOVERNANCEOBJECTVOTE;
 extern const char *MNVERIFY;
+extern const char *ANONMSG;
 };
 
 /* Get a vector of all valid message types (see above) */
@@ -363,6 +364,7 @@ enum {
     MSG_GOVERNANCE_OBJECT,
     MSG_GOVERNANCE_OBJECT_VOTE,
     MSG_MASTERNODE_VERIFY,
+    MSG_ANONMSG
 };
 
 #endif // BITCOIN_PROTOCOL_H

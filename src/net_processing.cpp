@@ -7,6 +7,7 @@
 
 #include "alert.h"
 #include "addrman.h"
+#include "anonmsg.h"
 #include "arith_uint256.h"
 #include "chainparams.h"
 #include "consensus/validation.h"
@@ -680,6 +681,8 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     switch (inv.type)
     {
+    case MSG_ANONMSG:
+        return mapAnonMsgSeen.count(inv.hash);
     case MSG_TX:
         {
             assert(recentRejects);
@@ -905,6 +908,17 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                         ss.reserve(1000);
                         ss << tx;
                         connman.PushMessage(pfrom, NetMsgType::TX, ss);
+                        pushed = true;
+                    }
+                }
+
+                //! for ANONMSG
+                if (!pushed && inv.type == MSG_ANONMSG) {
+                    if(mapAnonMsgSeen.count(inv.hash)) {
+                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+                        ss.reserve(1000);
+                        ss << mapAnonMsgSeen[inv.hash];
+                        connman.PushMessage(pfrom, NetMsgType::ANONMSG, ss);
                         pushed = true;
                     }
                 }
@@ -1266,6 +1280,19 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         return false;
     }
 
+    else if (strCommand == NetMsgType::ANONMSG)
+    {
+        CAnonMsg incomingMsg;
+        vRecv >> incomingMsg;
+        std::string msgpayload = incomingMsg.getMessage();
+        int64_t msgtime = incomingMsg.getTime();
+        if (msgpayload.size() > 256) return false;
+        char received[320];
+        snprintf(received, sizeof(received), "%s (%llu)", msgpayload, msgtime);
+        std::string receivedStr = received;
+        anonMsgReceived.push(receivedStr);
+        return true;
+    }
 
     else if (strCommand == NetMsgType::VERACK)
     {

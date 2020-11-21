@@ -214,6 +214,7 @@ libbitcoin_server_a_SOURCES = \
   activemasternode.cpp \
   addrman.cpp \
   addrdb.cpp \
+  anonmsg.cpp \
   alert.cpp \
   bloom.cpp \
   chain.cpp \
@@ -248,6 +249,7 @@ libbitcoin_server_a_SOURCES = \
   privatesend.cpp \
   privatesend-server.cpp \
   rest.cpp \
+  rpc/anonmsg.cpp \
   rpc/blockchain.cpp \
   rpc/masternode.cpp \
   rpc/governance.cpp \

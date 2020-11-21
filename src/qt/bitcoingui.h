@@ -97,6 +97,7 @@ private:
     QAction *overviewAction;
     QAction *historyAction;
     QAction *masternodeAction;
+    QAction *anonmsgAction;
     QAction *quitAction;
     QAction *sendCoinsAction;
     QAction *sendCoinsMenuAction;
@@ -217,6 +218,8 @@ private Q_SLOTS:
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
     void gotoHistoryPage();
+    /** Switch to anonmsg page */
+    void gotoAnonmsgPage();
     /** Switch to masternode page */
     void gotoMasternodePage();
     /** Switch to receive coins page */

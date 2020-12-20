@@ -46,7 +46,7 @@ void AnonmsgPage::updateMessageBoard()
     std::string newMessage;
     bool newPending = getNextAnonMsg(newMessage);
     if (!newPending) return;
-    ui->textEdit->append(QString::fromUtf8(newMessage.c_str()));
+    ui->textEdit->append(QString::fromStdString(newMessage));
 }
 
 void AnonmsgPage::on_sendButton_clicked()

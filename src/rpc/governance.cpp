@@ -143,8 +143,8 @@ UniValue gobject(const UniValue& params, bool fHelp)
 
         std::string strRevision = params[2].get_str();
         std::string strTime = params[3].get_str();
-        int nRevision = boost::lexical_cast<int>(strRevision);
-        int nTime = boost::lexical_cast<int>(strTime);
+        int nRevision = atoi(strRevision);
+        int64_t nTime = atoi64(strTime);
         std::string strData = params[4].get_str();
 
         // CREATE A NEW COLLATERAL TRANSACTION FOR THIS SPECIFIC OBJECT

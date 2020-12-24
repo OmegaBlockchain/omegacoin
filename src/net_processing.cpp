@@ -1287,9 +1287,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         std::string msgpayload = incomingMsg.getMessage();
         int64_t msgtime = incomingMsg.getTime();
         if (msgpayload.size() > 256) return false;
-        char received[320];
-        snprintf(received, sizeof(received), "%s (%llu)", msgpayload, msgtime);
-        std::string receivedStr = received;
+        std::string receivedStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
+        LogPrintf("test 1 %s\n", receivedStr);
+        LogPrintf("test 2 %s\n", msgpayload);
         anonMsgReceived.push(receivedStr);
         return true;
     }

@@ -11,6 +11,7 @@
 
 #include <QTimer>
 #include <QMessageBox>
+#include <boost/exception/to_string.hpp>
 
 AnonmsgPage::AnonmsgPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
@@ -51,4 +52,25 @@ void AnonmsgPage::updateMessageBoard()
 
 void AnonmsgPage::on_sendButton_clicked()
 {
+    QString sendTextQ = ui->textEdit_2->toPlainText();
+    ui->textEdit_2->clear();
+    std::string strMsg = sendTextQ.toStdString();
+
+    if (strMsg.empty()) {
+        return;
+    }
+
+    //! create and relay a message
+    CAnonMsg testCase;
+    testCase.setMessage(strMsg);
+
+    //! relay message and store
+    testCase.Relay();
+    mapAnonMsgSeen.insert(std::make_pair(testCase.GetHash(),testCase));
+    std::string msgpayload = testCase.getMessage();
+    int64_t msgtime = testCase.getTime();
+    if (msgpayload.size() > 256) return;
+    std::string receivedStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
+    anonMsgReceived.push(receivedStr);
+    return;
 }

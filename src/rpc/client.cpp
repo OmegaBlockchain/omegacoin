@@ -81,6 +81,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "sendmany", 6 },
     { "sendmany", 7 },
     { "sendanonmsg", 0 },
+    { "listanonmsg", 0 },
     { "addmultisigaddress", 0 },
     { "addmultisigaddress", 1 },
     { "createmultisig", 0 },

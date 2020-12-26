@@ -60,11 +60,11 @@ public:
         return true;
     }
 
-    std::string getMessage() {
+    std::string getMessage() const {
         return SanitizeString(msgData);
     }
 
-    int64_t getTime() {
+    int64_t getTime() const {
         return msgTime;
     }
 

@@ -358,6 +358,7 @@ static const CRPCCommand vRPCCommands[] =
 #ifdef ENABLE_WALLET
     { "omegacoin",               "privatesend",            &privatesend,            false },
     { "omegacoin",               "sendanonmsg",            &sendanonmsg,            false },
+    { "omegacoin",               "listanonmsg",            &listanonmsg,            false },
 
     /* Wallet */
     { "wallet",             "keepass",                &keepass,                true },

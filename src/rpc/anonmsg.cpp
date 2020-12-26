@@ -10,10 +10,13 @@
 #include <rpc/server.h>
 #include <rpc/protocol.h>
 #include <utilstrencodings.h>
+#include <boost/exception/to_string.hpp>
+
+#include <univalue.h>
 
 UniValue sendanonmsg(const UniValue& params, bool fHelp)
 {
-    UniValue result(UniValue::VOBJ);
+    UniValue result(UniValue::VARR);
     std::string strMsg = params[0].get_str();
     if (strMsg.empty()) {
         return result;
@@ -29,4 +32,24 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
     result.push_back("ok");
 
     return result;
+}
+
+UniValue listanonmsg(const UniValue& params, bool fHelp)
+{
+    UniValue ret(UniValue::VARR);
+    for (auto t=mapAnonMsgSeen.begin(); t!=mapAnonMsgSeen.end(); ++t) {
+        LogPrintf("test test  %s, %s\n", t->first.ToString(), t->second.getMessage());
+    }
+
+
+
+
+    for (auto message=mapAnonMsgSeen.begin(); message!=mapAnonMsgSeen.end(); ++message) {
+        UniValue obj(UniValue::VOBJ);
+        obj.push_back(Pair("timestamp", message->second.getTime()));
+        obj.push_back(Pair("message", message->second.getMessage()));
+        ret.push_back(obj);
+    }
+
+    return ret;
 }

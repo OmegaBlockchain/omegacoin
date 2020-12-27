@@ -13,7 +13,7 @@ void getAnonMessages(std::list<std::string>& listMsg)
     for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
         std::string msgpayload = message->second.getMessage();
         int64_t msgtime = message->second.getTime();
-        if (msgpayload.size() > 256) return false;
+        //if (msgpayload.size() > 256) return false;
         std::string messageStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
         listMsg.push_back(messageStr);
     }
@@ -31,7 +31,12 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
 
         pfrom->setAskFor.erase(incomingMsg.GetHash());
 
-        mapAnonMsg.push(incomingMsg);
+        int64_t msgtime = incomingMsg.getTime();
+        if ((msgtime + 24*60*60) < GetAdjustedTime()) {
+            return;
+        }
+
+        mapAnonMsg.insert(incomingMsg);
 
         incomingMsg.Relay(connman);
 
@@ -52,4 +57,17 @@ void CAnonMsg::Relay() const
 {
     CInv inv(MSG_ANONMSG, this->GetHash());
     connman.RelayInv(inv);
+}
+
+void CAnonMsg::CheckAndRemove()
+{
+    if(!masternodeSync.IsBlockchainSynced()) return;
+
+    for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
+        int64_t msgtime = message->second.getTime();
+        if ((msgtime + 24*60*60) < GetAdjustedTime()) {
+            mapAnonMsg.erase(message);
+        }
+    }
+
 }

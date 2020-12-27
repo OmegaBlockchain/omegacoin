@@ -143,6 +143,7 @@ void CMasternodeSync::ClearFulfilledRequests(CConnman& connman)
 
     connman.ForEachNode(CConnman::AllNodes, [](CNode* pnode) {
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "spork-sync");
+        netfulfilledman.RemoveFulfilledRequest(pnode->addr, "anonmsg-sync");
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "masternode-list-sync");
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "masternode-payment-sync");
         netfulfilledman.RemoveFulfilledRequest(pnode->addr, "governance-sync");
@@ -205,8 +206,10 @@ void CMasternodeSync::ProcessTick(CConnman& connman)
             if(nRequestedMasternodeAttempt <= 2) {
                 connman.PushMessageWithVersion(pnode, INIT_PROTO_VERSION, NetMsgType::GETSPORKS); //get current network sporks
             } else if(nRequestedMasternodeAttempt < 4) {
-                mnodeman.DsegUpdate(pnode, connman);
+                connman.PushMessageWithVersion(pnode, INIT_PROTO_VERSION, NetMsgType::GETANONMSG); //get current network sporks
             } else if(nRequestedMasternodeAttempt < 6) {
+                mnodeman.DsegUpdate(pnode, connman);
+            } else if(nRequestedMasternodeAttempt < 8) {
                 int nMnCount = mnodeman.CountMasternodes();
                 connman.PushMessage(pnode, NetMsgType::MASTERNODEPAYMENTSYNC, nMnCount); //sync payment votes
                 SendGovernanceSyncRequest(pnode, connman);
@@ -236,6 +239,14 @@ void CMasternodeSync::ProcessTick(CConnman& connman)
                 // get current network sporks
                 connman.PushMessageWithVersion(pnode, INIT_PROTO_VERSION, NetMsgType::GETSPORKS);
                 LogPrintf("CMasternodeSync::ProcessTick -- nTick %d nRequestedMasternodeAssets %d -- requesting sporks from peer %d\n", nTick, nRequestedMasternodeAssets, pnode->id);
+            }
+
+            if(!netfulfilledman.HasFulfilledRequest(pnode->addr, "anonmsg-sync")) {
+                // always get anonmsg first, only request once from each peer
+                netfulfilledman.AddFulfilledRequest(pnode->addr, "anonmsg-sync");
+                // get current network anonmsg
+                connman.PushMessageWithVersion(pnode, INIT_PROTO_VERSION, NetMsgType::GETANONMSG);
+                LogPrintf("CMasternodeSync::ProcessTick -- nTick %d nRequestedMasternodeAssets %d -- requesting anonmsg from peer %d\n", nTick, nRequestedMasternodeAssets, pnode->id);
             }
 
             // INITIAL TIMEOUT

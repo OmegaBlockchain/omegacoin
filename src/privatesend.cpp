@@ -473,6 +473,7 @@ void ThreadCheckPrivateSend(CConnman& connman)
                 mnodeman.CheckAndRemove(connman);
                 mnpayments.CheckAndRemove();
                 instantsend.CheckAndRemove();
+                anonMsg.CheckAndRemove();
             }
             if(fMasterNode && (nTick % (60 * 5) == 0)) {
                 mnodeman.DoFullVerificationStep(connman);

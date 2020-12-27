@@ -74,6 +74,8 @@ public:
     void Relay(CConnman& connman);
 
     void ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv, CConnman& connman);
+
+    void CheckAndRemove();
 };
 
 extern std::map<uint256, CAnonMsg> mapAnonMsg;

@@ -1,29 +1,55 @@
 // Copyright (c) 2020 barrystyle
+// Copyright (c) 2020 Kolby Moroz Liebl
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "anonmsg.h"
+#include <boost/exception/to_string.hpp>
 
-std::queue<std::string> anonMsgReceived;
-std::map<uint256, CAnonMsg> mapAnonMsgSeen;
+std::map<uint256, CAnonMsg> mapAnonMsg;
 
-bool getNextAnonMsg(std::string& nextMsg)
+void getAnonMessages(std::list<std::string>& listMsg)
 {
-    LogPrintf("%s called\n", __func__);
-    if (anonMsgReceived.size() > 0) {
-        nextMsg = anonMsgReceived.front();
-        LogPrintf("DEBUG->tolivefeed %s\n", nextMsg);
-        anonMsgReceived.pop();
-        return true;
+    for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
+        std::string msgpayload = message->second.getMessage();
+        int64_t msgtime = message->second.getTime();
+        if (msgpayload.size() > 256) return false;
+        std::string messageStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
+        listMsg.push_back(messageStr);
     }
-    return false;
+    return;
 }
+
+void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv, CConnman& connman)
+{
+    if(fLiteMode) return; // disable all OmegaCoin specific functionality
+
+    if (strCommand == NetMsgType::ANONMSG) {
+
+        CAnonMsg incomingMsg;
+        vRecv >> incomingMsg;
+
+        pfrom->setAskFor.erase(incomingMsg.GetHash());
+
+        mapAnonMsg.push(incomingMsg);
+
+        incomingMsg.Relay(connman);
+
+    } else if (strCommand == NetMsgType::GETANONMSG) {
+
+        std::map<uint256, CAnonMsg>::iterator it = mapAnonMsg.begin();
+
+        while(it != mapAnonMsg.end()) {
+            connman.PushMessage(pfrom, NetMsgType::ANONMSG, it->second);
+            it++;
+        }
+    }
+
+}
+
 
 void CAnonMsg::Relay() const
 {
-    LogPrintf("%s called\n", __func__);
     CInv inv(MSG_ANONMSG, this->GetHash());
-    g_connman->ForEachNode([&inv](CNode* pnode) {
-        pnode->PushInventory(inv);
-    });
+    connman.RelayInv(inv);
 }

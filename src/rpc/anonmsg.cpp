@@ -1,4 +1,5 @@
 // Copyright (c) 2020 barrystyle
+// Copyright (c) 2020 Kolby Moroz Liebl
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,7 +29,7 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
 
     //! relay message and store
     testCase.Relay();
-    mapAnonMsgSeen.insert(std::make_pair(testCase.GetHash(),testCase));
+    mapAnonMsg.insert(std::make_pair(testCase.GetHash(),testCase));
     result.push_back("ok");
 
     return result;
@@ -37,14 +38,7 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
 UniValue listanonmsg(const UniValue& params, bool fHelp)
 {
     UniValue ret(UniValue::VARR);
-    for (auto t=mapAnonMsgSeen.begin(); t!=mapAnonMsgSeen.end(); ++t) {
-        LogPrintf("test test  %s, %s\n", t->first.ToString(), t->second.getMessage());
-    }
-
-
-
-
-    for (auto message=mapAnonMsgSeen.begin(); message!=mapAnonMsgSeen.end(); ++message) {
+    for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("timestamp", message->second.getTime()));
         obj.push_back(Pair("message", message->second.getMessage()));

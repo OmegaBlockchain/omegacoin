@@ -682,7 +682,7 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
     switch (inv.type)
     {
     case MSG_ANONMSG:
-        return mapAnonMsgSeen.count(inv.hash);
+        return mapAnonMsg.count(inv.hash);
     case MSG_TX:
         {
             assert(recentRejects);
@@ -914,10 +914,10 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
 
                 //! for ANONMSG
                 if (!pushed && inv.type == MSG_ANONMSG) {
-                    if(mapAnonMsgSeen.count(inv.hash)) {
+                    if(mapAnonMsg.count(inv.hash)) {
                         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                         ss.reserve(1000);
-                        ss << mapAnonMsgSeen[inv.hash];
+                        ss << mapAnonMsg[inv.hash];
                         connman.PushMessage(pfrom, NetMsgType::ANONMSG, ss);
                         pushed = true;
                     }
@@ -1278,18 +1278,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         LOCK(cs_main);
         Misbehaving(pfrom->GetId(), 1);
         return false;
-    }
-
-    else if (strCommand == NetMsgType::ANONMSG)
-    {
-        CAnonMsg incomingMsg;
-        vRecv >> incomingMsg;
-        std::string msgpayload = incomingMsg.getMessage();
-        int64_t msgtime = incomingMsg.getTime();
-        if (msgpayload.size() > 256) return false;
-        std::string receivedStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
-        anonMsgReceived.push(receivedStr);
-        return true;
     }
 
     else if (strCommand == NetMsgType::VERACK)
@@ -2201,6 +2189,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             sporkManager.ProcessSpork(pfrom, strCommand, vRecv, connman);
             masternodeSync.ProcessMessage(pfrom, strCommand, vRecv);
             governance.ProcessMessage(pfrom, strCommand, vRecv, connman);
+            anonMsg.ProcessMessage(pfrom, strCommand, vRecv, connman);
+
         }
         else
         {

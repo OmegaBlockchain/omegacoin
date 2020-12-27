@@ -1,4 +1,5 @@
 // Copyright (c) 2020 barrystyle
+// Copyright (c) 2020 Kolby Moroz Liebl
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,6 +18,8 @@
 //
 // CAnonMsg Class: contains serialization and validation methods
 //
+
+extern CAnonMsg anonMsg;
 
 class CAnonMsg
 {
@@ -68,12 +71,13 @@ public:
         return msgTime;
     }
 
-    void Relay() const;
+    void Relay(CConnman& connman);
+
+    void ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv, CConnman& connman);
 };
 
-extern std::queue<std::string> anonMsgReceived;
-extern std::map<uint256, CAnonMsg> mapAnonMsgSeen;
+extern std::map<uint256, CAnonMsg> mapAnonMsg;
 
-bool getNextAnonMsg(std::string& nextMsg);
+bool getAnonMessages(std::list<std::string>& listMsg);
 
 #endif // ANONMSG_H

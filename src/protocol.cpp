@@ -66,6 +66,7 @@ const char *MNGOVERNANCEOBJECT="govobj";
 const char *MNGOVERNANCEOBJECTVOTE="govobjvote";
 const char *MNVERIFY="mnv";
 const char *ANONMSG="anonmsg";
+const char *GETANONMSG="getanonmsg";
 };
 
 static const char* ppszTypeName[] =
@@ -147,6 +148,7 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::MNGOVERNANCEOBJECTVOTE,
     NetMsgType::MNVERIFY,
     NetMsgType::ANONMSG
+    NetMsgType::GETANONMSG
 };
 const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 

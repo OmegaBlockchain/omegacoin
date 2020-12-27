@@ -245,6 +245,7 @@ extern const char *MNGOVERNANCEOBJECT;
 extern const char *MNGOVERNANCEOBJECTVOTE;
 extern const char *MNVERIFY;
 extern const char *ANONMSG;
+extern const char *GETANONMSG;
 };
 
 /* Get a vector of all valid message types (see above) */

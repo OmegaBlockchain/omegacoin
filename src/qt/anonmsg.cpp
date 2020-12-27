@@ -1,3 +1,5 @@
+// Copyright (c) 2020 barrystyle
+// Copyright (c) 2020 Kolby Moroz Liebl
 #include "anonmsg.h"
 #include "ui_anonmsg.h"
 
@@ -43,11 +45,12 @@ void AnonmsgPage::setWalletModel(WalletModel *model)
 
 void AnonmsgPage::updateMessageBoard()
 {
-    LogPrintf("%s called\n", __func__);
-    std::string newMessage;
-    bool newPending = getNextAnonMsg(newMessage);
-    if (!newPending) return;
-    ui->textEdit->append(QString::fromStdString(newMessage));
+    std::list<std::string> listMsg;
+    bool newPending = getAnonMessages(listMsg);
+    ui->textEdit->clear();
+    for (std::list<std::string>::iterator nextMessage=listMsg.begin(); nextMessage!=listMsg.end(); ++nextMessage) {
+        ui->textEdit->append(QString::fromStdString(nextMessage));
+    }
 }
 
 void AnonmsgPage::on_sendButton_clicked()
@@ -66,11 +69,6 @@ void AnonmsgPage::on_sendButton_clicked()
 
     //! relay message and store
     testCase.Relay();
-    mapAnonMsgSeen.insert(std::make_pair(testCase.GetHash(),testCase));
-    std::string msgpayload = testCase.getMessage();
-    int64_t msgtime = testCase.getTime();
-    if (msgpayload.size() > 256) return;
-    std::string receivedStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
-    anonMsgReceived.push(receivedStr);
+    mapAnonMsg.insert(std::make_pair(testCase.GetHash(),testCase));
     return;
 }

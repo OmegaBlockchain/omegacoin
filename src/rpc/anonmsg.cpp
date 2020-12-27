@@ -28,7 +28,7 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
     testCase.setMessage(strMsg);
 
     //! relay message and store
-    testCase.Relay();
+    testCase.Relay(*g_connman);
     mapAnonMsg.insert(std::make_pair(testCase.GetHash(),testCase));
     result.push_back("ok");
 
@@ -37,11 +37,17 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
 
 UniValue listanonmsg(const UniValue& params, bool fHelp)
 {
+
     UniValue ret(UniValue::VARR);
+    std::map<int64_t, std::string> messagesToSort;
     for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
+        messagesToSort.insert(std::make_pair(message->second.getTime(), message->second.getMessage()));
+    }
+    sortmap(messagesToSort);
+    for (auto message=messagesToSort.begin(); message!=messagesToSort.end(); ++message) {
         UniValue obj(UniValue::VOBJ);
-        obj.push_back(Pair("timestamp", message->second.getTime()));
-        obj.push_back(Pair("message", message->second.getMessage()));
+        obj.push_back(Pair("timestamp", message->first));
+        obj.push_back(Pair("message", message->second));
         ret.push_back(obj);
     }
 

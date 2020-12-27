@@ -15,6 +15,8 @@
 
 #include <queue>
 
+class CAnonMsg;
+
 //
 // CAnonMsg Class: contains serialization and validation methods
 //
@@ -80,6 +82,6 @@ public:
 
 extern std::map<uint256, CAnonMsg> mapAnonMsg;
 
-bool getAnonMessages(std::list<std::string>& listMsg);
+void sortmap(std::map<int64_t, std::string>& M);
 
 #endif // ANONMSG_H

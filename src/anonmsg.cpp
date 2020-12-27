@@ -4,20 +4,22 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "anonmsg.h"
+#include "masternode-sync.h"
 #include <boost/exception/to_string.hpp>
+
+class CAnonMsg;
+
+CAnonMsg anonMsg;
 
 std::map<uint256, CAnonMsg> mapAnonMsg;
 
-void getAnonMessages(std::list<std::string>& listMsg)
+void sortmap(std::map<int64_t, std::string>& M)
 {
-    for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
-        std::string msgpayload = message->second.getMessage();
-        int64_t msgtime = message->second.getTime();
-        //if (msgpayload.size() > 256) return false;
-        std::string messageStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
-        listMsg.push_back(messageStr);
+    std::multimap<std::string, int64_t> MM;
+
+    for (auto& it : M) {
+        MM.insert({ it.second, it.first });
     }
-    return;
 }
 
 void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream& vRecv, CConnman& connman)
@@ -36,7 +38,7 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
             return;
         }
 
-        mapAnonMsg.insert(incomingMsg);
+        mapAnonMsg.insert(std::make_pair(incomingMsg.GetHash(),incomingMsg));
 
         incomingMsg.Relay(connman);
 
@@ -53,7 +55,7 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
 }
 
 
-void CAnonMsg::Relay() const
+void CAnonMsg::Relay(CConnman& connman)
 {
     CInv inv(MSG_ANONMSG, this->GetHash());
     connman.RelayInv(inv);

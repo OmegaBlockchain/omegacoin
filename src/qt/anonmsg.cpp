@@ -45,11 +45,18 @@ void AnonmsgPage::setWalletModel(WalletModel *model)
 
 void AnonmsgPage::updateMessageBoard()
 {
-    std::list<std::string> listMsg;
-    bool newPending = getAnonMessages(listMsg);
     ui->textEdit->clear();
-    for (std::list<std::string>::iterator nextMessage=listMsg.begin(); nextMessage!=listMsg.end(); ++nextMessage) {
-        ui->textEdit->append(QString::fromStdString(nextMessage));
+    std::map<int64_t, std::string> messagesToSort;
+    for (auto message=mapAnonMsg.begin(); message!=mapAnonMsg.end(); ++message) {
+        messagesToSort.insert(std::make_pair(message->second.getTime(), message->second.getMessage()));
+    }
+    sortmap(messagesToSort);
+    for (auto message=messagesToSort.begin(); message!=messagesToSort.end(); ++message) {
+        std::string msgpayload = message->second;
+        int64_t msgtime = message->first;
+        //if (msgpayload.size() > 256) return false;
+        std::string messageStr = msgpayload +" "+"("+boost::to_string(msgtime)+")";
+        ui->textEdit->append(QString::fromStdString(messageStr));
     }
 }
 
@@ -68,7 +75,7 @@ void AnonmsgPage::on_sendButton_clicked()
     testCase.setMessage(strMsg);
 
     //! relay message and store
-    testCase.Relay();
+    testCase.Relay(*g_connman);
     mapAnonMsg.insert(std::make_pair(testCase.GetHash(),testCase));
     return;
 }

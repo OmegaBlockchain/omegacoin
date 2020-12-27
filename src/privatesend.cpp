@@ -4,6 +4,7 @@
 #include "privatesend.h"
 
 #include "activemasternode.h"
+#include "anonmsg.h"
 #include "consensus/validation.h"
 #include "governance.h"
 #include "init.h"

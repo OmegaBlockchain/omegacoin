@@ -35,8 +35,8 @@ fi
 
  source ~/.bashrc fi
 omegacoin-cli stop > /dev/null 2>&1
-wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.6.0/omegacoind -O /usr/local/bin/omegacoind
-wget https://github.com/RottenCoin/omegacoin/releases/download/0.12.6.0/omegacoin-cli -O /usr/local/bin/omegacoin-cli
+wget https://github.com/RottenCoin/omegacoin/releases/download/0.13.0.0/omegacoind -O /usr/local/bin/omegacoind
+wget https://github.com/RottenCoin/omegacoin/releases/download/0.13.0.0/omegacoin-cli -O /usr/local/bin/omegacoin-cli
 chmod +x /usr/local/bin/omegacoin*
 
 echo ""
@@ -101,18 +101,7 @@ echo "logtimestamps=1" >> $CONF_DIR/$CONF_FILE
 echo "maxconnections=256" >> $CONF_DIR/$CONF_FILE
 echo "staking=0" >> $CONF_DIR/$CONF_FILE
 echo "masternode=1" >> $CONF_DIR/$CONF_FILE
-echo "addnode=144.202.49.240:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=108.61.85.12:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=158.69.62.180:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=80.211.19.159:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=188.166.224.184:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=185.62.81.135:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=140.82.22.255:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=173.249.7.187:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=80.211.47.13:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=80.211.96.202:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=139.99.193.57:7777" >> $CONF_DIR/$CONF_FILE
-echo "addnode=212.237.24.140:7777" >> $CONF_DIR/$CONF_FILE
+echo "addnode=167.86.91.191:7777" >> $CONF_DIR/$CONF_FILE
 echo "port=$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeaddr=$IP:$PORT" >> $CONF_DIR/$CONF_FILE
 echo "masternodeprivkey=$PRIVKEY" >> $CONF_DIR/$CONF_FILE

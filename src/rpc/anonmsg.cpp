@@ -17,10 +17,9 @@
 
 UniValue sendanonmsg(const UniValue& params, bool fHelp)
 {
-    UniValue result(UniValue::VARR);
     std::string strMsg = params[0].get_str();
     if (strMsg.empty()) {
-        return result;
+        return "Failed: Message is empty";
     }
 
     //! create and relay a message
@@ -30,9 +29,8 @@ UniValue sendanonmsg(const UniValue& params, bool fHelp)
     //! relay message and store
     testCase.Relay(*g_connman);
     mapAnonMsg.insert(std::make_pair(testCase.GetHash(),testCase));
-    result.push_back("ok");
 
-    return result;
+    return "sent";
 }
 
 UniValue listanonmsg(const UniValue& params, bool fHelp)

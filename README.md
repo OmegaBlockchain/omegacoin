@@ -1,6 +1,8 @@
 
-![alt text](http://omegablockchain.net/wp-content/uploads/2020/01/OMEGA256x256circle.png "Omega Network Logo")
+![alt text](http://www.explorer.omegablockchain.net/OMEGA_full.png "Omega Network Logo")
 # OmegaBlockchain -  Social Network Reinvented.
+# NEW 0.13.0.0 wallet version just have been published.
+# We are starting with the anonymous messaging.
 
 http://omegablockchain.net/
 
@@ -18,7 +20,7 @@ http://omegablockchain.net/
 | Port | `7777` |
 | RPC Port | `7778` |
 
-# omegacoin-Masternode Setup 12.5.1
+# omegacoin-Masternode Setup 0.13.0.0
 
 wget https://github.com/RottenCoin/omegacoin/raw/master/omega_setup.sh
 
@@ -28,16 +30,4 @@ chmod 755 omega_setup.sh
 
 # Omega Sentinel quick installation:
 
-wget https://raw.githubusercontent.com/rottencoin/sentinel/master/sentinel-one-line-installer.sh
-
-chmod +x sentinel-one-line-installer.sh
-
-./sentinel-one-line-installer.sh
-
-to test if is working properly:
-
-cd sentinel
-
-./venv/bin/py.test ./test
-
-***
+No longer required

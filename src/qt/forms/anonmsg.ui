@@ -70,7 +70,7 @@
               </rect>
              </property>
              <property name="text">
-              <string>anonmsg live feed</string>
+              <string>Anonymous messaging live feed</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -151,7 +151,7 @@
             <item>
              <widget class="QPushButton" name="sendButton">
               <property name="text">
-               <string>send</string>
+               <string>SEND MESSAGE</string>
               </property>
              </widget>
             </item>

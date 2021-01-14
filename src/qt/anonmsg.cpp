@@ -66,7 +66,7 @@ void AnonmsgPage::on_sendButton_clicked()
     ui->textEdit_2->clear();
     std::string strMsg = sendTextQ.toStdString();
 
-    if (strMsg.empty()) {
+    if (strMsg.empty() || (strMsg.size() > 141)) {
         return;
     }
 

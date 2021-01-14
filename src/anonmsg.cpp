@@ -38,6 +38,9 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
             return;
         }
 
+        std::string msgpayload = incomingMsg.getMessage();
+        if (msgpayload.size() > 141) return;
+
         mapAnonMsg.insert(std::make_pair(incomingMsg.GetHash(),incomingMsg));
 
         incomingMsg.Relay(connman);

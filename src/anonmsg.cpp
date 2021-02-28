@@ -29,19 +29,27 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
     if (strCommand == NetMsgType::ANONMSG) {
 
         CAnonMsg incomingMsg;
-        vRecv >> incomingMsg;
+        int64_t msgTime;
+        std::string msgData;
+
+        vRecv >> msgTime;
+
+        if (!vRecv.empty()) {
+            vRecv >> LIMITED_STRING(msgData, 140);
+        }
+
+        incomingMsg.setMessageAndTime(msgData, msgTime);
 
         pfrom->setAskFor.erase(incomingMsg.GetHash());
 
-        int64_t msgtime = incomingMsg.getTime();
-        if ((msgtime + 24*60*60) < GetAdjustedTime()) {
+        if ((msgTime + 24*60*60) < GetAdjustedTime()) {
             return;
         }
 
         std::string msgpayload = incomingMsg.getMessage();
         if (msgpayload.size() > 141) return;
 
-        mapAnonMsg.insert(std::make_pair(incomingMsg.GetHash(),incomingMsg));
+        mapAnonMsg.insert(std::make_pair(incomingMsg.GetHash(), incomingMsg));
 
         incomingMsg.Relay(connman);
 
@@ -50,7 +58,7 @@ void CAnonMsg::ProcessMessage(CNode* pfrom, std::string& strCommand, CDataStream
         std::map<uint256, CAnonMsg>::iterator it = mapAnonMsg.begin();
 
         while(it != mapAnonMsg.end()) {
-            connman.PushMessage(pfrom, NetMsgType::ANONMSG, it->second);
+            connman.PushMessage(pfrom, NetMsgType::ANONMSG, it->second.getTime(), it->second.getMessage());
             it++;
         }
     }

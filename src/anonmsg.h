@@ -26,47 +26,47 @@ extern CAnonMsg anonMsg;
 class CAnonMsg
 {
 private:
-    int64_t msgTime{0};
-    uint8_t msgSize{0};
-    std::string msgData{};
+    int64_t msgTime;
+    std::string msgData;
 
 public:
 
     CAnonMsg()
     {
         msgTime = 0;
-        msgSize = 0;
         msgData.clear();
     }
 
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
-    {
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(msgTime);
-        READWRITE(msgSize);
-        READWRITE(msgData);
+        READWRITE(LIMITED_STRING(msgData, 140));
     }
 
     uint256 GetHash() const
     {
         CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
         ss << msgTime;
-        ss << msgSize;
         ss << msgData;
         return ss.GetHash();
     }
 
     bool setMessage(std::string& msgContent) {
         msgData = msgContent;
-        msgSize = msgData.size();
         msgTime = GetAdjustedTime();
         return true;
     }
 
+    bool setMessageAndTime(std::string& msgContent, int64_t time) {
+        msgData = msgContent;
+        msgTime = time;
+        return true;
+    }
+
     std::string getMessage() const {
-        return SanitizeString(msgData);
+        return msgData;
     }
 
     int64_t getTime() const {

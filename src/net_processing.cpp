@@ -915,10 +915,7 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 //! for ANONMSG
                 if (!pushed && inv.type == MSG_ANONMSG) {
                     if(mapAnonMsg.count(inv.hash)) {
-                        CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-                        ss.reserve(1000);
-                        ss << mapAnonMsg[inv.hash];
-                        connman.PushMessage(pfrom, NetMsgType::ANONMSG, ss);
+                        connman.PushMessage(pfrom, NetMsgType::ANONMSG, mapAnonMsg[inv.hash].getTime(), mapAnonMsg[inv.hash].getMessage());
                         pushed = true;
                     }
                 }

@@ -1,7 +1,7 @@
 
 ![alt text](http://www.explorer.omegablockchain.net/OMEGA_full.png "Omega Network Logo")
 # OmegaBlockchain -  Social Network Reinvented.
-# NEW 0.13.0.0 wallet version just have been published.
+# NEW 0.13.0.1 wallet version just have been published.
 # We are starting with the anonymous messaging.
 
 http://omegablockchain.net/

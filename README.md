@@ -22,7 +22,7 @@ http://omegablockchain.net/
 
 # omegacoin-Masternode Setup 0.13.0.0
 
-wget https://github.com/RottenCoin/omegacoin/raw/master/omega_setup.sh
+wget https://github.com/OmegaBlockchain/omegacoin/blob/master/omega_setup.sh
 
 chmod 755 omega_setup.sh
 

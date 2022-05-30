@@ -1,7 +1,7 @@
 
 ![alt text](http://www.explorer.omegablockchain.net/OMEGA_full.png "Omega Network Logo")
 # OmegaBlockchain -  Social Network Reinvented.
-# NEW 0.13.0.1 wallet version just have been published.
+# NEW 0.13.0.2 wallet version just have been published.
 # We are starting with the anonymous messaging.
 
 http://omegablockchain.net/
@@ -20,7 +20,7 @@ http://omegablockchain.net/
 | Port | `7777` |
 | RPC Port | `7778` |
 
-# omegacoin-Masternode Setup 0.13.0.0
+# omegacoin-Masternode Setup 0.13.0.2
 
 wget https://github.com/OmegaBlockchain/omegacoin/blob/master/omega_setup.sh
 

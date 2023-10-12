@@ -74,12 +74,12 @@
         <translation>Адреса получения</translation>
     </message>
     <message>
-        <source>These are your Dash addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Это ваши адреса Dash для отправки платежей. Всегда проверяйте количество и адрес получателя перед отправкой перевода.</translation>
+        <source>These are your Omega addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>Это ваши адреса Omega для отправки платежей. Всегда проверяйте количество и адрес получателя перед отправкой перевода.</translation>
     </message>
     <message>
-        <source>These are your Dash addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.</source>
-        <translation>Это ваши адреса Dash для получения платежей. Используйте кнопку 'Создать новый адрес для получения' на закладке получения для создания новых адресов.</translation>
+        <source>These are your Omega addresses for receiving payments. Use the 'Create new receiving address' button in the receive tab to create new addresses.</source>
+        <translation>Это ваши адреса Omega для получения платежей. Используйте кнопку 'Создать новый адрес для получения' на закладке получения для создания новых адресов.</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -326,8 +326,8 @@
 <context>
     <name>BitcoinGUI</name>
     <message>
-        <source>A fatal error occurred. Dash Core can no longer continue safely and will quit.</source>
-        <translation>Произошла критическая ошибка. Дальнейшая безопасная работа Dash Core невозможна, программа будет закрыта.</translation>
+        <source>A fatal error occurred. Omega Core can no longer continue safely and will quit.</source>
+        <translation>Произошла критическая ошибка. Дальнейшая безопасная работа Omega Core невозможна, программа будет закрыта.</translation>
     </message>
     <message>
         <source>&amp;Overview</source>
@@ -342,8 +342,8 @@
         <translation>&amp;Отправить</translation>
     </message>
     <message>
-        <source>Send coins to a Dash address</source>
-        <translation>Отправить монеты на указанный адрес Dash</translation>
+        <source>Send coins to a Omega address</source>
+        <translation>Отправить монеты на указанный адрес Omega</translation>
     </message>
     <message>
         <source>&amp;Receive</source>
@@ -438,8 +438,8 @@
         <translation>&amp;О %1</translation>
     </message>
     <message>
-        <source>Send %1 funds to a Dash address</source>
-        <translation>Отправить %1 средства на Dash адрес</translation>
+        <source>Send %1 funds to a Omega address</source>
+        <translation>Отправить %1 средства на Omega адрес</translation>
     </message>
     <message>
         <source>Modify configuration options for %1</source>
@@ -494,16 +494,16 @@
         <translation>П&amp;одписать сообщение...</translation>
     </message>
     <message>
-        <source>Sign messages with your Dash addresses to prove you own them</source>
-        <translation>Подписать сообщения вашими адресами Dash, чтобы доказать, что вы ими владеете</translation>
+        <source>Sign messages with your Omega addresses to prove you own them</source>
+        <translation>Подписать сообщения вашими адресами Omega, чтобы доказать, что вы ими владеете</translation>
     </message>
     <message>
         <source>&amp;Verify message...</source>
         <translation>&amp;Проверить сообщение...</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified Dash addresses</source>
-        <translation>Проверить сообщения, чтобы удостовериться, что они были подписаны определёнными адресами Dash</translation>
+        <source>Verify messages to ensure they were signed with specified Omega addresses</source>
+        <translation>Проверить сообщения, чтобы удостовериться, что они были подписаны определёнными адресами Omega</translation>
     </message>
     <message>
         <source>&amp;Information</source>
@@ -574,7 +574,7 @@
         <translation>&amp;Параметры командной строки</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible Dash command-line options</source>
+        <source>Show the %1 help message to get a list with possible Omega command-line options</source>
         <translation>Показать справку по %1 со списком возможных параметров командной строки</translation>
     </message>
     <message>
@@ -648,8 +648,8 @@
         <translation>Посмотреть предложения по Управлению</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to Dash network</source>
-        <translation><numerusform>%n активное соединение с сетью Dash</numerusform><numerusform>%n активных соединения с сетью Dash</numerusform><numerusform>%n активных соединений с сетью Dash</numerusform><numerusform>%n активных соединений с сетью Dash</numerusform></translation>
+        <source>%n active connection(s) to Omega network</source>
+        <translation><numerusform>%n активное соединение с сетью Omega</numerusform><numerusform>%n активных соединения с сетью Omega</numerusform><numerusform>%n активных соединений с сетью Omega</numerusform><numerusform>%n активных соединений с сетью Omega</numerusform></translation>
     </message>
     <message>
         <source>Network activity disabled</source>
@@ -1098,8 +1098,8 @@
         <translation>Изменение адреса для отправки</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid Dash address.</source>
-        <translation>Введённый адрес "%1" не является правильным адресом Dash.</translation>
+        <source>The entered address "%1" is not a valid Omega address.</source>
+        <translation>Введённый адрес "%1" не является правильным адресом Omega.</translation>
     </message>
     <message>
         <source>Address "%1" already exists as a receiving address with label "%2" and so cannot be added as a sending address.</source>
@@ -1187,8 +1187,8 @@
         <translation>Информация о %1</translation>
     </message>
     <message>
-        <source>&lt;h3&gt;%1 Basics&lt;/h3&gt; %1 gives you true financial privacy by obscuring the origins of your funds. All the Dash in your wallet is comprised of different "inputs" which you can think of as separate, discrete coins.&lt;br&gt; %1 uses an innovative process to mix your inputs with the inputs of two or more other people, without having your coins ever leave your wallet. You retain control of your money at all times.&lt;hr&gt; &lt;b&gt;The %1 process works like this:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;%1 begins by breaking your transaction inputs down into standard denominations. These denominations are 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH and 10 DASH -- sort of like the paper money you use every day.&lt;/li&gt; &lt;li&gt;Your wallet then sends requests to specially configured software nodes on the network, called "masternodes." These masternodes are informed then that you are interested in mixing a certain denomination. No identifiable information is sent to the masternodes, so they never know "who" you are.&lt;/li&gt; &lt;li&gt;When two or more other people send similar messages, indicating that they wish to mix the same denomination, a mixing session begins. The masternode mixes up the inputs and instructs all three users' wallets to pay the now-transformed input back to themselves. Your wallet pays that denomination directly to itself, but in a different address (called a change address).&lt;/li&gt; &lt;li&gt;In order to fully obscure your funds, your wallet must repeat this process a number of times with each denomination. Each time the process is completed, it's called a "round." Each round of %1 makes it exponentially more difficult to determine where your funds originated.&lt;/li&gt; &lt;li&gt;This mixing process happens in the background without any intervention on your part. When you wish to make a transaction, your funds will already be mixed. No additional waiting is required.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;IMPORTANT:&lt;/b&gt; Your wallet only contains 1000 of these "change addresses." Every time a mixing event happens, up to 9 of your addresses are used up. This means those 1000 addresses last for about 100 mixing events. When 900 of them are used, your wallet must create more addresses. It can only do this, however, if you have automatic backups enabled.&lt;br&gt; Consequently, users who have backups disabled will also have %1 disabled. &lt;hr&gt;For more information, see the &lt;a style="%2" href="%3"&gt;%1 documentation&lt;/a&gt;.</source>
-        <translation>&lt;h3&gt;Основы %1&lt;/h3&gt;%1 позволяет Вам получить настоящую финансовую конфиденциальность за счет скрытия источников Ваших средств. Все Dash в  Вашем кошельке состоят из различных "входов", Вы можете думать о них как об отдельных монетах.&lt;br&gt;%1 использует инновационный процесс для перемешивания Ваших входов со входами еще двоих или более человек, но при этом Ваши монеты никогда не покидают Ваш кошелек. Вы сохраняете контроль над Вашими деньгами на протяжении всего времени.&lt;hr&gt; &lt;b&gt;%1 работает так:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;%1 начинается с разбиения Ваших входов транзакций на стандартные номиналы. Такими номиналами являются 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH и 10 DASH -- что-то вроде купюр, которыми вы пользуетесь каждый день.&lt;/li&gt; &lt;li&gt;Ваш кошелек затем отправляет запросы к особым образом настроенным сетевым узлам, называемым "мастернодами". Эти мастерноды знают только то, что Вы хотите перемешать определенные номиналы. Никакой идентифицирующей информации мастернодам не отправляется, так что они не знают "кто" Вы конкретно.&lt;/li&gt; &lt;li&gt;Сессия перемешивания начинается тогда, когда еще двое или более человек отправляют схожее сообщение, подтверждающее, что они хотят перемешать точно такой же номинал. Мастернода перемешивает входы и просит кошельки всех пользователей осуществить платежи по ним. Ваш кошелек осуществляет выплату самому себе, но на другой адрес (тоже из вашего кошелька).&lt;/li&gt; &lt;li&gt;Для скрытия Ваших средств кошелек должен повторить этот процесс несколько раз с каждым номиналом. Каждый раз, когда такой процесс завершается, называется "раундом". С каждым раундом %1 становится экспоненциально сложнее определить откуда поступили средства.&lt;/li&gt; &lt;li&gt;Процесс перемешивания выполняется в фоне, без участия пользователя. Когда Вы захотите провести транзакцию, средства уже будут перемешаны. Дополнительно ждать не требуется.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;ВАЖНО:&lt;/b&gt; Ваш кошелек содержит 1000 адресов. Каждое перемешивание использует до 9 из этих адресов. Это означает, что 1000 адресов хватит примерно на 100 перемешиваний. Когда 900 адресов будут уже использованы, Ваш кошелек должен создать новые адреса. Однако, он может сделать это, только если у Вас включены автоматические резервные копии.&lt;br&gt;Соответственно, пользователям с отключенным резервным копированием %1 не доступен. &lt;hr&gt;Дополнительная информация доступна в &lt;a style="%2" href="%3"&gt; документации %1&lt;/a&gt;.</translation>
+        <source>&lt;h3&gt;%1 Basics&lt;/h3&gt; %1 gives you true financial privacy by obscuring the origins of your funds. All the Omega in your wallet is comprised of different "inputs" which you can think of as separate, discrete coins.&lt;br&gt; %1 uses an innovative process to mix your inputs with the inputs of two or more other people, without having your coins ever leave your wallet. You retain control of your money at all times.&lt;hr&gt; &lt;b&gt;The %1 process works like this:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;%1 begins by breaking your transaction inputs down into standard denominations. These denominations are 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH and 10 DASH -- sort of like the paper money you use every day.&lt;/li&gt; &lt;li&gt;Your wallet then sends requests to specially configured software nodes on the network, called "masternodes." These masternodes are informed then that you are interested in mixing a certain denomination. No identifiable information is sent to the masternodes, so they never know "who" you are.&lt;/li&gt; &lt;li&gt;When two or more other people send similar messages, indicating that they wish to mix the same denomination, a mixing session begins. The masternode mixes up the inputs and instructs all three users' wallets to pay the now-transformed input back to themselves. Your wallet pays that denomination directly to itself, but in a different address (called a change address).&lt;/li&gt; &lt;li&gt;In order to fully obscure your funds, your wallet must repeat this process a number of times with each denomination. Each time the process is completed, it's called a "round." Each round of %1 makes it exponentially more difficult to determine where your funds originated.&lt;/li&gt; &lt;li&gt;This mixing process happens in the background without any intervention on your part. When you wish to make a transaction, your funds will already be mixed. No additional waiting is required.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;IMPORTANT:&lt;/b&gt; Your wallet only contains 1000 of these "change addresses." Every time a mixing event happens, up to 9 of your addresses are used up. This means those 1000 addresses last for about 100 mixing events. When 900 of them are used, your wallet must create more addresses. It can only do this, however, if you have automatic backups enabled.&lt;br&gt; Consequently, users who have backups disabled will also have %1 disabled. &lt;hr&gt;For more information, see the &lt;a style="%2" href="%3"&gt;%1 documentation&lt;/a&gt;.</source>
+        <translation>&lt;h3&gt;Основы %1&lt;/h3&gt;%1 позволяет Вам получить настоящую финансовую конфиденциальность за счет скрытия источников Ваших средств. Все Omega в  Вашем кошельке состоят из различных "входов", Вы можете думать о них как об отдельных монетах.&lt;br&gt;%1 использует инновационный процесс для перемешивания Ваших входов со входами еще двоих или более человек, но при этом Ваши монеты никогда не покидают Ваш кошелек. Вы сохраняете контроль над Вашими деньгами на протяжении всего времени.&lt;hr&gt; &lt;b&gt;%1 работает так:&lt;/b&gt;&lt;ol type="1"&gt; &lt;li&gt;%1 начинается с разбиения Ваших входов транзакций на стандартные номиналы. Такими номиналами являются 0.001 DASH, 0.01 DASH, 0.1 DASH, 1 DASH и 10 DASH -- что-то вроде купюр, которыми вы пользуетесь каждый день.&lt;/li&gt; &lt;li&gt;Ваш кошелек затем отправляет запросы к особым образом настроенным сетевым узлам, называемым "мастернодами". Эти мастерноды знают только то, что Вы хотите перемешать определенные номиналы. Никакой идентифицирующей информации мастернодам не отправляется, так что они не знают "кто" Вы конкретно.&lt;/li&gt; &lt;li&gt;Сессия перемешивания начинается тогда, когда еще двое или более человек отправляют схожее сообщение, подтверждающее, что они хотят перемешать точно такой же номинал. Мастернода перемешивает входы и просит кошельки всех пользователей осуществить платежи по ним. Ваш кошелек осуществляет выплату самому себе, но на другой адрес (тоже из вашего кошелька).&lt;/li&gt; &lt;li&gt;Для скрытия Ваших средств кошелек должен повторить этот процесс несколько раз с каждым номиналом. Каждый раз, когда такой процесс завершается, называется "раундом". С каждым раундом %1 становится экспоненциально сложнее определить откуда поступили средства.&lt;/li&gt; &lt;li&gt;Процесс перемешивания выполняется в фоне, без участия пользователя. Когда Вы захотите провести транзакцию, средства уже будут перемешаны. Дополнительно ждать не требуется.&lt;/li&gt; &lt;/ol&gt; &lt;hr&gt;&lt;b&gt;ВАЖНО:&lt;/b&gt; Ваш кошелек содержит 1000 адресов. Каждое перемешивание использует до 9 из этих адресов. Это означает, что 1000 адресов хватит примерно на 100 перемешиваний. Когда 900 адресов будут уже использованы, Ваш кошелек должен создать новые адреса. Однако, он может сделать это, только если у Вас включены автоматические резервные копии.&lt;br&gt;Соответственно, пользователям с отключенным резервным копированием %1 не доступен. &lt;hr&gt;Дополнительная информация доступна в &lt;a style="%2" href="%3"&gt; документации %1&lt;/a&gt;.</translation>
     </message>
 </context>
 <context>
@@ -1234,8 +1234,8 @@
         <translation>Приблизительно %1 GB данных будет сохранено в этой папке.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the Dash block chain.</source>
-        <translation>%1 скачает и сохранит копию цепочки блоков Dash.</translation>
+        <source>%1 will download and store a copy of the Omega block chain.</source>
+        <translation>%1 скачает и сохранит копию цепочки блоков Omega.</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
@@ -1392,11 +1392,11 @@
         <translation>Форма</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the Dash network, as detailed below.</source>
-        <translation>Последние транзакции пока что могут быть не видны и поэтому ваш баланс может отображаться некорректно. Информация будет корректироваться по мере синхронизации с сетью Dash, подробности о ходе синхронизации представлены ниже.</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the Omega network, as detailed below.</source>
+        <translation>Последние транзакции пока что могут быть не видны и поэтому ваш баланс может отображаться некорректно. Информация будет корректироваться по мере синхронизации с сетью Omega, подробности о ходе синхронизации представлены ниже.</translation>
     </message>
     <message>
-        <source>Attempting to spend Dash that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
+        <source>Attempting to spend Omega that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
         <translation>Попытка потратить средства из ещё не отображённых транзакций будет отвергнута сетью.</translation>
     </message>
     <message>
@@ -1432,8 +1432,8 @@
         <translation>Скрыть</translation>
     </message>
     <message>
-        <source>Dash Core is currently syncing.  It will download headers and blocks from peers and validate them until reaching the tip of the block chain.</source>
-        <translation>Dash Core синхронизируется.  Он будет скачивать заголовки и блоки и проверять их, пока не достигнет вершины цепочки блоков.</translation>
+        <source>Omega Core is currently syncing.  It will download headers and blocks from peers and validate them until reaching the tip of the block chain.</source>
+        <translation>Omega Core синхронизируется.  Он будет скачивать заголовки и блоки и проверять их, пока не достигнет вершины цепочки блоков.</translation>
     </message>
     <message>
         <source>Unknown. Syncing Headers (%1, %2%)...</source>
@@ -1593,8 +1593,8 @@
         <translation>Целевой баланс</translation>
     </message>
     <message>
-        <source>Automatically open the Dash Core client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Автоматически открыть порт для Dash Core на роутере. Работает только в том случае, если Ваш роутер поддерживает UPnP и данная функция включена.</translation>
+        <source>Automatically open the Omega Core client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Автоматически открыть порт для Omega Core на роутере. Работает только в том случае, если Ваш роутер поддерживает UPnP и данная функция включена.</translation>
     </message>
     <message>
         <source>Map port using NA&amp;T-PMP</source>
@@ -1609,8 +1609,8 @@
         <translation>Принимать &amp;входящие подключения</translation>
     </message>
     <message>
-        <source>Connect to the Dash network through a SOCKS5 proxy.</source>
-        <translation>Подключаться к сети Dash через прокси SOCKS5.</translation>
+        <source>Connect to the Omega network through a SOCKS5 proxy.</source>
+        <translation>Подключаться к сети Omega через прокси SOCKS5.</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1685,8 +1685,8 @@
         <translation>Пробросить порт через &amp;UPnP</translation>
     </message>
     <message>
-        <source>Automatically open the Dash Core client port on the router. This only works when your router supports NAT-PMP and it is enabled. The external port could be random.</source>
-        <translation>Автоматически открыть порт для Dash Core на роутере. Работает только в том случае, если Ваш роутер поддерживает NAT-PMP и данная функция включена. Внешний порт может быть любым.</translation>
+        <source>Automatically open the Omega Core client port on the router. This only works when your router supports NAT-PMP and it is enabled. The external port could be random.</source>
+        <translation>Автоматически открыть порт для Omega Core на роутере. Работает только в том случае, если Ваш роутер поддерживает NAT-PMP и данная функция включена. Внешний порт может быть любым.</translation>
     </message>
     <message>
         <source>Proxy &amp;IP:</source>
@@ -1721,8 +1721,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the Dash network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>Подключаться к сети Dash через отдельный прокси SOCKS5 для скрытых сервисов Tor.</translation>
+        <source>Connect to the Omega network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>Подключаться к сети Omega через отдельный прокси SOCKS5 для скрытых сервисов Tor.</translation>
     </message>
     <message>
         <source>Show only a tray icon after minimizing the window.</source>
@@ -1818,8 +1818,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Форма</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Dash network after a connection is established, but this process has not completed yet.</source>
-        <translation>Отображаемая информация может быть устаревшей. Ваш кошелёк автоматически синхронизируется с сетью Dash после подключения, но этот процесс пока не завершён.</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Omega network after a connection is established, but this process has not completed yet.</source>
+        <translation>Отображаемая информация может быть устаревшей. Ваш кошелёк автоматически синхронизируется с сетью Omega после подключения, но этот процесс пока не завершён.</translation>
     </message>
     <message>
         <source>Available:</source>
@@ -2061,8 +2061,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Неверный адрес платежа %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid Dash address or malformed URI parameters.</source>
-        <translation>Не удалось разобрать URI! Возможно указан некорректный адрес Dash либо параметры URI сформированы неверно.</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid Omega address or malformed URI parameters.</source>
+        <translation>Не удалось разобрать URI! Возможно указан некорректный адрес Omega либо параметры URI сформированы неверно.</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -2237,8 +2237,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Сумма</translation>
     </message>
     <message>
-        <source>Enter a Dash address (e.g. %1)</source>
-        <translation>Введите адрес Dash (например, %1)</translation>
+        <source>Enter a Omega address (e.g. %1)</source>
+        <translation>Введите адрес Omega (например, %1)</translation>
     </message>
     <message>
         <source>Appearance Setup</source>
@@ -2777,8 +2777,8 @@ https://www.transifex.com/projects/p/dash/</translation>
 <context>
     <name>ReceiveCoinsDialog</name>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Dash network.</source>
-        <translation>Необязательное сообщение для запроса платежа, которое будет показано при открытии запроса. Обратите внимание: сообщение не будет отправлено вместе с платежом через сеть Dash.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Omega network.</source>
+        <translation>Необязательное сообщение для запроса платежа, которое будет показано при открытии запроса. Обратите внимание: сообщение не будет отправлено вместе с платежом через сеть Omega.</translation>
     </message>
     <message>
         <source>&amp;Message:</source>
@@ -2789,8 +2789,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Необязательная метка для нового адреса получения.</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the Dash network.</source>
-        <translation>Необязательное сообщение для запроса платежа, которое будет показано при открытии запроса.&lt;br&gt;Обратите внимание: сообщение не будет отправлено вместе с платежом через сеть Dash.</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the Omega network.</source>
+        <translation>Необязательное сообщение для запроса платежа, которое будет показано при открытии запроса.&lt;br&gt;Обратите внимание: сообщение не будет отправлено вместе с платежом через сеть Omega.</translation>
     </message>
     <message>
         <source>Use this form to request payments. All fields are &lt;b&gt;optional&lt;/b&gt;.</source>
@@ -3238,8 +3238,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation><numerusform>Будет подтверждено приблизительно в течение %n блока.</numerusform><numerusform>Будет подтверждено приблизительно в течение %n блоков.</numerusform><numerusform>Будет подтверждено приблизительно в течение %n блоков.</numerusform><numerusform>Будет подтверждено приблизительно в течение %n блоков.</numerusform></translation>
     </message>
     <message>
-        <source>Warning: Invalid Dash address</source>
-        <translation>Внимание: неверный адрес Dash</translation>
+        <source>Warning: Invalid Omega address</source>
+        <translation>Внимание: неверный адрес Omega</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -3265,8 +3265,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Полу&amp;чатель:</translation>
     </message>
     <message>
-        <source>The Dash address to send the payment to</source>
-        <translation>Адрес Dash для отправки на него монет</translation>
+        <source>The Omega address to send the payment to</source>
+        <translation>Адрес Omega для отправки на него монет</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -3305,8 +3305,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Сумма к отправке в выбранных единицах</translation>
     </message>
     <message>
-        <source>The fee will be deducted from the amount being sent. The recipient will receive a lower amount of Dash than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</source>
-        <translation>Комиссия будет вычтена из отправляемой суммы. Получателю придет меньше Dash, сем указано в поле "Сумма". Если указано несколько получателей, то комиссия будет разделена между ними поровну.</translation>
+        <source>The fee will be deducted from the amount being sent. The recipient will receive a lower amount of Omega than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</source>
+        <translation>Комиссия будет вычтена из отправляемой суммы. Получателю придет меньше Omega, сем указано в поле "Сумма". Если указано несколько получателей, то комиссия будет разделена между ними поровну.</translation>
     </message>
     <message>
         <source>S&amp;ubtract fee from amount</source>
@@ -3321,8 +3321,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Сообщение:</translation>
     </message>
     <message>
-        <source>A message that was attached to the dash: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Dash network.</source>
-        <translation>К dash: URI было прикреплено сообщение, которое будет сохранено вместе с транзакцией для вашего сведения. Обратите внимание: сообщение не будет отправлено через сеть Dash.</translation>
+        <source>A message that was attached to the dash: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Omega network.</source>
+        <translation>К dash: URI было прикреплено сообщение, которое будет сохранено вместе с транзакцией для вашего сведения. Обратите внимание: сообщение не будет отправлено через сеть Omega.</translation>
     </message>
     <message>
         <source>This is an unauthenticated payment request.</source>
@@ -3363,12 +3363,12 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>&amp;Подписать сообщение</translation>
     </message>
     <message>
-        <source>You can sign messages/agreements with your addresses to prove you can receive Dash sent to them. Be careful not to sign anything vague or random, as phishing attacks may try to trick you into signing your identity over to them. Only sign fully-detailed statements you agree to.</source>
-        <translation>Вы можете подписывать сообщения своими адресами, чтобы доказать, что Вы можете получать Dash на них. Будьте осторожны, не подписывайте что-то неопределённое, так как фишинговые атаки могут обманным путём заставить вас подписать нежелательные сообщения. Подписывайте только те сообщения, с которыми вы согласны вплоть до мелочей.</translation>
+        <source>You can sign messages/agreements with your addresses to prove you can receive Omega sent to them. Be careful not to sign anything vague or random, as phishing attacks may try to trick you into signing your identity over to them. Only sign fully-detailed statements you agree to.</source>
+        <translation>Вы можете подписывать сообщения своими адресами, чтобы доказать, что Вы можете получать Omega на них. Будьте осторожны, не подписывайте что-то неопределённое, так как фишинговые атаки могут обманным путём заставить вас подписать нежелательные сообщения. Подписывайте только те сообщения, с которыми вы согласны вплоть до мелочей.</translation>
     </message>
     <message>
-        <source>The Dash address to sign the message with</source>
-        <translation>Адрес Dash, которым Вы хотите подписать сообщение</translation>
+        <source>The Omega address to sign the message with</source>
+        <translation>Адрес Omega, которым Вы хотите подписать сообщение</translation>
     </message>
     <message>
         <source>Choose previously used address</source>
@@ -3399,8 +3399,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Скопировать текущую подпись в системный буфер обмена</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this Dash address</source>
-        <translation>Подписать сообщение, чтобы доказать владение этим адресом Dash</translation>
+        <source>Sign the message to prove you own this Omega address</source>
+        <translation>Подписать сообщение, чтобы доказать владение этим адресом Omega</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -3423,8 +3423,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Введите ниже адрес для подписи, сообщение (убедитесь, что переводы строк, пробелы, табы и т.п. в точности скопированы) и подпись, чтобы проверить сообщение. Убедитесь, что не скопировали лишнего в подпись, кроме самого подписываемого сообщения, чтобы не стать жертвой атаки "man-in-the-middle". Обратите внимание, что это лишь подтверждает, что подписывающий может получить средства на этот адрес, это не подтверждает, что он является отправителем какой-либо транзакции!</translation>
     </message>
     <message>
-        <source>The Dash address the message was signed with</source>
-        <translation>Адрес Dash, которым было подписано сообщение</translation>
+        <source>The Omega address the message was signed with</source>
+        <translation>Адрес Omega, которым было подписано сообщение</translation>
     </message>
     <message>
         <source>The signed message to verify</source>
@@ -3435,8 +3435,8 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Подпись, полученная при подписании сообщения</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified Dash address</source>
-        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Dash</translation>
+        <source>Verify the message to ensure it was signed with the specified Omega address</source>
+        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Omega</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>

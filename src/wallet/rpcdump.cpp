@@ -193,7 +193,7 @@ UniValue importaddress(const JSONRPCRequest& request)
     "\nNote: If you import a non-standard raw script in hex form, outputs sending to it will be treated\n"
     "as change, and not show up in many RPCs.\n",
         {
-            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The Dash address (or hex-encoded script)"},
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The Omega address (or hex-encoded script)"},
             {"label", RPCArg::Type::STR, /* default */ "\"\"", "An optional label"},
             {"rescan", RPCArg::Type::BOOL, /* default */ "true", "Rescan the wallet for transactions"},
             {"p2sh", RPCArg::Type::BOOL, /* default */ "false", "Add the P2SH version of the script as well"},
@@ -265,7 +265,7 @@ UniValue importaddress(const JSONRPCRequest& request)
 
             pwallet->ImportScriptPubKeys(strLabel, scripts, false /* have_solving_data */, true /* apply_label */, 1 /* timestamp */);
         } else {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dash address or script");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Omega address or script");
         }
     }
     if (fRescan)
@@ -826,7 +826,7 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     std::string strAddress = request.params[0].get_str();
     CTxDestination dest = DecodeDestination(strAddress);
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dash address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Omega address");
     }
     const PKHash *pkhash= std::get_if<PKHash>(&dest);
     if (!pkhash) {
@@ -953,7 +953,7 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     std::sort(vKeyBirth.begin(), vKeyBirth.end());
 
     // produce output
-    file << strprintf("# Wallet dump created by Dash Core %s\n", CLIENT_BUILD);
+    file << strprintf("# Wallet dump created by Omega Core %s\n", CLIENT_BUILD);
     file << strprintf("# * Created on %s\n", FormatISO8601DateTime(GetTime()));
     const std::optional<int> tip_height = pwallet->chain().getHeight();
     file << strprintf("# * Best block at time of backup was %i (%s),\n", tip_height.value_or(-1), tip_height ? pwallet->chain().getBlockHash(*tip_height).ToString() : "(missing block hash)");

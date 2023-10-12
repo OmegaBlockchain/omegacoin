@@ -164,7 +164,7 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::ALL, "1"},
     {BCLog::ALL, "all"},
 
-    //Start Dash
+    //Start Omega
     {BCLog::CHAINLOCKS, "chainlocks"},
     {BCLog::GOBJECT, "gobject"},
     {BCLog::INSTANTSEND, "instantsend"},
@@ -177,7 +177,7 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::SPORK, "spork"},
     {BCLog::NETCONN, "netconn"},
     {BCLog::DASH, "dash"},
-    //End Dash
+    //End Omega
 };
 
 bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str)

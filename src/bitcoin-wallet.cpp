@@ -44,7 +44,7 @@ static bool WalletAppInit(int argc, char* argv[])
     }
     if (argc < 2 || HelpRequested(gArgs)) {
         std::string usage = strprintf("%s omega-wallet version", PACKAGE_NAME) + " " + FormatFullVersion() + "\n\n" +
-                                      "omega-wallet is an offline tool for creating and interacting with Dash Core wallet files.\n" +
+                                      "omega-wallet is an offline tool for creating and interacting with Omega Core wallet files.\n" +
                                       "By default omega-wallet will act on wallets in the default mainnet wallet directory in the datadir.\n" +
                                       "To change the target wallet, use the -datadir, -wallet and -testnet/-regtest arguments.\n\n" +
                                       "Usage:\n" +

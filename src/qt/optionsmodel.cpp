@@ -233,10 +233,10 @@ void OptionsModel::Init(bool resetSettings)
 
     if (!settings.contains("nCoinJoinAmount")) {
         // for migration from old settings
-        if (!settings.contains("nAnonymizeDashAmount"))
+        if (!settings.contains("nAnonymizeOmegaAmount"))
             settings.setValue("nCoinJoinAmount", DEFAULT_COINJOIN_AMOUNT);
         else
-            settings.setValue("nCoinJoinAmount", settings.value("nAnonymizeDashAmount").toInt());
+            settings.setValue("nCoinJoinAmount", settings.value("nAnonymizeOmegaAmount").toInt());
     }
     if (!m_node.softSetArg("-coinjoinamount", settings.value("nCoinJoinAmount").toString().toStdString()))
         addOverriddenOption("-coinjoinamount");

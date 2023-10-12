@@ -62,7 +62,7 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
         ui->helpMessage->setVisible(false);
     } else if (helpMode == cmdline) {
         setWindowTitle(tr("Command-line options"));
-        QString header = "Usage:  dash-qt [command-line options]                     \n";
+        QString header = "Usage:  omega-qt [command-line options]                     \n";
         QTextCursor cursor(ui->helpMessage->document());
         cursor.insertText(version);
         cursor.insertBlock();
@@ -115,7 +115,7 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
         ui->aboutMessage->setText(tr("\
 <h3>%1 Basics</h3> \
 %1 gives you true financial privacy by obscuring the origins of your funds. \
-All the Dash in your wallet is comprised of different \"inputs\" which you can think of as separate, discrete coins.<br> \
+All the Omega in your wallet is comprised of different \"inputs\" which you can think of as separate, discrete coins.<br> \
 %1 uses an innovative process to mix your inputs with the inputs of two or more other people, without having your coins ever leave your wallet. \
 You retain control of your money at all times.<hr> \
 <b>The %1 process works like this:</b>\

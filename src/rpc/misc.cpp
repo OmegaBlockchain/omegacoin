@@ -45,7 +45,7 @@ static UniValue debug(const JSONRPCRequest& request)
         "libevent logging is configured on startup and cannot be modified by this RPC during runtime.\n"
         "There are also a few meta-categories:\n"
         " - \"all\", \"1\" and \"\" activate all categories at once;\n"
-        " - \"dash\" activates all Dash-specific categories at once;\n"
+        " - \"dash\" activates all Omega-specific categories at once;\n"
         " - \"none\" (or \"0\") deactivates all categories at once.\n"
         "Note: If specified category doesn't match any of the above, no error is thrown.\n",
         {
@@ -1217,7 +1217,7 @@ static UniValue logging(const JSONRPCRequest& request)
     "The valid logging categories are: " + ListLogCategories() + "\n"
     "In addition, the following are available as category names with special meanings:\n"
     "  - \"all\",  \"1\" : represent all logging categories.\n"
-    "  - \"dash\" activates all Dash-specific categories at once.\n"
+    "  - \"dash\" activates all Omega-specific categories at once.\n"
     "To deactivate all categories at once you can specify \"all\" in <exclude>.\n"
     "  - \"none\", \"0\" : even if other logging categories are specified, ignore all of them.\n"
     ,
@@ -1317,7 +1317,7 @@ static const CRPCCommand commands[] =
     { "addressindex",       "getaddresstxids",        &getaddresstxids,        {"addresses"} },
     { "addressindex",       "getaddressbalance",      &getaddressbalance,      {"addresses"} },
 
-    /* Dash features */
+    /* Omega features */
     { "dash",               "mnsync",                 &mnsync,                 {} },
     { "dash",               "spork",                  &spork,                  {"command"} },
     { "dash",               "sporkupdate",            &sporkupdate,            {"name","value"} },

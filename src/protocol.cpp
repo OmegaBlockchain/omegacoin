@@ -46,7 +46,7 @@ MAKE_MSG(GETCFHEADERS, "getcfheaders");
 MAKE_MSG(CFHEADERS, "cfheaders");
 MAKE_MSG(GETCFCHECKPT, "getcfcheckpt");
 MAKE_MSG(CFCHECKPT, "cfcheckpt");
-// Dash message types
+// Omega message types
 MAKE_MSG(LEGACYTXLOCKREQUEST, "ix");
 MAKE_MSG(SPORK, "spork");
 MAKE_MSG(GETSPORKS, "getsporks");
@@ -127,7 +127,7 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::CFHEADERS,
     NetMsgType::GETCFCHECKPT,
     NetMsgType::CFCHECKPT,
-    // Dash message types
+    // Omega message types
     // NOTE: do NOT include non-implmented here, we want them to be "Unknown command" in ProcessMessage()
     NetMsgType::LEGACYTXLOCKREQUEST,
     NetMsgType::SPORK,

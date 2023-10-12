@@ -196,7 +196,7 @@ static std::string LabelFromValue(const UniValue& value)
 UniValue getnewaddress(const JSONRPCRequest& request)
 {
     RPCHelpMan{"getnewaddress",
-        "\nReturns a new Dash address for receiving payments.\n"
+        "\nReturns a new Omega address for receiving payments.\n"
         "If 'label' is specified, it is added to the address book \n"
         "so payments received with the address will be associated with 'label'.\n",
         {
@@ -241,7 +241,7 @@ UniValue getnewaddress(const JSONRPCRequest& request)
 UniValue getrawchangeaddress(const JSONRPCRequest& request)
 {
     RPCHelpMan{"getrawchangeaddress",
-        "\nReturns a new Dash address, for receiving change.\n"
+        "\nReturns a new Omega address, for receiving change.\n"
         "This is for use with raw transactions, NOT normal use.\n",
         {},
         RPCResult{
@@ -295,7 +295,7 @@ static UniValue setlabel(const JSONRPCRequest& request)
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dash address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Omega address");
     }
 
     std::string label = LabelFromValue(request.params[1]);
@@ -329,7 +329,7 @@ static CTransactionRef SendMoney(CWallet* const pwallet, const CTxDestination& a
         mapValue["DS"] = "1";
     }
 
-    // Parse Dash address
+    // Parse Omega address
     CScript scriptPubKey = GetScriptForDestination(address);
 
     // Create and send the transaction
@@ -367,7 +367,7 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
     "                             to which you're sending the transaction. This is not part of the \n"
     "                             transaction, just kept in your wallet."},
             {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
-    "                             The recipient will receive less amount of Dash than you enter in the amount field."},
+    "                             The recipient will receive less amount of Omega than you enter in the amount field."},
             {"use_is", RPCArg::Type::BOOL, /* default */ "false", "Deprecated and ignored"},
             {"use_cj", RPCArg::Type::BOOL, /* default */ "false", "Use CoinJoin funds only"},
             {"conf_target", RPCArg::Type::NUM, /* default */ "wallet default", "Confirmation target (in blocks)"},
@@ -652,10 +652,10 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
 
     LOCK(pwallet->cs_wallet);
 
-    // Dash address
+    // Omega address
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Dash address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Omega address");
     }
     CScript scriptPubKey = GetScriptForDestination(dest);
     if (!pwallet->IsMine(scriptPubKey)) {
@@ -934,7 +934,7 @@ static UniValue sendmany(const JSONRPCRequest& request)
     for (const std::string& name_ : keys) {
         CTxDestination dest = DecodeDestination(name_);
         if (!IsValidDestination(dest)) {
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Dash address: ") + name_);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Omega address: ") + name_);
         }
 
         if (destinations.count(dest)) {
@@ -976,7 +976,7 @@ UniValue addmultisigaddress(const JSONRPCRequest& request)
 {
     RPCHelpMan{"addmultisigaddress",
         "\nAdd a nrequired-to-sign multisignature address to the wallet. Requires a new wallet backup.\n"
-        "Each key is a Dash address or hex-encoded public key.\n"
+        "Each key is a Omega address or hex-encoded public key.\n"
         "This functionality is only intended for use with non-watchonly addresses.\n"
         "See `importaddress` for watchonly p2sh address support.\n"
         "If 'label' is specified, assign address to that label.\n",
@@ -3066,7 +3066,7 @@ static UniValue listunspent(const JSONRPCRequest& request)
             const UniValue& input = inputs[idx];
             CTxDestination dest = DecodeDestination(input.get_str());
             if (!IsValidDestination(dest)) {
-                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Dash address: ") + input.get_str());
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Omega address: ") + input.get_str());
             }
             if (!destinations.insert(dest).second) {
                 throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());
@@ -4071,7 +4071,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                     {"feeRate", RPCArg::Type::AMOUNT, /* default */ "not set: makes wallet determine the fee", "Set a specific fee rate in " + CURRENCY_UNIT + "/kB"},
                     {"subtractFeeFromOutputs", RPCArg::Type::ARR, /* default */ "empty array", "The outputs to subtract the fee from.\n"
                     "                              The fee will be equally deducted from the amount of each specified output.\n"
-                    "                              Those recipients will receive less Dash than you enter in their corresponding amount field.\n"
+                    "                              Those recipients will receive less Omega than you enter in their corresponding amount field.\n"
                     "                              If no outputs are specified here, the sender pays the fee.",
                         {
                             {"vout_index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "The zero-based output index, before a change output is added."},

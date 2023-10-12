@@ -42,7 +42,7 @@ public:
     //! Add wallets that should be opened to list of chain clients.
     void Construct(NodeContext& node) const override;
 
-    // Dash Specific Wallet Init
+    // Omega Specific Wallet Init
     void AutoLockMasternodeCollaterals() const override;
     void InitCoinJoinSettings() const override;
     bool InitAutoBackup() const override;

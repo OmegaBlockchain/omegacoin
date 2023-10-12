@@ -6,17 +6,17 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/dash
-src/dashd
-src/dash-cli
-src/dash-tx
-src/dash-wallet
+src/omega
+src/omegad
+src/omega-cli
+src/omega-tx
+src/omega-wallet
 src/test/fuzz/*
 !src/test/fuzz/*.*
-src/test/test_dash
-src/qt/test/test_dash-qt
+src/test/test_omega
+src/qt/test/test_omega-qt
 src/qt/res/css/colors/*
-src/bench/bench_dash
+src/bench/bench_omega
 
 # autoreconf
 Makefile.in
@@ -93,7 +93,7 @@ libconftest.dylib*
 *.qm
 Makefile
 !depends/Makefile
-dash-qt
+omega-qt
 Dash-Qt.app
 background.tiff*
 !/depends/Makefile
@@ -103,7 +103,7 @@ Makefile.am.user
 
 # Unit-tests
 Makefile.test
-dash-qt_test
+omega-qt_test
 
 # Resources cpp
 qrc_*.cpp
@@ -117,7 +117,7 @@ build
 *.gcno
 *.gcda
 /*.info
-test_dash.coverage/
+test_omega.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -135,15 +135,16 @@ test/cache/*
 .autotools
 /doc/doxygen/
 
+libomegaconsensus.pc
 libdashconsensus.pc
 contrib/devtools/split-debug.sh
-src/qt/dash-qt.bash
+src/qt/omega-qt.bash
 qa/pull-tester/tests-config.sh
 
 #development symlinks
-dash-cli
-dashd
-dash-qt
+omega-cli
+omegad
+omega-qt
 make
 
 /docker/bin

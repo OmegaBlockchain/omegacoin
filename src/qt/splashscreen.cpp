@@ -64,7 +64,7 @@ SplashScreen::SplashScreen(interfaces::Node& node, Qt::WindowFlags f, const Netw
     pixmapLogo.setDevicePixelRatio(scale);
 
     // Adjust logo color based on the current theme
-    QImage imgLogo = pixmapLogo.toImage().convertToFormat(QImage::Format_ARGB32);
+/*    QImage imgLogo = pixmapLogo.toImage().convertToFormat(QImage::Format_ARGB32);
     QColor logoColor = GUIUtil::getThemedQColor(GUIUtil::ThemedColor::BLUE);
     for (int x = 0; x < imgLogo.width(); ++x) {
         for (int y = 0; y < imgLogo.height(); ++y) {
@@ -73,7 +73,7 @@ SplashScreen::SplashScreen(interfaces::Node& node, Qt::WindowFlags f, const Netw
         }
     }
     pixmapLogo.convertFromImage(imgLogo);
-
+*/
     pixmap = QPixmap(width * scale, height * scale);
     pixmap.setDevicePixelRatio(scale);
     pixmap.fill(GUIUtil::getThemedQColor(GUIUtil::ThemedColor::BORDER_WIDGET));

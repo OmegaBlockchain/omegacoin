@@ -23,8 +23,8 @@ Loaded in GUIUtil::loadStyleSheet() in guitil.cpp.
 #222222
 #333
 #fff
-#008de4
-#047ac2
+#d60000
+#d60000
 #a84832
 #ccfafafa
 
@@ -66,7 +66,7 @@ QPushButton - Special case, tabbar replacement buttons
     border-bottom: 3px solid red;
     padding-bottom: 5px;
     background-color: #00000000;
-    border-color: #008de4;
+    border-color: #d60000;
 }
 
 /* Debug window buttons */
@@ -112,7 +112,7 @@ QPushButton - Special case, tabbar replacement buttons
     border-radius: 0px;
     border-bottom: 3px solid red;
     background-color: #00000000;
-    border-color: #047ac2;
+    border-color: #d60000;
 }
 
 /* Debug window buttons */

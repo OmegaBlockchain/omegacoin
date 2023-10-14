@@ -146,6 +146,18 @@ public Q_SLOTS:
     /** set which tab has the focus (is visible) */
     void setTabFocus(enum TabTypes tabType);
 
+    // Links
+    void hyperlinks_slot1();
+    void hyperlinks_slot2();
+    void hyperlinks_slot3();
+    void hyperlinks_slot4();
+    void hyperlinks_slot5();
+    void hyperlinks_slot6();
+    void hyperlinks_slot7();
+    void hyperlinks_slot8();
+    void hyperlinks_slot9();
+    void hyperlinks_slot10();
+
 Q_SIGNALS:
     // For RPC command executor
     void cmdRequest(const QString &command, const WalletModel* wallet_model);

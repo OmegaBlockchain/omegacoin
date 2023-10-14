@@ -202,6 +202,18 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     // Subscribe to notifications from core
     subscribeToCoreSignals();
 
+    //Links
+    connect(openWebsite1, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot1()));
+    connect(openWebsite2, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot2()));
+    connect(openWebsite3, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot3()));
+    connect(openWebsite4, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot4()));
+    connect(openWebsite5, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot5()));
+    connect(openWebsite6, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot6()));
+    connect(openWebsite7, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot7()));
+    connect(openWebsite8, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot8()));
+    connect(openWebsite9, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot9()));
+    connect(openWebsite10, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot10()));
+
     // Jump to peers tab by clicking on connections icon
     connect(labelConnectionsIcon, &GUIUtil::ClickableLabel::clicked, this, &BitcoinGUI::showPeers);
     connect(labelProxyIcon, &GUIUtil::ClickableLabel::clicked, [this] {
@@ -475,6 +487,18 @@ void BitcoinGUI::createActions()
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, &QAction::triggered, rpcConsole, &QWidget::hide);
 
+    //links
+    openWebsite1 = new QAction(tr("&Website"), this);
+    openWebsite2 = new QAction(tr("&Discord"), this);
+    openWebsite3 = new QAction(tr("&Twitter"), this);
+    openWebsite4 = new QAction(tr("&Telegram"), this);
+    openWebsite5 = new QAction(tr("&Bitcointalk"), this);
+    openWebsite6 = new QAction(tr("&GitHub"), this);
+    openWebsite7 = new QAction(tr("&Coingecko"), this);
+    openWebsite8 = new QAction(tr("&MasternodesOnline"), this);
+    openWebsite9 = new QAction(tr("&Mining pools"), this);
+    openWebsite10 = new QAction(tr("&Block Explorer"), this);
+
 #ifdef ENABLE_WALLET
     if(walletFrame)
     {
@@ -622,6 +646,20 @@ void BitcoinGUI::createMenuBar()
             rpcConsole->setTabFocus(tab_type);
             showDebugWindow();
         });
+    }
+
+     if (walletFrame) {
+        QMenu* hyperlinks = appMenuBar->addMenu(tr("&Links"));
+        hyperlinks->addAction(openWebsite1);
+        hyperlinks->addAction(openWebsite2);
+        hyperlinks->addAction(openWebsite3);
+        hyperlinks->addAction(openWebsite4);
+        hyperlinks->addAction(openWebsite5);
+        hyperlinks->addAction(openWebsite6);
+        hyperlinks->addAction(openWebsite7);
+        hyperlinks->addAction(openWebsite8);
+        hyperlinks->addAction(openWebsite9);
+        hyperlinks->addAction(openWebsite10);
     }
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));

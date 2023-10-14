@@ -199,6 +199,18 @@ namespace GUIUtil
     // Browse backup folder
     void showBackups();
 
+    // Links
+    void hyperlinks_slot1();
+    void hyperlinks_slot2();
+    void hyperlinks_slot3();
+    void hyperlinks_slot4();
+    void hyperlinks_slot5();
+    void hyperlinks_slot6();
+    void hyperlinks_slot7();
+    void hyperlinks_slot8();
+    void hyperlinks_slot9();
+    void hyperlinks_slot10();
+
     /** Qt event filter that intercepts ToolTipChange events, and replaces the tooltip with a rich text
       representation if needed. This assures that Qt can word-wrap long tooltip messages.
       Tooltips longer than the provided size threshold (in characters) are wrapped.

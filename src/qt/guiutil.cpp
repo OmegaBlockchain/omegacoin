@@ -661,6 +661,18 @@ bool ToolTipToRichTextFilter::eventFilter(QObject *obj, QEvent *evt)
     return QObject::eventFilter(obj, evt);
 }
 
+// Links
+void hyperlinks_slot1(){QString link1 = "http://omegablockchain.net/"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot2(){QString link1 = "https://discord.gg/nYQfKdc"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot3(){QString link1 = "https://twitter.com/omegablockchain"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot4(){QString link1 = "https://t.me/GyNlCE58N8"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot5(){QString link1 = "https://bitcointalk.org/index.php?topic=5110642"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot6(){QString link1 = "https://github.com/OmegaBlockchain/omegacoin"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot7(){QString link1 = "https://www.coingecko.com/en/coins/omega"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot8(){QString link1 = "https://masternodes.online/currencies/OMEGA/"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot9(){QString link1 = "https://miningpoolstats.stream/omegacoin"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot10(){QString link1 = "https://openchains.info/coin/omega/blocks"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+
 LabelOutOfFocusEventFilter::LabelOutOfFocusEventFilter(QObject* parent)
     : QObject(parent)
 {

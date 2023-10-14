@@ -193,7 +193,7 @@ namespace GUIUtil
     // Open debug.log
     void openDebugLogfile();
 
-    // Open dash.conf
+    // Open omega.conf
     void openConfigfile();
 
     // Browse backup folder

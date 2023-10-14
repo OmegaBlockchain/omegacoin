@@ -1,4 +1,4 @@
-# `dash.conf` Configuration File
+# `omega.conf` Configuration File
 
 The configuration file is used by `dashd`, `dash-qt` and `dash-cli`.
 
@@ -49,16 +49,16 @@ rpcport=4000
 
 ## Configuration File Path
 
-The configuration file is not automatically created; you can create it using your favorite text editor. By default, the configuration file name is `dash.conf` and it is located in the Dash data directory, but both the dash data directory and the configuration file path may be changed using the `-datadir` and `-conf` command-line options.
+The configuration file is not automatically created; you can create it using your favorite text editor. By default, the configuration file name is `omega.conf` and it is located in the Dash data directory, but both the dash data directory and the configuration file path may be changed using the `-datadir` and `-conf` command-line options.
 
-The `includeconf=<file>` option in the `dash.conf` file can be used to include additional configuration files.
+The `includeconf=<file>` option in the `omega.conf` file can be used to include additional configuration files.
 
 ### Default configuration file locations
 
 Operating System | Data Directory | Example Path
 -- | -- | --
-Windows | `%APPDATA%\DashCore\` | `C:\Users\username\AppData\Roaming\DashCore\dash.conf`
-Linux | `$HOME/.dashcore/` | `/home/username/.dashcore/dash.conf`
-macOS | `$HOME/Library/Application Support/DashCore/` | `/Users/username/Library/Application Support/DashCore/dash.conf`
+Windows | `%APPDATA%\OmegaCore\` | `C:\Users\username\AppData\Roaming\OmegaCore\omega.conf`
+Linux | `$HOME/.omegacore/` | `/home/username/.omegacore/omega.conf`
+macOS | `$HOME/Library/Application Support/OmegaCore/` | `/Users/username/Library/Application Support/OmegaCore/omega.conf`
 
-You can find an example dash.conf file in [share/examples/dash.conf](../share/examples/dash.conf).
+You can find an example omega.conf file in [share/examples/omega.conf](../share/examples/omega.conf).

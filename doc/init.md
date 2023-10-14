@@ -21,7 +21,7 @@ Configuration
 ---------------------------------
 
 Running dashd as a daemon does not require any manual configuration. You may
-set the `rpcauth` setting in the `dash.conf` configuration file to override
+set the `rpcauth` setting in the `omega.conf` configuration file to override
 the default behaviour of using a special cookie for authentication.
 
 This password does not have to be remembered or typed as it is mostly used
@@ -44,7 +44,7 @@ This allows for running dashd without having to do any manual configuration.
 relative to the data directory. `wallet` *only* supports relative paths.
 
 For an example configuration file that describes the configuration settings,
-see `contrib/debian/examples/dash.conf`.
+see `contrib/debian/examples/omega.conf`.
 
 Paths
 ---------------------------------
@@ -54,7 +54,7 @@ Paths
 All three configurations assume several paths that might need to be adjusted.
 
 Binary:              `/usr/bin/dashd`
-Configuration file:  `/etc/dashcore/dash.conf`
+Configuration file:  `/etc/dashcore/omega.conf`
 Data directory:      `/var/lib/dashd`
 PID file:            `/var/run/dashd/dashd.pid` (OpenRC and Upstart) or `/run/dashd/dashd.pid` (systemd)
 Lock file:           `/var/lock/subsys/dashd` (CentOS)
@@ -73,10 +73,10 @@ dashcore user and group to do so (e.g. when `-sysperms` is specified). This does
 for the listing of files under the directory.
 
 NOTE: It is not currently possible to override `datadir` in
-`/etc/dash/dash.conf` with the current systemd, OpenRC, and Upstart init
+`/etc/dash/omega.conf` with the current systemd, OpenRC, and Upstart init
 files out-of-the-box. This is because the command line options specified in the
 init files take precedence over the configurations in
-`/etc/dash/dash.conf`. However, some init systems have their own
+`/etc/dash/omega.conf`. However, some init systems have their own
 configuration mechanisms that would allow for overriding the command line
 options specified in the init files (e.g. setting `BITCOIND_DATADIR` for
 OpenRC).
@@ -84,9 +84,9 @@ OpenRC).
 ### macOS
 
 Binary:              `/usr/local/bin/dashd`
-Configuration file:  `~/Library/Application Support/DashCore/dash.conf`
-Data directory:      `~/Library/Application Support/DashCore`
-Lock file:           `~/Library/Application Support/DashCore/.lock`
+Configuration file:  `~/Library/Application Support/OmegaCore/omega.conf`
+Data directory:      `~/Library/Application Support/OmegaCore`
+Lock file:           `~/Library/Application Support/OmegaCore/.lock`
 
 Installing Service Configuration
 -----------------------------------

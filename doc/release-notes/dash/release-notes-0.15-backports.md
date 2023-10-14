@@ -659,7 +659,7 @@
 - [`9b8a750c9`](https://github.com/dashpay/dash/commit/9b8a750c9) More `boost::filesystem`->`fs` and some related cleanup
 - [`250195185`](https://github.com/dashpay/dash/commit/250195185) Adjust CDSNotificationInterface to align with CValidationInterface changes
 - [`d180061b8`](https://github.com/dashpay/dash/commit/d180061b8) Pass block index via BlockDisconnected
-- [`282d1554d`](https://github.com/dashpay/dash/commit/282d1554d) adjust examples/dash.conf
+- [`282d1554d`](https://github.com/dashpay/dash/commit/282d1554d) adjust examples/omega.conf
 - [`e451325d6`](https://github.com/dashpay/dash/commit/e451325d6) Merge #10186: Remove SYNC_TRANSACTION_NOT_IN_BLOCK magic number
 - [`60438257a`](https://github.com/dashpay/dash/commit/60438257a) Merge #9725: CValidationInterface Cleanups
 - [`f893ac66c`](https://github.com/dashpay/dash/commit/f893ac66c) Merge #10124: [test] Suppress test logging spam

@@ -91,9 +91,9 @@ systemd, which will take care of their creation, permissions, etc. See
 for more details.
 
 When using the provided init files under `contrib/init`, overriding the
-`datadir` option in `/etc/dash/dash.conf` will have no effect. This is
+`datadir` option in `/etc/dash/omega.conf` will have no effect. This is
 because the command line arguments specified in the init files take precedence
-over the options specified in `/etc/dash/dash.conf`.
+over the options specified in `/etc/dash/omega.conf`.
 
 Account API removed
 -------------------

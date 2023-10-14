@@ -128,7 +128,7 @@ PrivateSend
 -----------
 With further refactoring of PrivateSend code it became possible to implement mixing in few parallel
 mixing sessions at once from one single wallet. You can set number of mixing sessions via
-`privatesendsessions` cmd-line option or dash.conf. You can pick any number of sessions between 1 and 10,
+`privatesendsessions` cmd-line option or omega.conf. You can pick any number of sessions between 1 and 10,
 default is 4 which should be good enough for most users. For this feature to work you should also make
 sure that `privatesendmultisession` is set to `1` via cmd-line or `Enable PrivateSend multi-session` is
 enabled in GUI.

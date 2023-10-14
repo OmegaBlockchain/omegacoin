@@ -58,11 +58,11 @@ Dash Core is now available at `./src/dashd`
 
 Before running, you may create an empty configuration file:
 ```shell
-mkdir -p "/Users/${USER}/Library/Application Support/DashCore"
+mkdir -p "/Users/${USER}/Library/Application Support/OmegaCore"
 
-touch "/Users/${USER}/Library/Application Support/DashCore/dash.conf"
+touch "/Users/${USER}/Library/Application Support/OmegaCore/omega.conf"
 
-chmod 600 "/Users/${USER}/Library/Application Support/DashCore/dash.conf"
+chmod 600 "/Users/${USER}/Library/Application Support/OmegaCore/omega.conf"
 ```
 
 The first time you run dashd, it will start downloading the blockchain. This process could
@@ -70,7 +70,7 @@ take many hours, or even days on slower than average systems.
 
 You can monitor the download process by looking at the debug.log file:
 ```shell
-tail -f $HOME/Library/Application\ Support/DashCore/debug.log
+tail -f $HOME/Library/Application\ Support/OmegaCore/debug.log
 ```
 
 ## Other commands:

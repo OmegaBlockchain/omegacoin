@@ -146,7 +146,7 @@ The following RPC commands are supported:
   - nextblock          - Get info about next superblock for budget system
   - nextsuperblocksize - Get superblock size for a given blockheight
   - projection         - Show the projection of which proposals will be paid the next cycle
-  - vote               - Vote on a proposal by single masternode (using dash.conf setup)
+  - vote               - Vote on a proposal by single masternode (using omega.conf setup)
   - vote-many          - Vote on a proposal by all masternodes for which the voting key is in the wallet
   - vote-alias         - Vote on a proposal by alias
  - mnfinalbudget "command"... ( "passphrase" )

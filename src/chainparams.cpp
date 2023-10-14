@@ -1,6 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin Core developers
 // Copyright (c) 2014-2023 The Dash Core developers
+// Copyright (c) 2018-2023 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -142,7 +143,7 @@ public:
         consensus.nMasternodePaymentsIncreasePeriod = 1569325056; // 17280 - actual historical value
         consensus.nInstantSendConfirmationsRequired = 6;
         consensus.nInstantSendKeepLock = 24;
-        consensus.nBudgetPaymentsStartBlock = 115000; // set to actual historical value on the hardfork moment(differs from 33001-66000 block height advertised on the http://omegacoin.network/index-2.html)
+        consensus.nBudgetPaymentsStartBlock = 115000; // set to actual historical value on the hardfork moment(differs from 33001-66000 block height advertised on the http://omega.network/index-2.html)
         consensus.nBudgetPaymentsCycleBlocks = 16616; // ~(60*24*30)/2.6, actual number of blocks per month is 200700 / 12 = 16725
         consensus.nBudgetPaymentsWindowBlocks = 100;
         consensus.nSuperblockStartBlock = 614820; // The block at which 12.1 goes live (end of final 12.0 budget cycle)
@@ -164,8 +165,8 @@ public:
         consensus.BRRHeight = std::numeric_limits<int>::max();
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
-        consensus.nPowTargetTimespan = 600; // OmegaCoin: each 10 minute
-        consensus.nPowTargetSpacing = 60; // OmegaCoin: 80 seconds
+        consensus.nPowTargetTimespan = 600; // Omega: each 10 minute
+        consensus.nPowTargetSpacing = 60; // Omega: 80 seconds
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nPowKGWHeight = 0;
@@ -264,7 +265,7 @@ public:
         nDefaultPlatformP2PPort = 26656;
         nDefaultPlatformHTTPPort = 443;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 45;
+        m_assumed_blockchain_size = 2;
         m_assumed_chain_state_size = 1;
 
         genesis = CreateGenesisBlock(1517519966, 869501, 0x1e0ffff0, 1, 50 * COIN);
@@ -376,7 +377,7 @@ public:
         consensus.MinBIP9WarningHeight = 850100 + 2016;  // v19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Omega: 1 day
-        consensus.nPowTargetSpacing = 60; // OmegaCoin: 2.5 minutes
+        consensus.nPowTargetSpacing = 60; // Omega: 2.5 minutes
         consensus.fPowAllowMinDifficultyBlocks = true;
         consensus.fPowNoRetargeting = false;
         consensus.nPowKGWHeight = 4002; // nPowKGWHeight >= nPowDGWHeight means "no KGW"

@@ -5,7 +5,7 @@
 # See "man systemd.service" for details.
 
 # Note that almost all daemon options could be specified in
-# /etc/dash/dash.conf, except for those explicitly specified as arguments
+# /etc/dash/omega.conf, except for those explicitly specified as arguments
 # in ExecStart=
 
 [Unit]
@@ -15,7 +15,7 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/dashd -daemon \
                                                             -pid=/run/dashd/dashd.pid \
-                                                            -conf=/etc/dash/dash.conf  \
+                                                            -conf=/etc/dash/omega.conf  \
                                                             -datadir=/var/lib/dashd
 
 # Process management

@@ -883,7 +883,7 @@ void RPCConsole::clear(bool clearHistory)
                         tr("Type %1 for an overview of available commands.").arg("<b>help</b>") + "<br>" +
                         tr("For more information on using this console type %1.").arg("<b>help-console</b>") +
                         "<br><span class=\"secwarning\"><br>" +
-                        tr("WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.") +
+                        tr("WARNING: Scammers have been active, telling users to type commands here, stealing their wallet contents. Do not use this console without fully understanding the ramifications of a command.  DO NOT share the output from commands dumpprivkey, dumpwallet or masternodeprivkey with ANYONE!") +
                         "</span>"),
                         true);
 }

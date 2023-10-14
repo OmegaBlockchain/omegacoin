@@ -328,7 +328,7 @@ void setupAppearance(QWidget* parent, OptionsModel* model)
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
     // return if URI is not valid or is no dash: URI
-    if(!uri.isValid() || uri.scheme() != QString("dash"))
+    if(!uri.isValid() || uri.scheme() != QString("OMEGA"))
         return false;
 
     SendCoinsRecipient rv;
@@ -402,7 +402,7 @@ bool validateBitcoinURI(const QString& uri)
 
 QString formatBitcoinURI(const SendCoinsRecipient &info)
 {
-    QString ret = QString("dash:%1").arg(info.address);
+    QString ret = QString("omega:%1").arg(info.address);
     int paramCount = 0;
 
     if (info.amount)
@@ -612,7 +612,7 @@ void openConfigfile()
 {
     fs::path pathConfig = GetConfigFile(gArgs.GetArg("-conf", BITCOIN_CONF_FILENAME));
 
-    /* Open dash.conf with the associated application */
+    /* Open omega.conf with the associated application */
     if (fs::exists(pathConfig)) {
         // Workaround for macOS-specific behavior; see #15409.
         if (!QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathConfig)))) {
@@ -667,10 +667,10 @@ void hyperlinks_slot2(){QString link1 = "https://discord.gg/nYQfKdc"; QDesktopSe
 void hyperlinks_slot3(){QString link1 = "https://twitter.com/omegablockchain"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 void hyperlinks_slot4(){QString link1 = "https://t.me/GyNlCE58N8"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 void hyperlinks_slot5(){QString link1 = "https://bitcointalk.org/index.php?topic=5110642"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
-void hyperlinks_slot6(){QString link1 = "https://github.com/OmegaBlockchain/omegacoin"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot6(){QString link1 = "https://github.com/OmegaBlockchain/omega"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 void hyperlinks_slot7(){QString link1 = "https://www.coingecko.com/en/coins/omega"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 void hyperlinks_slot8(){QString link1 = "https://masternodes.online/currencies/OMEGA/"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
-void hyperlinks_slot9(){QString link1 = "https://miningpoolstats.stream/omegacoin"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
+void hyperlinks_slot9(){QString link1 = "https://miningpoolstats.stream/omega"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 void hyperlinks_slot10(){QString link1 = "https://openchains.info/coin/omega/blocks"; QDesktopServices::openUrl(QUrl(link1, QUrl::TolerantMode));}
 
 LabelOutOfFocusEventFilter::LabelOutOfFocusEventFilter(QObject* parent)
@@ -897,8 +897,8 @@ fs::path static GetAutostartFilePath()
 {
     std::string chain = gArgs.GetChainName();
     if (chain == CBaseChainParams::MAIN)
-        return GetAutostartDir() / "dashcore.desktop";
-    return GetAutostartDir() / strprintf("dashcore-%s.desktop", chain);
+        return GetAutostartDir() / "omegacore.desktop";
+    return GetAutostartDir() / strprintf("omegacore-%s.desktop", chain);
 }
 
 bool GetStartOnSystemStartup()

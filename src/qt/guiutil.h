@@ -210,6 +210,7 @@ namespace GUIUtil
     void hyperlinks_slot8();
     void hyperlinks_slot9();
     void hyperlinks_slot10();
+    void hyperlinks_slot11();
 
     /** Qt event filter that intercepts ToolTipChange events, and replaces the tooltip with a rich text
       representation if needed. This assures that Qt can word-wrap long tooltip messages.

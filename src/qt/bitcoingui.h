@@ -184,6 +184,7 @@ private:
     QAction* openWebsite8;
     QAction* openWebsite9;
     QAction* openWebsite10;
+    QAction* openWebsite11;
 
     QSystemTrayIcon* trayIcon = nullptr;
     const std::unique_ptr<QMenu> trayIconMenu;

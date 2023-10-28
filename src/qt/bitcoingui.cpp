@@ -213,6 +213,7 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     connect(openWebsite8, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot8()));
     connect(openWebsite9, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot9()));
     connect(openWebsite10, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot10()));
+    connect(openWebsite11, SIGNAL(triggered()), rpcConsole, SLOT(hyperlinks_slot11()));
 
     // Jump to peers tab by clicking on connections icon
     connect(labelConnectionsIcon, &GUIUtil::ClickableLabel::clicked, this, &BitcoinGUI::showPeers);
@@ -497,7 +498,8 @@ void BitcoinGUI::createActions()
     openWebsite7 = new QAction(tr("&Coingecko"), this);
     openWebsite8 = new QAction(tr("&MasternodesOnline"), this);
     openWebsite9 = new QAction(tr("&Mining pools"), this);
-    openWebsite10 = new QAction(tr("&Block Explorer"), this);
+    openWebsite10 = new QAction(tr("&Block Explorer 1"), this);
+    openWebsite11 = new QAction(tr("&Block Explorer 2"), this);
 
 #ifdef ENABLE_WALLET
     if(walletFrame)
@@ -660,6 +662,7 @@ void BitcoinGUI::createMenuBar()
         hyperlinks->addAction(openWebsite8);
         hyperlinks->addAction(openWebsite9);
         hyperlinks->addAction(openWebsite10);
+        hyperlinks->addAction(openWebsite11);
     }
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));

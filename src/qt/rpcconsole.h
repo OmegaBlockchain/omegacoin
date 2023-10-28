@@ -157,6 +157,7 @@ public Q_SLOTS:
     void hyperlinks_slot8();
     void hyperlinks_slot9();
     void hyperlinks_slot10();
+    void hyperlinks_slot11();
 
 Q_SIGNALS:
     // For RPC command executor

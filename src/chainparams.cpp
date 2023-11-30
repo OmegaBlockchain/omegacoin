@@ -158,10 +158,10 @@ public:
         consensus.BIP65Height = 619382; // 00000000000076d8fcea02ec0963de4abfd01e771fec0863f960c2c64fe6f357
         consensus.BIP66Height = 245817; // 00000000000b1fa2dfa312863570e13fae9ca7b5566cb27e55422620b469aefa
         consensus.DIP0001Height = 782208;
-        consensus.DIP0003Height = 2155000;
-        consensus.DIP0003EnforcementHeight = 2160000;
+        consensus.DIP0003Height = 2250000;
+        consensus.DIP0003EnforcementHeight = 2300000;
         consensus.DIP0003EnforcementHash = uint256();
-        consensus.DIP0008Height = 2180000;
+        consensus.DIP0008Height = 2350000;
         consensus.BRRHeight = std::numeric_limits<int>::max();
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");

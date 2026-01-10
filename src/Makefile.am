@@ -1,5 +1,6 @@
 # Copyright (c) 2013-2016 The Bitcoin Core developers
 # Copyright (c) 2014-2018 The Dash Core developers
+# Copyright (c) 2018-2026 The Omega Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -372,6 +373,12 @@ libbitcoin_server_a_SOURCES = \
   blockencodings.cpp \
   blockfilter.cpp \
   chain.cpp \
+  chatroom/chatroom.cpp \
+  chatroom/chatroom_db.cpp \
+  chatroom/chatroom_manager.cpp \
+  chatroom/chatmessage.cpp \
+  chatroom/chatroom_net.cpp \
+  chatroom/chatroom_rpc.cpp \
   coinjoin/coinjoin.cpp \
   coinjoin/options.cpp \
   coinjoin/server.cpp \

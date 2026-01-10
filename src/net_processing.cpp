@@ -60,6 +60,9 @@
 
 #include <statsd_client.h>
 
+#include <chatroom/chatroom_net.h>
+#include <chatroom/chatroom_manager.h>
+
 /** Maximum number of in-flight objects from a peer */
 static constexpr int32_t MAX_PEER_OBJECT_IN_FLIGHT = 100;
 /** Maximum number of announced objects from a peer */
@@ -146,7 +149,7 @@ static const unsigned int AVG_ADDRESS_BROADCAST_INTERVAL = 30;
 static const unsigned int INVENTORY_BROADCAST_INTERVAL = 5;
 /** Maximum number of inventory items to send per transmission.
  *  Limits the impact of low-fee transaction floods.
- *  We have 4 times smaller block times in Omega, so we need to push 4 times more invs per 1MB. */
+ *  We have 4 times smaller block times in Dash, so we need to push 4 times more invs per 1MB. */
 static constexpr unsigned int INVENTORY_BROADCAST_MAX_PER_1MB_BLOCK = 4 * 7 * INVENTORY_BROADCAST_INTERVAL;
 /** Maximum number of compact filters that may be requested with one getcfilters. See BIP 157. */
 static constexpr uint32_t MAX_GETCFILTERS_SIZE = 1000;
@@ -1540,7 +1543,7 @@ bool static AlreadyHave(const CInv& inv, const CTxMemPool& mempool, const LLMQCo
         return LookupBlockIndex(inv.hash) != nullptr;
 
     /*
-        Omega Related Inventory Messages
+        Dash Related Inventory Messages
 
         --
 
@@ -1962,36 +1965,31 @@ void static ProcessGetData(CNode& pfrom, const CChainParams& chainparams, CConnm
         }
     } // release cs_main
 
-    // Only process one BLOCK item per call, since they're uncommon and can be
-    // expensive to process.
-    if (it != pfrom.vRecvGetData.end() && !pfrom.fPauseSend) {
-        const CInv &inv = *it++;
-        if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK || inv.type == MSG_CMPCT_BLOCK) {
-            ProcessGetBlockData(pfrom, chainparams, inv, connman, *llmq_ctx.isman);
-        }
-        // else: If the first item on the queue is an unknown type, we erase it
-        // and continue processing the queue on the next call.
-    }
+// Process chatroom GETDATA requests once, before mutating vRecvGetData
+if (!pfrom.vRecvGetData.empty()) {
+    ProcessChatMessageGetData(&pfrom, pfrom.vRecvGetData, connman);
+}
 
-    pfrom.vRecvGetData.erase(pfrom.vRecvGetData.begin(), it);
-
-    if (!vNotFound.empty()) {
-        // Let the peer know that we didn't find what it asked for, so it doesn't
-        // have to wait around forever.
-        // SPV clients care about this message: it's needed when they are
-        // recursively walking the dependencies of relevant unconfirmed
-        // transactions. SPV clients want to do that because they want to know
-        // about (and store and rebroadcast and risk analyze) the dependencies
-        // of transactions relevant to them, without having to download the
-        // entire memory pool.
-        // Also, other nodes can use these messages to automatically request a
-        // transaction from some other peer that annnounced it, and stop
-        // waiting for us to respond.
-        // In normal operation, we often send NOTFOUND messages for parents of
-        // transactions that we relay; if a peer is missing a parent, they may
-        // assume we have them and request the parents from us.
-        connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::NOTFOUND, vNotFound));
+// Only process one BLOCK item per call, since they're uncommon and can be
+// expensive to process.
+if (it != pfrom.vRecvGetData.end() && !pfrom.fPauseSend) {
+    const CInv& inv = *it++;
+    if (inv.type == MSG_BLOCK ||
+        inv.type == MSG_FILTERED_BLOCK ||
+        inv.type == MSG_CMPCT_BLOCK) {
+        ProcessGetBlockData(pfrom, chainparams, inv, connman, *llmq_ctx.isman);
     }
+    // else: unknown type, will be erased below
+}
+
+// Erase everything we processed (or skipped)
+pfrom.vRecvGetData.erase(pfrom.vRecvGetData.begin(), it);
+
+// NOTFOUND handling is independent of chatroom logic
+if (!vNotFound.empty()) {
+    connman.PushMessage(&pfrom, msgMaker.Make(NetMsgType::NOTFOUND, vNotFound));
+}
+
 }
 
 inline void static SendBlockTransactions(const CBlock& block, const BlockTransactionsRequest& req, CNode& pfrom, CConnman& connman) {
@@ -4976,7 +4974,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
             state.m_object_download.m_check_expiry_timer = current_time + GetObjectExpiryInterval(MSG_TX)/2 + GetRandMicros(GetObjectExpiryInterval(MSG_TX));
         }
 
-        // DASH this code also handles non-TXs (Omega specific messages)
+        // DASH this code also handles non-TXs (Dash specific messages)
         auto& object_process_time = state.m_object_download.m_object_process_time;
         while (!object_process_time.empty() && object_process_time.begin()->first <= current_time && state.m_object_download.m_object_in_flight.size() < MAX_PEER_OBJECT_IN_FLIGHT) {
             const CInv inv = object_process_time.begin()->second;

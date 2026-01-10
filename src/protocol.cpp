@@ -89,6 +89,10 @@ MAKE_MSG(SENDHEADERS2, "sendheaders2");
 MAKE_MSG(HEADERS2, "headers2");
 MAKE_MSG(GETQUORUMROTATIONINFO, "getqrinfo");
 MAKE_MSG(QUORUMROTATIONINFO, "qrinfo");
+// CHATROOM:
+MAKE_MSG(CHATROOM, "chatroom");
+MAKE_MSG(CHATMSGSTEM, "chatmsgstem");
+MAKE_MSG(CHATMSGFLUFF, "chatmsgfluff");
 }; // namespace NetMsgType
 
 /** All known message types. Keep this in the same order as the list of
@@ -168,7 +172,11 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::MNAUTH,
     NetMsgType::GETHEADERS2,
     NetMsgType::SENDHEADERS2,
-    NetMsgType::HEADERS2};
+    NetMsgType::HEADERS2,
+    // CHATROOM: Add these three at the end
+    NetMsgType::CHATROOM,
+    NetMsgType::CHATMSGSTEM,
+    NetMsgType::CHATMSGFLUFF};
 const static std::vector<std::string> allNetMessageTypesVec(std::begin(allNetMessageTypes), std::end(allNetMessageTypes));
 
 /** Message types that are not allowed by blocks-relay-only policy.

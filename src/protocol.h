@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2019 The Bitcoin Core developers
+// Copyright (c) 2018-2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -248,6 +249,18 @@ extern const char *GETCFCHECKPT;
  * evenly spaced filter headers for blocks on the requested chain.
  */
 extern const char *CFCHECKPT;
+/**
+ * Chatroom announcement
+ */
+extern const char* CHATROOM;
+/**
+* Stem phase message
+*/
+extern const char* CHATMSGSTEM;
+/**
+ * Fluff phase message
+ */
+extern const char* CHATMSGFLUFF;
 
 // Dash message types
 // NOTE: do NOT declare non-implmented here, we don't want them to be exposed to the outside
@@ -464,6 +477,7 @@ enum GetDataMsg {
     MSG_CLSIG = 29,
     MSG_ISLOCK = 30,
     MSG_ISDLOCK = 31,
+    MSG_CHATMSG = 32,
 };
 
 /** inv message data */

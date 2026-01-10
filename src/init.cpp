@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2018 The Bitcoin Core developers
 // Copyright (c) 2014-2023 The Dash Core developers
+// Copyright (c) 2018-2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -95,6 +96,9 @@
 #include <llmq/signing_shares.h>
 
 #include <statsd_client.h>
+
+#include <chatroom/chatroom_db.h>
+#include <chatroom/chatroom_manager.h>
 
 #include <stdint.h>
 #include <stdio.h>
@@ -327,6 +331,14 @@ void PrepareShutdown(NodeContext& node)
         g_txindex->Stop();
         g_txindex.reset();
     }
+
+        // Shutdown chatroom system
+    if (g_chatroom_manager || g_chatroom_db) {
+        LogPrintf("Shutting down chatroom system...\n");
+        g_chatroom_manager.reset();
+        g_chatroom_db.reset();
+    }
+
     ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Stop(); });
     DestroyAllBlockFilterIndexes();
 
@@ -570,6 +582,7 @@ void SetupServerArgs(NodeContext& node)
     argsman.AddArg("-externalip=<ip>", "Specify your own public address", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-forcednsseed", strprintf("Always query for peer addresses via DNS lookup (default: %u)", DEFAULT_FORCEDNSSEED), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-listen", "Accept connections from outside (default: 1 if no -proxy or -connect)", ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
+    argsman.AddArg("-disablechatroom", "Disable chatroom system (default: 0)", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-listenonion", strprintf("Automatically create Tor hidden service (default: %d)", DEFAULT_LISTEN_ONION), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-maxconnections=<n>", strprintf("Maintain at most <n> connections to peers (temporary service connections excluded) (default: %u)", DEFAULT_MAX_PEER_CONNECTIONS), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
     argsman.AddArg("-maxreceivebuffer=<n>", strprintf("Maximum per-connection receive buffer, <n>*1000 bytes (default: %u)", DEFAULT_MAXRECEIVEBUFFER), ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
@@ -2292,6 +2305,38 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
+
+    // Initialize chatroom system (before block indexing)
+    bool fDisableChatroom = gArgs.GetBoolArg("-disablechatroom", false);
+
+    if (!fDisableChatroom) {
+        LogPrintf("Initializing chatroom system...\n");
+
+        try {
+            const int64_t nChatRoomCacheSize = 2 << 20; // 2 MB
+            g_chatroom_db = std::make_unique<CChatRoomDB>(
+                nChatRoomCacheSize,
+                false,  // not memory-only
+                fReindex || fReindexChainState
+            );
+
+            g_chatroom_manager = std::make_unique<CChatRoomManager>();
+
+            // Cleanup expired rooms on startup
+            size_t cleaned = g_chatroom_db->CleanupExpiredRooms();
+            if (cleaned > 0) {
+                LogPrintf("ChatRoom: Removed %d expired rooms\n", cleaned);
+            }
+
+            LogPrintf("ChatRoom: Initialized (no-subscriptions, 7d active, 14d expiry)\n");
+        } catch (const std::exception& e) {
+            return InitError(strprintf(_("Failed to initialize chatroom system: %s"), e.what()));
+        }
+    } else {
+        LogPrintf("ChatRoom: Disabled via -disablechatroom\n");
+    }
+    // continue indexers
+
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
         g_txindex->Start();

@@ -10,17 +10,11 @@
 #include <net.h>
 #include <protocol.h>
 
-namespace NetMsgType {
-    extern const char* CHATROOM;
-    extern const char* CHATMSGSTEM;
-    extern const char* CHATMSGFLUFF;
-}
-
 bool ProcessChatRoomAnnouncement(CNode* pfrom, CDataStream& vRecv);
 bool ProcessChatMessageStem(CNode* pfrom, CDataStream& vRecv, CConnman& connman);
 bool ProcessChatMessageFluff(CNode* pfrom, CDataStream& vRecv, CConnman& connman);
 bool ProcessChatMessageInv(CNode* pfrom, const CInv& inv, CConnman& connman);
-bool ProcessChatMessageGetData(CNode* pfrom, const std::vector<CInv>& vInv, CConnman& connman);
+bool ProcessChatMessageGetData(CNode* pfrom, const std::deque<CInv>& vInv, CConnman& connman);
 
 void SendChatRoomAnnouncement(const CChatRoom& room, CConnman& connman);
 void SendChatMessageStem(const CChatMessage& msg, CNode* target, CConnman& connman);

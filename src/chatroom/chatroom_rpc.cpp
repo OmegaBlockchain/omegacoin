@@ -18,8 +18,7 @@
 #include <key.h>
 #include <wallet/scriptpubkeyman.h>
 
-// ✅ DODANE: deklaracja g_connman
-extern std::unique_ptr<CConnman> g_connman;
+extern CConnman* chat_connman;
 
 static CKey GetWalletKey(const JSONRPCRequest& request)
 {
@@ -309,8 +308,7 @@ UniValue sendchatmessage(const JSONRPCRequest& request)
 
     CKey senderKey = GetWalletKey(request);
 
-    // ✅ POPRAWKA: *g_connman zamiast *g_rpc_node->connman
-    if (!g_chatroom_manager->SendMessage(roomId, message, senderKey, *g_connman)) {
+    if (!g_chatroom_manager->SendMessage(roomId, message, senderKey, *chat_connman)) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Failed to send message");
     }
 

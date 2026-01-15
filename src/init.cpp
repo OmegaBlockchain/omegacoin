@@ -1626,6 +1626,9 @@ bool AppInitInterfaces(NodeContext& node)
     return true;
 }
 
+//for chatroom
+CConnman* chat_connman;
+
 bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 {
     const ArgsManager& args = *Assert(node.args);
@@ -1806,6 +1809,8 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     assert(!::sporkManager);
     ::sporkManager = std::make_unique<CSporkManager>();
     ::masternodeSync = std::make_unique<CMasternodeSync>(*node.connman);
+
+    chat_connman = node.connman.get();
 
     std::vector<std::string> vSporkAddresses;
     if (args.IsArgSet("-sporkaddr")) {

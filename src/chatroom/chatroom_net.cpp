@@ -9,13 +9,8 @@
 
 #include <logging.h>
 #include <netmessagemaker.h>
+#include <protocol.h>
 #include <validation.h>
-
-namespace NetMsgType {
-    const char* CHATROOM = "chatroom";
-    const char* CHATMSGSTEM = "chatmsgstem";
-    const char* CHATMSGFLUFF = "chatmsgfluff";
-}
 
 bool ProcessChatRoomAnnouncement(CNode* pfrom, CDataStream& vRecv)
 {

@@ -45,6 +45,7 @@ LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
 LIBBITCOINQT=qt/libbitcoinqt.a
 LIBDASHBLS=dashbls/libdashbls.la
 LIBSECP256K1=secp256k1/libsecp256k1.la
+LIBBITCOIN_SMSG=libomega_smsg.a
 
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
@@ -284,6 +285,14 @@ BITCOIN_CORE_H = \
   support/cleanse.h \
   support/events.h \
   support/lockedpool.h \
+  smsg/db.h \
+  smsg/net.h \
+  smsg/types.h \
+  smsg/crypter.h \
+  smsg/smessage.h \
+  smsg/manager.h \
+  smsg/rpcsmessage.h \
+  smsg/securemessage.h \
   sync.h \
   threadsafety.h \
   threadinterrupt.h \
@@ -735,6 +744,18 @@ libbitcoin_util_a_SOURCES = \
   util/url.cpp \
   util/validation.cpp \
   $(BITCOIN_CORE_H)
+
+libomega_smsg_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LEVELDB_CPPFLAGS)
+libomega_smsg_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+libomega_smsg_a_CFLAGS = $(AM_CFLAGS) $(PIE_FLAGS)
+libomega_smsg_a_SOURCES = \
+  smsg/crypter.cpp \
+  smsg/keystore.h \
+  smsg/keystore.cpp \
+  smsg/db.cpp \
+  smsg/smessage.cpp \
+  smsg/manager.cpp \
+  smsg/rpcsmessage.cpp
 
 if GLIBC_BACK_COMPAT
 libbitcoin_util_a_SOURCES += compat/glibc_compat.cpp

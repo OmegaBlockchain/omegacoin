@@ -138,6 +138,17 @@ public:
 
     //! Load private key and check that public key matches.
     bool Load(const CPrivKey& privkey, const CPubKey& vchPubKey, bool fSkipCheck);
+
+    SERIALIZE_METHODS(CKey, obj)
+    {
+        if (!ser_action.ForRead()) {
+            s.write((char*)&obj.keydata[0], 32);
+        } else {
+            s.read((char*)&obj.keydata[0], 32);
+        }
+        READWRITE(obj.fValid);
+        READWRITE(obj.fCompressed);
+    };
 };
 
 struct CExtKey {

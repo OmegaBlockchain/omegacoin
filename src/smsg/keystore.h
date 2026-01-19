@@ -42,7 +42,7 @@ public:
 class SecMsgKeyStore
 {
 protected:
-    mutable RecursiveMutex cs_KeyStore;
+    mutable CCriticalSection cs_KeyStore;
 
 public:
     std::map<CKeyID, SecMsgKey> mapKeys;
@@ -51,11 +51,10 @@ public:
     bool HaveKey(const CKeyID &idk) const;
     bool EraseKey(const CKeyID &idk);
     bool GetPubKey(const CKeyID &idk, CPubKey &pk);
-    bool GetKey(const CKeyID &idk, CKey &key);
 
     bool Clear();
 };
 
 } // namespace smsg
 
-#endif // OMEGA_SMSG_KEYSTORE_H
+#endif //OMEGA_SMSG_KEYSTORE_H

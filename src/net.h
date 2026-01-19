@@ -42,6 +42,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include <smsg/net.h>
 
 #ifndef WIN32
 #define USE_WAKEUP_PIPE
@@ -591,10 +592,12 @@ private:
     std::map<std::pair<Consensus::LLMQType, uint256>, std::set<uint256>> masternodeQuorumNodes GUARDED_BY(cs_vPendingMasternodes);
     std::map<std::pair<Consensus::LLMQType, uint256>, std::set<uint256>> masternodeQuorumRelayMembers GUARDED_BY(cs_vPendingMasternodes);
     std::set<uint256> masternodePendingProbes GUARDED_BY(cs_vPendingMasternodes);
-    std::vector<CNode*> vNodes GUARDED_BY(cs_vNodes);
     std::list<CNode*> vNodesDisconnected;
     std::unordered_map<SOCKET, CNode*> mapSocketToNode;
+public:
     mutable CCriticalSection cs_vNodes;
+    std::vector<CNode*> vNodes GUARDED_BY(cs_vNodes);
+private:
     std::atomic<NodeId> nLastNodeId{0};
     unsigned int nPrevNodeCount{0};
 
@@ -1093,6 +1096,9 @@ public:
 
     // Used for headers announcements - unfiltered blocks to relay
     std::vector<uint256> vBlockHashesToAnnounce GUARDED_BY(cs_inventory);
+
+    // SMSG related
+    SecMsgNode smsgData;
 
     // Ping time measurement:
     // The pong reply we're expecting, or 0 if no pong expected.

@@ -7,6 +7,7 @@
 
 #include <support/allocators/secure.h>
 #include <vector>
+#include <string.h>
 
 const unsigned int SMSG_CRYPTO_KEY_SIZE = 32;
 const unsigned int SMSG_CRYPTO_SALT_SIZE = 8;
@@ -25,12 +26,12 @@ public:
         fKeySet = false;
         vchKey.resize(SMSG_CRYPTO_KEY_SIZE);
         vchIV.resize(SMSG_CRYPTO_IV_SIZE);
-    }
+    };
 
     ~SecMsgCrypter()
     {
         CleanKey();
-    }
+    };
 
     void CleanKey()
     {

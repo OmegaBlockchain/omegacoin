@@ -267,6 +267,21 @@ unsigned int ParseConfirmTarget(const UniValue& value, unsigned int max_target)
     return (unsigned int)target;
 }
 
+bool GetBool(const UniValue &uv)
+{
+    if (uv.isBool()) {
+        return uv.get_bool();
+    }
+    if (!uv.isStr()) {
+        throw std::runtime_error("Not a boolean or string value.");
+    }
+    bool rv;
+    if (!omega::GetStringBool(uv.get_str(), rv)) {
+        throw std::runtime_error("String not a boolean value.");
+    }
+    return rv;
+}
+
 /**
  * A pair of strings that can be aligned (through padding) with other Sections
  * later on

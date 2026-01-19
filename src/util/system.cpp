@@ -630,6 +630,9 @@ std::string ArgsManager::GetHelpMessage() const
             case OptionsCategory::REGISTER_COMMANDS:
                 usage += HelpMessageGroup("Register Commands:");
                 break;
+            case OptionsCategory::SMSG:
+                usage += HelpMessageGroup("SMSG Commands:");
+                break;
             default:
                 break;
         }

@@ -96,6 +96,9 @@
 
 #include <statsd_client.h>
 
+#include <smsg/rpcsmessage.h>
+#include <smsg/smessage.h>
+
 #include <stdint.h>
 #include <stdio.h>
 #include <memory>
@@ -119,6 +122,8 @@
 #include <zmq/zmqnotificationinterface.h>
 #include <zmq/zmqrpc.h>
 #endif
+
+CConnman g_connman;
 
 static bool fFeeEstimatesInitialized = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
@@ -233,6 +238,7 @@ void PrepareShutdown(NodeContext& node)
     StopREST();
     StopRPC();
     StopHTTPServer();
+    smsgModule.Shutdown();
     if (node.llmq_ctx) node.llmq_ctx->Stop();
 
     // fRPCInWarmup should be `false` if we completed the loading sequence
@@ -615,6 +621,8 @@ void SetupServerArgs(NodeContext& node)
     argsman.AddArg("-whitelist=<[permissions@]IP address or network>", "Whitelist peers connecting from the given IP address (e.g. 1.2.3.4) or "
         "CIDR notated network(e.g. 1.2.3.0/24). Uses same permissions as "
         "-whitebind. Can be specified multiple times." , ArgsManager::ALLOW_ANY, OptionsCategory::CONNECTION);
+
+    smsg::AddOptions();
 
     g_wallet_init_interface.AddWalletOptions(argsman);
 
@@ -1731,6 +1739,7 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
      * available in the GUI RPC console even if external calls are disabled.
      */
     RegisterAllCoreRPCCommands(tableRPC);
+    RegisterSmsgRPCCommands(tableRPC);
     for (const auto& client : node.chain_clients) {
         client->registerRpcs();
     }
@@ -2348,6 +2357,8 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     ::coinJoinClientQueueManager = std::make_unique<CCoinJoinClientQueueManager>(*node.connman, ::masternodeSync);
 #endif // ENABLE_WALLET
 
+    g_connman = *node.connman;
+
     g_wallet_init_interface.InitCoinJoinSettings();
 
     // ********************************************************* Step 10b: Load cache data
@@ -2490,6 +2501,19 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     if (ShutdownRequested()) {
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
+    }
+
+    // ********************************************************* Step 11.1: start secure messaging
+
+    smsgModule.m_node = &node;
+    if (args.GetBoolArg("-smsg", true)) {
+#ifdef ENABLE_WALLET
+        auto vpwallets = GetWallets();
+        smsgModule.Start(vpwallets.size() > 0 ? vpwallets[0] : nullptr, vpwallets, gArgs.GetBoolArg("-smsgscanchain", false));
+#else
+        std::vector<std::shared_ptr<CWallet>> empty;
+        smsgModule.Start(nullptr, empty, gArgs.GetBoolArg("-smsgscanchain", false));
+#endif
     }
 
     // ********************************************************* Step 12: start node

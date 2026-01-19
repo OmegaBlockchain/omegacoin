@@ -291,7 +291,6 @@ BITCOIN_CORE_H = \
   smsg/types.h \
   smsg/crypter.h \
   smsg/smessage.h \
-  smsg/manager.h \
   smsg/rpcsmessage.h \
   smsg/securemessage.h \
   sync.h \
@@ -759,7 +758,6 @@ libomega_smsg_a_SOURCES = \
   smsg/keystore.cpp \
   smsg/db.cpp \
   smsg/smessage.cpp \
-  smsg/manager.cpp \
   smsg/rpcsmessage.cpp
 
 if GLIBC_BACK_COMPAT

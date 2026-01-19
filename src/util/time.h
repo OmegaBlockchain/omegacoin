@@ -71,4 +71,8 @@ struct timeval MillisToTimeval(int64_t nTimeout);
  */
 struct timeval MillisToTimeval(std::chrono::milliseconds ms);
 
+std::string GetTimeString(int64_t timestamp, char *buffer, size_t nBuffer);
+
+int64_t strToEpoch(const char *input, bool fFillMax=false);
+
 #endif // BITCOIN_UTIL_TIME_H

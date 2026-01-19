@@ -146,6 +146,7 @@ enum class OptionsCategory {
     GUI,
     COMMANDS,
     REGISTER_COMMANDS,
+    SMSG,
 
     HIDDEN // Always the last option to avoid printing these in the help
 };
@@ -484,5 +485,20 @@ private:
 #endif
 
 } // namespace util
+
+template<typename... Args>
+int errorN(int n, const char *fmt, const Args&... args)
+{
+    LogPrintf("ERROR: %s\n", tfm::format(fmt, args...));
+    return n;
+}
+
+template<typename... Args>
+int errorN(int n, std::string &s, const char *func, const char *fmt, const Args&... args)
+{
+    s = tfm::format(fmt, args...);
+    LogPrintf("ERROR: %s\n", std::string(func) + ": " + s);
+    return n;
+}
 
 #endif // BITCOIN_UTIL_SYSTEM_H

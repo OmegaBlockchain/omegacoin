@@ -181,5 +181,6 @@ void StartRPC();
 void InterruptRPC();
 void StopRPC();
 std::string JSONRPCExecBatch(const JSONRPCRequest& jreq, const UniValue& vReq);
+void PushTime(UniValue &o, const char *name, int64_t nTime);
 
 #endif // BITCOIN_RPC_SERVER_H

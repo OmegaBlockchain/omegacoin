@@ -62,6 +62,8 @@
 
 #include <statsd_client.h>
 
+#include <smsg/smessage.h>
+
 #include <optional>
 #include <string>
 
@@ -4204,6 +4206,10 @@ bool ChainstateManager::ProcessNewBlock(const CChainParams& chainparams, const s
     CValidationState state; // Only used to report errors, not invalidity - ignore it
     if (!::ChainstateActive().ActivateBestChain(state, chainparams, pblock))
         return error("%s: ActivateBestChain failed: %s", __func__, FormatStateMessage(state));
+
+    if (smsg::fSecMsgEnabled && gArgs.GetBoolArg("-smsgscanincoming", false)) {
+        smsgModule.ScanBlock(*pblock);
+    }
 
     LogPrintf("%s : ACCEPTED\n", __func__);
     return true;

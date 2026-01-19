@@ -75,6 +75,8 @@ struct PKHash : public uint160
     using uint160::uint160;
 };
 
+CKeyID ToKeyID(const PKHash& key_hash);
+
 struct ScriptHash : public uint160
 {
     ScriptHash() : uint160() {}

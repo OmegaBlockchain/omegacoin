@@ -19,6 +19,11 @@ ScriptHash::ScriptHash(const CScript& in) : uint160(Hash160(in.begin(), in.end()
 
 PKHash::PKHash(const CPubKey& pubkey) : uint160(pubkey.GetID()) {}
 
+CKeyID ToKeyID(const PKHash& key_hash)
+{
+    return CKeyID{static_cast<uint160>(key_hash)};
+}
+
 const char* GetTxnOutputType(TxoutType t)
 {
     switch (t)

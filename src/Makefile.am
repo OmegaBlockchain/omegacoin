@@ -93,7 +93,8 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CLI) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_ZMQ)
+  $(LIBBITCOIN_ZMQ) \
+  $(LIBBITCOIN_SMSG)
 
 lib_LTLIBRARIES = $(LIBBITCOINCONSENSUS)
 noinst_LTLIBRARIES =
@@ -749,6 +750,10 @@ libomega_smsg_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(LEVELDB_CPPFLAGS
 libomega_smsg_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libomega_smsg_a_CFLAGS = $(AM_CFLAGS) $(PIE_FLAGS)
 libomega_smsg_a_SOURCES = \
+  lz4/lz4.h \
+  lz4/lz4.c \
+  xxhash/xxhash.h \
+  xxhash/xxhash.c \
   smsg/crypter.cpp \
   smsg/keystore.h \
   smsg/keystore.cpp \
@@ -797,7 +802,8 @@ dashd_LDADD = \
   $(LIBLEVELDB) \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
-  $(LIBSECP256K1)
+  $(LIBSECP256K1) \
+  $(LIBBITCOIN_SMSG)
 
 dashd_LDADD += $(BACKTRACE_LIB) $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(NATPMP_LIBS) $(SQLITE_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS) $(GMP_LIBS)
 

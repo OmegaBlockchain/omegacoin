@@ -123,7 +123,7 @@
 #include <zmq/zmqrpc.h>
 #endif
 
-CConnman g_connman;
+CConnman* g_connman = nullptr;
 
 static bool fFeeEstimatesInitialized = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
@@ -2357,7 +2357,7 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     ::coinJoinClientQueueManager = std::make_unique<CCoinJoinClientQueueManager>(*node.connman, ::masternodeSync);
 #endif // ENABLE_WALLET
 
-    g_connman = *node.connman;
+    g_connman = node.connman.get();
 
     g_wallet_init_interface.InitCoinJoinSettings();
 
@@ -2509,10 +2509,9 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     if (args.GetBoolArg("-smsg", true)) {
 #ifdef ENABLE_WALLET
         auto vpwallets = GetWallets();
-        smsgModule.Start(vpwallets.size() > 0 ? vpwallets[0] : nullptr, vpwallets, gArgs.GetBoolArg("-smsgscanchain", false));
+        smsgModule.Start(vpwallets.size() > 0 ? vpwallets[0] : nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false));
 #else
-        std::vector<std::shared_ptr<CWallet>> empty;
-        smsgModule.Start(nullptr, empty, gArgs.GetBoolArg("-smsgscanchain", false));
+        smsgModule.Start(nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false));
 #endif
     }
 

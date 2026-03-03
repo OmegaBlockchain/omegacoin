@@ -110,6 +110,8 @@ struct Params {
     int nPowKGWHeight;
     int nPowDGWHeight;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
+    /** Time at which paid SMSG becomes active */
+    int64_t nPaidSmsgTime = 0;
     uint256 nMinimumChainWork;
     uint256 defaultAssumeValid;
 

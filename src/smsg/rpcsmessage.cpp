@@ -22,7 +22,7 @@
 
 #include <univalue.h>
 
-extern CConnman g_connman;
+extern CConnman* g_connman;
 
 static void EnsureSMSGIsEnabled()
 {

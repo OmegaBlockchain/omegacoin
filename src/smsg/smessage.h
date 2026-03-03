@@ -474,7 +474,10 @@ public:
     std::set<int64_t> setPurgedTimestamps;
     SecMsgOptions options;
     std::shared_ptr<CWallet> pwallet;
+    std::shared_ptr<CWallet> pactive_wallet;
+    std::vector<std::shared_ptr<CWallet>> m_vpwallets;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
+    std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
 
     int64_t nLastProcessedPurged = 0;
 

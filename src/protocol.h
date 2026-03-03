@@ -328,6 +328,9 @@ enum ServiceFlags : uint64_t {
     // description will be provided
     NODE_HEADERS_COMPRESSED = (1 << 11),
 
+    // NODE_SMSG means the node supports the secure messaging protocol.
+    NODE_SMSG = (1 << 24),
+
     // Bits 24-31 are reserved for temporary experiments. Just pick a bit that
     // isn't getting used, or one not being used much, and notify the
     // bitcoin-development mailing list. Remember that service bits are just

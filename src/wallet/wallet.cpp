@@ -2888,6 +2888,39 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nC
     return true;
 }
 
+bool CWallet::SignTransaction(CMutableTransaction& tx)
+{
+    AssertLockHeld(cs_wallet);
+
+    // Build map of input coins from wallet transactions
+    std::map<COutPoint, Coin> coins;
+    for (auto& input : tx.vin) {
+        auto mi = mapWallet.find(input.prevout.hash);
+        if (mi == mapWallet.end() || input.prevout.n >= mi->second.tx->vout.size()) {
+            return false;
+        }
+        const CWalletTx& wtx = mi->second;
+        coins[input.prevout] = Coin(wtx.tx->vout[input.prevout.n], wtx.m_confirm.block_height, wtx.IsCoinBase());
+    }
+
+    // Sign each input
+    for (unsigned int i = 0; i < tx.vin.size(); i++) {
+        const auto& coin = coins.at(tx.vin[i].prevout);
+        const CScript& scriptPubKey = coin.out.scriptPubKey;
+        SignatureData sigdata;
+
+        const SigningProvider* provider = GetSigningProvider(scriptPubKey);
+        if (!provider) {
+            return false;
+        }
+        if (!ProduceSignature(*provider, MutableTransactionSignatureCreator(&tx, i, coin.out.nValue, SIGHASH_ALL), scriptPubKey, sigdata)) {
+            return false;
+        }
+        UpdateInput(tx.vin.at(i), sigdata);
+    }
+    return true;
+}
+
 bool CWallet::SelectTxDSInsByDenomination(int nDenom, CAmount nValueMax, std::vector<CTxDSIn>& vecTxDSInRet)
 {
     LOCK(cs_wallet);

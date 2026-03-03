@@ -450,6 +450,7 @@ public:
     //! which is used to advertise which services we are offering
     //! that peer during `net_processing.cpp:PushNodeVersion()`.
     ServiceFlags GetLocalServices() const;
+    void SetLocalServices(ServiceFlags flags) { nLocalServices = flags; }
 
     uint64_t GetMaxOutboundTarget();
     std::chrono::seconds GetMaxOutboundTimeframe();

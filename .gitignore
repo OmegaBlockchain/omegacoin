@@ -12,6 +12,7 @@ src/omega-cli
 src/omega-tx
 src/omega-wallet
 src/qt/omega-qt
+src/qt/test/test_omega-qt
 src/test/fuzz/*
 !src/test/fuzz/*.*
 src/test/test_dash

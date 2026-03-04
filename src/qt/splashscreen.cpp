@@ -63,16 +63,7 @@ SplashScreen::SplashScreen(interfaces::Node& node, Qt::WindowFlags f, const Netw
     QPixmap pixmapLogo = networkStyle->getSplashImage();
     pixmapLogo.setDevicePixelRatio(scale);
 
-    // Adjust logo color based on the current theme
-    QImage imgLogo = pixmapLogo.toImage().convertToFormat(QImage::Format_ARGB32);
-    QColor logoColor = GUIUtil::getThemedQColor(GUIUtil::ThemedColor::BLUE);
-    for (int x = 0; x < imgLogo.width(); ++x) {
-        for (int y = 0; y < imgLogo.height(); ++y) {
-            const QRgb rgb = imgLogo.pixel(x, y);
-            imgLogo.setPixel(x, y, qRgba(logoColor.red(), logoColor.green(), logoColor.blue(), qAlpha(rgb)));
-        }
-    }
-    pixmapLogo.convertFromImage(imgLogo);
+    // Use the splash image as-is (full-colour Omega logo)
 
     pixmap = QPixmap(width * scale, height * scale);
     pixmap.setDevicePixelRatio(scale);

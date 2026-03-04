@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2022 The Dash Core developers
+// Copyright (c) 2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -1334,6 +1335,8 @@ std::string CopyrightHolders(const std::string& strPrefix, unsigned int nStartYe
     if (copyright_devs.find("Omega Core") == std::string::npos) {
         strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2014, nEndYear) + "The Omega Core developers";
     }
+    strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2014, 2023) + "The Dash Core developers";
+    strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2017, 2024) + "The Particl Core developers";
     // Check for untranslated substitution to make sure Bitcoin Core copyright is not removed by accident
     if (copyright_devs.find("Bitcoin Core") == std::string::npos) {
         strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2009, nEndYear) + "The Bitcoin Core developers";

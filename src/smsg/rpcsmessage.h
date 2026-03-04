@@ -1,4 +1,5 @@
-// Copyright (c) 2026 The Omega Core developerss
+// Copyright (c) 2017-2024 The Particl Core developers
+// Copyright (c) 2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 

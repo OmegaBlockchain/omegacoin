@@ -800,8 +800,8 @@ void SetupServerArgs(NodeContext& node)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/dashpay/dash>";
-    const std::string URL_WEBSITE = "<https://dash.org>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/OmegaBlockchain/omega>";
+    const std::string URL_WEBSITE = "<https://omegablockchain.net/>";
 
     return CopyrightHolders(_("Copyright (C)").translated, 2014, COPYRIGHT_YEAR) + "\n" +
            "\n" +
@@ -1037,7 +1037,7 @@ static void PeriodicStats(ArgsManager& args, const CTxMemPool& mempool)
 }
 
 /** Sanity checks
- *  Ensure that Dash Core is running in a usable environment with all
+ *  Ensure that Omega Core is running in a usable environment with all
  *  necessary library support.
  */
 static bool InitSanityCheck()
@@ -1566,7 +1566,7 @@ bool AppInitParameterInteraction(const ArgsManager& args)
 
 static bool LockDataDirectory(bool probeOnly)
 {
-    // Make sure only a single Dash Core process is using the data directory.
+    // Make sure only a single Omega Core process is using the data directory.
     fs::path datadir = GetDataDir();
     if (!DirIsWritable(datadir)) {
         return InitError(strprintf(_("Cannot write to data directory '%s'; check permissions."), datadir.string()));
@@ -1667,9 +1667,9 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     // Warn about relative -datadir path.
     if (args.IsArgSet("-datadir") && !fs::path(args.GetArg("-datadir", "")).is_absolute()) {
         LogPrintf("Warning: relative datadir option '%s' specified, which will be interpreted relative to the " /* Continued */
-                  "current working directory '%s'. This is fragile, because if Dash Core is started in the future "
+                  "current working directory '%s'. This is fragile, because if Omega Core is started in the future "
                   "from a different location, it will be unable to locate the current data files. There could "
-                  "also be data loss if Dash Core is started while in a temporary directory.\n",
+                  "also be data loss if Omega Core is started while in a temporary directory.\n",
                   args.GetArg("-datadir", ""), fs::current_path().string());
     }
 

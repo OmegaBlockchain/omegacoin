@@ -62,7 +62,7 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
         ui->helpMessage->setVisible(false);
     } else if (helpMode == cmdline) {
         setWindowTitle(tr("Command-line options"));
-        QString header = "Usage:  dash-qt [command-line options]                     \n";
+        QString header = "Usage:  omega-qt [command-line options]                     \n";
         QTextCursor cursor(ui->helpMessage->document());
         cursor.insertText(version);
         cursor.insertBlock();

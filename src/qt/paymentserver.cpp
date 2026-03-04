@@ -48,7 +48,7 @@ const QString BITCOIN_IPC_PREFIX("dash:");
 //
 static QString ipcServerName()
 {
-    QString name("DashQt");
+    QString name("OmegaQt");
 
     // Append a simple hash of the datadir
     // Note that GetDataDir(true) returns a different path
@@ -173,7 +173,7 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) :
         if (!uriServer->listen(name)) {
             // constructor is called early in init, so don't use "Q_EMIT message()" here
             QMessageBox::critical(nullptr, tr("Payment request error"),
-                tr("Cannot start dash: click-to-pay handler"));
+                tr("Cannot start omega: click-to-pay handler"));
         }
         else {
             connect(uriServer, &QLocalServer::newConnection, this, &PaymentServer::handleURIConnection);
@@ -250,7 +250,7 @@ void PaymentServer::handleURIOrFile(const QString& s)
             }
             else
                 Q_EMIT message(tr("URI handling"),
-                    tr("URI cannot be parsed! This can be caused by an invalid Dash address or malformed URI parameters."),
+                    tr("URI cannot be parsed! This can be caused by an invalid Omega address or malformed URI parameters."),
                     CClientUIInterface::ICON_WARNING);
 
             return;

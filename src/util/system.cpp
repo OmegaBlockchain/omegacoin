@@ -88,7 +88,7 @@ const std::string gCoinJoinName = "CoinJoin";
 */
 int nWalletBackups = 10;
 
-const char * const BITCOIN_CONF_FILENAME = "dash.conf";
+const char * const BITCOIN_CONF_FILENAME = "omega.conf";
 const char * const BITCOIN_SETTINGS_FILENAME = "settings.json";
 
 ArgsManager gArgs;
@@ -707,13 +707,13 @@ void PrintExceptionContinue(const std::exception_ptr pex, const char* pszExcepti
 
 fs::path GetDefaultDataDir()
 {
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\DashCore
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\DashCore
-    // Mac: ~/Library/Application Support/DashCore
-    // Unix: ~/.dashcore
+    // Windows < Vista: C:\Documents and Settings\Username\Application Data\OmegaCore
+    // Windows >= Vista: C:\Users\Username\AppData\Roaming\OmegaCore
+    // Mac: ~/Library/Application Support/OmegaCore
+    // Unix: ~/.omegacore
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "DashCore";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "OmegaCore";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -723,10 +723,10 @@ fs::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    return pathRet / "Library/Application Support/DashCore";
+    return pathRet / "Library/Application Support/OmegaCore";
 #else
     // Unix
-    return pathRet / ".dashcore";
+    return pathRet / ".omegacore";
 #endif
 #endif
 }
@@ -1330,9 +1330,9 @@ std::string CopyrightHolders(const std::string& strPrefix, unsigned int nStartYe
     const auto copyright_devs = strprintf(_(COPYRIGHT_HOLDERS).translated, COPYRIGHT_HOLDERS_SUBSTITUTION);
     std::string strCopyrightHolders = strPrefix + strprintf(" %u-%u ", nStartYear, nEndYear) + copyright_devs;
 
-    // Check for untranslated substitution to make sure Dash Core copyright is not removed by accident
-    if (copyright_devs.find("Dash Core") == std::string::npos) {
-        strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2014, nEndYear) + "The Dash Core developers";
+    // Check for untranslated substitution to make sure Omega Core copyright is not removed by accident
+    if (copyright_devs.find("Omega Core") == std::string::npos) {
+        strCopyrightHolders += "\n" + strPrefix + strprintf(" %u-%u ", 2014, nEndYear) + "The Omega Core developers";
     }
     // Check for untranslated substitution to make sure Bitcoin Core copyright is not removed by accident
     if (copyright_devs.find("Bitcoin Core") == std::string::npos) {

@@ -10,6 +10,7 @@
 #include <qt/bitcoingui.h>
 #include <qt/governancelist.h>
 #include <qt/masternodelist.h>
+#include <qt/messagingpage.h>
 #include <qt/walletview.h>
 
 #include <cassert>
@@ -55,6 +56,9 @@ WalletFrame::WalletFrame(BitcoinGUI* _gui) :
 
     governanceListPage = new GovernanceList();
     walletStack->addWidget(governanceListPage);
+
+    messagingPage = new MessagingPage();
+    walletStack->addWidget(messagingPage);
 }
 
 WalletFrame::~WalletFrame()
@@ -67,6 +71,7 @@ void WalletFrame::setClientModel(ClientModel *_clientModel)
 
     masternodeListPage->setClientModel(_clientModel);
     governanceListPage->setClientModel(_clientModel);
+    messagingPage->setClientModel(_clientModel);
 
     for (auto i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i) {
         i.value()->setClientModel(_clientModel);
@@ -167,6 +172,19 @@ void WalletFrame::gotoGovernancePage()
     }
 }
 
+void WalletFrame::gotoMessagingPage()
+{
+    QMap<WalletModel*, WalletView*>::const_iterator i;
+
+    if (mapWalletViews.empty()) {
+        walletStack->setCurrentWidget(messagingPage);
+        return;
+    }
+
+    for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i) {
+        i.value()->gotoMessagingPage();
+    }
+}
 
 void WalletFrame::gotoOverviewPage()
 {

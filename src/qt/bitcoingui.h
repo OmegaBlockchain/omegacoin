@@ -137,6 +137,7 @@ private:
     QToolButton* historyButton = nullptr;
     QToolButton* masternodeButton = nullptr;
     QToolButton* governanceButton = nullptr;
+    QToolButton* messagingButton = nullptr;
     QAction* appToolBarLogoAction = nullptr;
     QAction* quitAction = nullptr;
     QAction* sendCoinsMenuAction = nullptr;
@@ -310,6 +311,8 @@ public Q_SLOTS:
 #ifdef ENABLE_WALLET
     /** Switch to governance page */
     void gotoGovernancePage();
+    /** Switch to messaging page */
+    void gotoMessagingPage();
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */

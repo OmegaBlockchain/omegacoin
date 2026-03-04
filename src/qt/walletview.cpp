@@ -94,6 +94,9 @@ WalletView::WalletView(QWidget* parent) :
         addWidget(governanceListPage);
     }
 
+    messagingPage = new MessagingPage();
+    addWidget(messagingPage);
+
     connect(overviewPage, &OverviewPage::transactionClicked, this, &WalletView::transactionClicked);
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, &OverviewPage::transactionClicked, transactionView, static_cast<void (TransactionView::*)(const QModelIndex&)>(&TransactionView::focusTransaction));
@@ -144,6 +147,9 @@ void WalletView::setClientModel(ClientModel *_clientModel)
     }
     if (settings.value("fShowGovernanceTab").toBool() && governanceListPage != nullptr) {
         governanceListPage->setClientModel(_clientModel);
+    }
+    if (messagingPage != nullptr) {
+        messagingPage->setClientModel(_clientModel);
     }
 }
 
@@ -222,6 +228,11 @@ void WalletView::gotoGovernancePage()
     if (settings.value("fShowGovernanceTab").toBool()) {
         setCurrentWidget(governanceListPage);
     }
+}
+
+void WalletView::gotoMessagingPage()
+{
+    setCurrentWidget(messagingPage);
 }
 
 void WalletView::gotoOverviewPage()

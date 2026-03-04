@@ -8,6 +8,7 @@
 #include <amount.h>
 #include <qt/governancelist.h>
 #include <qt/masternodelist.h>
+#include <qt/messagingpage.h>
 
 #include <QStackedWidget>
 
@@ -68,6 +69,7 @@ private:
     AddressBookPage *usedReceivingAddressesPage;
     MasternodeList *masternodeListPage;
     GovernanceList* governanceListPage;
+    MessagingPage* messagingPage;
 
     TransactionView *transactionView;
 
@@ -77,6 +79,8 @@ private:
 public Q_SLOTS:
     /** Switch to governance page */
     void gotoGovernancePage();
+    /** Switch to messaging page */
+    void gotoMessagingPage();
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */

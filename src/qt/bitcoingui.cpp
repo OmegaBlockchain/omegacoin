@@ -690,6 +690,13 @@ void BitcoinGUI::createToolBars()
             governanceButton->setEnabled(true);
         }
 
+        messagingButton = new QToolButton(this);
+        messagingButton->setText(tr("&Messages"));
+        messagingButton->setStatusTip(tr("View and send secure messages"));
+        tabGroup->addButton(messagingButton);
+        connect(messagingButton, &QToolButton::clicked, this, &BitcoinGUI::gotoMessagingPage);
+        messagingButton->setEnabled(true);
+
         connect(overviewButton, &QToolButton::clicked, this, &BitcoinGUI::gotoOverviewPage);
         connect(sendCoinsButton, &QToolButton::clicked, [this]{ gotoSendCoinsPage(); });
         connect(coinJoinCoinsButton, &QToolButton::clicked, [this]{ gotoCoinJoinCoinsPage(); });
@@ -1128,6 +1135,14 @@ void BitcoinGUI::gotoGovernancePage()
     if (settings.value("fShowGovernanceTab").toBool() && governanceButton) {
         governanceButton->setChecked(true);
         if (walletFrame) walletFrame->gotoGovernancePage();
+    }
+}
+
+void BitcoinGUI::gotoMessagingPage()
+{
+    if (messagingButton) {
+        messagingButton->setChecked(true);
+        if (walletFrame) walletFrame->gotoMessagingPage();
     }
 }
 

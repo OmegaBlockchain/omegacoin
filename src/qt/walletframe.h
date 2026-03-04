@@ -16,6 +16,7 @@ class WalletModel;
 class WalletView;
 class MasternodeList;
 class GovernanceList;
+class MessagingPage;
 
 QT_BEGIN_NAMESPACE
 class QStackedWidget;
@@ -59,6 +60,7 @@ private:
     QGroupBox* no_wallet_group;
     MasternodeList* masternodeListPage;
     GovernanceList* governanceListPage;
+    MessagingPage* messagingPage;
 
     bool bOutOfSync;
 
@@ -69,6 +71,8 @@ public:
 public Q_SLOTS:
     /** Switch to governance page */
     void gotoGovernancePage();
+    /** Switch to messaging page */
+    void gotoMessagingPage();
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */

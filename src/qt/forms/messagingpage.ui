@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MessagingPage</class>
+ <widget class="QWidget" name="MessagingPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>550</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Messages</string>
+  </property>
+  <layout class="QVBoxLayout" name="topLayout">
+   <property name="leftMargin">
+    <number>20</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>20</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="disabledLabel">
+     <property name="text">
+      <string>Secure messaging is not enabled.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="visible">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="enableSmsgButton">
+     <property name="text">
+      <string>Enable Secure Messaging</string>
+     </property>
+     <property name="visible">
+      <bool>false</bool>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>250</width>
+       <height>16777215</height>
+      </size>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <!-- Tab 0: Inbox -->
+     <widget class="QWidget" name="tabInbox">
+      <attribute name="title">
+       <string>Inbox</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="inboxLayout">
+       <item>
+        <layout class="QHBoxLayout" name="inboxFilterLayout">
+         <item>
+          <widget class="QLabel" name="inboxFilterLabel">
+           <property name="text">
+            <string>Filter:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="inboxFilterLineEdit">
+           <property name="placeholderText">
+            <string>Filter by address or text</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="inboxSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="inboxCountLabel">
+           <property name="text">
+            <string notr="true">0 messages</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="inboxTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Tab 1: Outbox -->
+     <widget class="QWidget" name="tabOutbox">
+      <attribute name="title">
+       <string>Outbox</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="outboxLayout">
+       <item>
+        <layout class="QHBoxLayout" name="outboxFilterLayout">
+         <item>
+          <widget class="QLabel" name="outboxFilterLabel">
+           <property name="text">
+            <string>Filter:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="outboxFilterLineEdit">
+           <property name="placeholderText">
+            <string>Filter by address or text</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="outboxSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="outboxCountLabel">
+           <property name="text">
+            <string notr="true">0 messages</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="outboxTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Tab 2: Compose -->
+     <widget class="QWidget" name="tabCompose">
+      <attribute name="title">
+       <string>Compose</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="composeLayout">
+       <item>
+        <layout class="QFormLayout" name="composeFormLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="fromLabel">
+           <property name="text">
+            <string>From:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="fromAddressCombo">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="toLabel">
+           <property name="text">
+            <string>To:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="toAddressEdit">
+           <property name="placeholderText">
+            <string>Enter recipient address</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="paidLabel">
+           <property name="text">
+            <string>Options:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <layout class="QHBoxLayout" name="paidLayout">
+           <item>
+            <widget class="QCheckBox" name="paidCheckBox">
+             <property name="text">
+              <string>Paid message</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="retentionLabel">
+             <property name="text">
+              <string>Retention (days):</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="retentionSpinBox">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>31</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="feeEstimateLabel">
+             <property name="text">
+              <string notr="true"></string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="paidSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="messageEdit">
+         <property name="placeholderText">
+          <string>Enter your message</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="composeSendLayout">
+         <item>
+          <widget class="QLabel" name="charCountLabel">
+           <property name="text">
+            <string notr="true">0 / 24000</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="composeSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="sendStatusLabel">
+           <property name="text">
+            <string notr="true"></string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="sendButton">
+           <property name="text">
+            <string>Send</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <!-- Tab 3: Keys -->
+     <widget class="QWidget" name="tabKeys">
+      <attribute name="title">
+       <string>Keys</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="keysLayout">
+       <item>
+        <layout class="QHBoxLayout" name="keysFilterLayout">
+         <item>
+          <widget class="QLabel" name="keysFilterLabel">
+           <property name="text">
+            <string>Filter:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="keysFilterLineEdit">
+           <property name="placeholderText">
+            <string>Filter by address or label</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="keysSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>10</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="scanChainButton">
+           <property name="text">
+            <string>Scan Blockchain</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="addAddressButton">
+           <property name="text">
+            <string>Add Address</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="keysTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

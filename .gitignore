@@ -6,11 +6,12 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/dash
-src/dashd
-src/dash-cli
-src/dash-tx
-src/dash-wallet
+src/omega
+src/omegad
+src/omega-cli
+src/omega-tx
+src/omega-wallet
+src/qt/omega-qt
 src/test/fuzz/*
 !src/test/fuzz/*.*
 src/test/test_dash
@@ -93,8 +94,8 @@ libconftest.dylib*
 *.qm
 Makefile
 !depends/Makefile
-dash-qt
-Dash-Qt.app
+omega-qt
+Omega-Qt.app
 background.tiff*
 !/depends/Makefile
 
@@ -103,7 +104,7 @@ Makefile.am.user
 
 # Unit-tests
 Makefile.test
-dash-qt_test
+omega-qt_test
 
 # Resources cpp
 qrc_*.cpp
@@ -141,9 +142,9 @@ src/qt/dash-qt.bash
 qa/pull-tester/tests-config.sh
 
 #development symlinks
-dash-cli
-dashd
-dash-qt
+omega-cli
+omegad
+omega-qt
 make
 
 /docker/bin

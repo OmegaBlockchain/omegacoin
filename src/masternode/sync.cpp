@@ -37,6 +37,10 @@ void CMasternodeSync::Reset(bool fForce, bool fNotifyReset)
     nTimeLastBumped = GetTime();
     nTimeLastUpdateBlockTip = 0;
     fReachedBestHeader = false;
+    // Clear stale fulfilled requests so peers are not disconnected on restart.
+    // When sync resets to BLOCKCHAIN, persisted "full-sync" flags from a previous
+    // session would cause ProcessTick to disconnect every known peer immediately.
+    netfulfilledman.Clear();
     if (fNotifyReset) {
         uiInterface.NotifyAdditionalDataSyncProgressChanged(-1);
     }

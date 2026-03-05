@@ -331,10 +331,11 @@ public:
             }
         };
 
+        // getchaintxstats 17280 000001ffaca7093c2144636d514c9b6c1fc3059a95ed8155901a5d52f5d0d5da
         chainTxData = ChainTxData{
-                0,
-                0,
-                0,
+                1772692774, // * UNIX timestamp of last known number of transactions (Block 3138974)
+                3702605,    // * total number of transactions between genesis and that timestamp
+                0.0231489930142416, // * estimated number of transactions per second after that timestamp
         };
     }
 };

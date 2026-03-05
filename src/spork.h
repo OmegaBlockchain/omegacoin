@@ -194,7 +194,7 @@ public:
     {
         // We don't serialize pubkey ids because pubkeys should be
         // hardcoded or be set with cmdline or options, should
-        // not reuse pubkeys from previous dashd run.
+        // not reuse pubkeys from previous omegad run.
         // We don't serialize private key to prevent its leakage.
         LOCK(cs);
         s << SERIALIZATION_VERSION_STRING << mapSporksByHash << mapSporksActive;

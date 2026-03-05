@@ -1284,7 +1284,7 @@ static UniValue echo(const JSONRPCRequest& request)
                 "\nSimply echo back the input arguments. This command is for testing.\n"
                 "\nIt will return an internal bug report when exactly 100 arguments are passed.\n"
                 "\nThe difference between echo and echojson is that echojson has argument conversion enabled in the client-side table in "
-                "dash-cli and the GUI. There is no server-side difference.",
+                "omega-cli and the GUI. There is no server-side difference.",
                 {},
                 RPCResult{RPCResult::Type::NONE, "", "Returns whatever was passed in"},
                 RPCExamples{""},

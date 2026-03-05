@@ -39,7 +39,7 @@ namespace interfaces {
 class Handler;
 class WalletClient;
 
-//! Interface for the src/evo part of a dash node (dashd process).
+//! Interface for the src/evo part of a omega node (omegad process).
 class EVO
 {
 public:
@@ -47,7 +47,7 @@ public:
     virtual CDeterministicMNList getListAtChainTip() = 0;
 };
 
-//! Interface for the src/governance part of a dash node (dashd process).
+//! Interface for the src/governance part of a omega node (omegad process).
 class GOV
 {
 public:
@@ -55,7 +55,7 @@ public:
     virtual void getAllNewerThan(std::vector<CGovernanceObject> &objs, int64_t nMoreThanTime) = 0;
 };
 
-//! Interface for the src/llmq part of a dash node (dashd process).
+//! Interface for the src/llmq part of a omega node (omegad process).
 class LLMQ
 {
 public:
@@ -63,7 +63,7 @@ public:
     virtual size_t getInstantSentLockCount() = 0;
 };
 
-//! Interface for the src/masternode part of a dash node (dashd process).
+//! Interface for the src/masternode part of a omega node (omegad process).
 namespace Masternode
 {
 class Sync
@@ -112,7 +112,7 @@ struct BlockAndHeaderTipInfo
     double verification_progress;
 };
 
-//! Top-level interface for a dash node (dashd process).
+//! Top-level interface for a omega node (omegad process).
 class Node
 {
 public:

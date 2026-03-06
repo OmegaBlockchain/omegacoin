@@ -29,5 +29,6 @@ define $(package)_stage_cmds
 endef
 
 define $(package)_postprocess_cmds
-  rm -rf var lib/*.la
+  rm -rf var lib/*.la && \
+  sed -i 's/Requires.private:/Requires:/g' lib/pkgconfig/fontconfig.pc
 endef

@@ -1348,7 +1348,7 @@ bool loadFonts()
         QFont::Weight boldWeight = getBestMatch(family, defaultFontWeightBold);
         if (normalWeight == boldWeight) {
             // If the results are the same use the next possible weight for bold font
-            auto& vecSupported = mapSupportedWeights[fontFamily];
+            auto& vecSupported = mapSupportedWeights[family];
             auto it = std::find(vecSupported.begin(), vecSupported.end(),normalWeight);
             if (++it != vecSupported.end()) {
                 boldWeight = *it;
@@ -1398,6 +1398,14 @@ void setApplicationFont()
 
     font->setPointSizeF(defaultFontSize);
     qApp->setFont(*font);
+
+    // Use system default font for menus so shortcut key glyphs render correctly
+    if (osDefaultFont) {
+        QFont menuFont(*osDefaultFont);
+        menuFont.setPointSizeF(defaultFontSize);
+        qApp->setFont(menuFont, "QMenuBar");
+        qApp->setFont(menuFont, "QMenu");
+    }
 
     qDebug() << __func__ << ": " << qApp->font().toString() <<
                 " family: " << qApp->font().family() <<

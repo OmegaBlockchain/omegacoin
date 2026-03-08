@@ -3814,6 +3814,13 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "time-too-old", strprintf("block's timestamp is too early %d %d", block.GetBlockTime(), pindexPrev->GetMedianTimePast()));
 
+    // Enforce minimum time between blocks (activated with LWMA)
+    if (nHeight >= consensusParams.nPowLWMAHeight) {
+        int64_t nMinBlockTimeDelta = consensusParams.nPowTargetSpacing / 2;
+        if (block.GetBlockTime() < pindexPrev->GetBlockTime() + nMinBlockTimeDelta)
+            return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "time-too-close", strprintf("block timestamp too close to parent: %d < %d + %d", block.GetBlockTime(), pindexPrev->GetBlockTime(), nMinBlockTimeDelta));
+    }
+
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
         return state.Invalid(ValidationInvalidReason::BLOCK_TIME_FUTURE, false, REJECT_INVALID, "time-too-new", strprintf("block timestamp too far in the future %d %d", block.GetBlockTime(), nAdjustedTime + 2 * 60 * 60));

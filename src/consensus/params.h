@@ -111,6 +111,8 @@ struct Params {
     int64_t nPowTargetTimespan;
     int nPowKGWHeight;
     int nPowDGWHeight;
+    int nPowLWMAHeight;
+    int nLWMAWindow;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     /** Time at which paid SMSG becomes active */
     int64_t nPaidSmsgTime = 0;

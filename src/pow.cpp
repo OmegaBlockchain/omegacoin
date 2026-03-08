@@ -12,6 +12,7 @@
 #include <primitives/block.h>
 #include <uint256.h>
 
+#include <algorithm>
 #include <math.h>
 
 unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const Consensus::Params& params) {
@@ -130,6 +131,49 @@ unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consens
     return bnNew.GetCompact();
 }
 
+unsigned int static LwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params) {
+    // LWMA-1 difficulty algorithm
+    // Copyright (c) 2017-2019 Zawy, Bitcoin Gold developers
+    // MIT License
+    // https://github.com/zawy12/difficulty-algorithms/issues/3
+
+    const int64_t T = params.nPowTargetSpacing;
+    const int64_t N = params.nLWMAWindow;
+    const int64_t k = N * (N + 1) * T / 2;
+    const int height = pindexLast->nHeight;
+    const arith_uint256 powLimit = UintToArith256(params.powLimit);
+
+    if (height < N) { return powLimit.GetCompact(); }
+
+    arith_uint256 sumTarget;
+    int64_t t = 0, j = 0;
+
+    const CBlockIndex* blockPreviousTimestamp = pindexLast->GetAncestor(height - N);
+    int64_t previousTimestamp = blockPreviousTimestamp->GetBlockTime();
+
+    for (int64_t i = height - N + 1; i <= height; i++) {
+        const CBlockIndex* block = pindexLast->GetAncestor(i);
+        int64_t thisTimestamp = (block->GetBlockTime() > previousTimestamp) ?
+                                 block->GetBlockTime() : previousTimestamp + 1;
+        int64_t solveTime = std::min(6 * T, thisTimestamp - previousTimestamp);
+        previousTimestamp = thisTimestamp;
+        j++;
+        t += solveTime * j;
+
+        arith_uint256 target;
+        target.SetCompact(block->nBits);
+        sumTarget += target / (N * N);
+    }
+
+    // Prevent division by zero edge case
+    if (t < N * T / 20) { t = N * T / 20; }
+
+    arith_uint256 nextTarget = t * sumTarget / k;
+    if (nextTarget > powLimit) { nextTarget = powLimit; }
+
+    return nextTarget.GetCompact();
+}
+
 unsigned int GetNextWorkRequiredBTC(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
@@ -200,6 +244,10 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             }
             return bnNew.GetCompact();
         }
+    }
+
+    if (pindexLast->nHeight + 1 >= params.nPowLWMAHeight) {
+        return LwmaCalculateNextWorkRequired(pindexLast, params);
     }
 
     if (pindexLast->nHeight + 1 < params.nPowDGWHeight) {

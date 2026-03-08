@@ -92,6 +92,7 @@ private Q_SLOTS:
     void extraInfoDIP3_clicked();
     void copyProTxHash_clicked();
     void copyCollateralOutpoint_clicked();
+    void on_btnCreateMasternode_clicked();
 
     void handleMasternodeListChanged();
     void updateDIP3ListScheduled();

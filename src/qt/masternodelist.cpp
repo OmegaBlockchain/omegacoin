@@ -7,6 +7,7 @@
 
 #include <evo/deterministicmns.h>
 #include <qt/clientmodel.h>
+#include <qt/masternodewizarddialog.h>
 #include <clientversion.h>
 #include <coins.h>
 #include <qt/guiutil.h>
@@ -399,4 +400,18 @@ void MasternodeList::copyCollateralOutpoint_clicked()
     }
 
     QApplication::clipboard()->setText(QString::fromStdString(dmn->collateralOutpoint.ToStringShort()));
+}
+
+void MasternodeList::on_btnCreateMasternode_clicked()
+{
+    if (!walletModel || !clientModel) {
+        return;
+    }
+
+    MasternodeWizardDialog dlg(walletModel->node(), walletModel, this);
+    if (dlg.exec() == QDialog::Accepted) {
+        // Trigger a list refresh
+        mnListChanged = true;
+        updateDIP3ListScheduled();
+    }
 }

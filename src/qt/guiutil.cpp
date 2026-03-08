@@ -1464,7 +1464,7 @@ void updateFonts()
     for (QWidget* w : qApp->allWidgets()) {
         std::vector<QString> vecIgnoreClasses{
             "QWidget", "QDialog", "QFrame", "QStackedWidget", "QDesktopWidget", "QDesktopScreenWidget",
-            "QTipLabel", "QMessageBox", "QMenu", "QComboBoxPrivateScroller", "QComboBoxPrivateContainer",
+            "QTipLabel", "QMessageBox", "QMenu", "QMenuBar", "QComboBoxPrivateScroller", "QComboBoxPrivateContainer",
             "QScrollBar", "QListView", "BitcoinGUI", "WalletView", "WalletFrame", "QVBoxLayout", "QGroupBox"
         };
         std::vector<QString> vecIgnoreObjects{
@@ -1515,7 +1515,7 @@ void updateFonts()
 
     // Scale the global font size for the classes in the map below
     static std::map<std::string, int> mapClassFontUpdates{
-        {"QTipLabel", -1}, {"QMenu", -1}, {"QMessageBox", -1}
+        {"QTipLabel", -1}, {"QMenuBar", -1}, {"QMenu", -1}, {"QMessageBox", -1}
     };
     for (auto& it : mapClassFontUpdates) {
         QFont fontClass = qApp->font(it.first.c_str());

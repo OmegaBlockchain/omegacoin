@@ -203,6 +203,48 @@ public:
     bool Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc) const;
 };
 
+/** An encapsulated x-only public key for Schnorr signatures (BIP340). */
+class XOnlyPubKey
+{
+private:
+    uint256 m_keydata;
+
+public:
+    static constexpr unsigned int XONLY_SIZE = 32;
+    static constexpr unsigned int SCHNORR_SIGNATURE_SIZE = 64;
+
+    XOnlyPubKey() = default;
+
+    explicit XOnlyPubKey(const uint256& keydata) : m_keydata(keydata) {}
+
+    /** Construct from a 32-byte data span. */
+    explicit XOnlyPubKey(const unsigned char* data) { memcpy(m_keydata.begin(), data, 32); }
+
+    /** Construct from a compressed CPubKey (extracts x coordinate). */
+    explicit XOnlyPubKey(const CPubKey& pubkey);
+
+    bool IsNull() const { return m_keydata.IsNull(); }
+
+    const unsigned char* data() const { return m_keydata.begin(); }
+    unsigned int size() const { return XONLY_SIZE; }
+
+    const uint256& GetKeyData() const { return m_keydata; }
+
+    CKeyID GetID() const
+    {
+        return CKeyID(Hash160(m_keydata.begin(), m_keydata.end()));
+    }
+
+    /**
+     * Verify a BIP340 Schnorr signature (64 bytes) over a 32-byte message hash.
+     */
+    bool VerifySchnorr(const uint256& msg, const std::vector<unsigned char>& sig) const;
+
+    friend bool operator==(const XOnlyPubKey& a, const XOnlyPubKey& b) { return a.m_keydata == b.m_keydata; }
+    friend bool operator!=(const XOnlyPubKey& a, const XOnlyPubKey& b) { return a.m_keydata != b.m_keydata; }
+    friend bool operator<(const XOnlyPubKey& a, const XOnlyPubKey& b) { return a.m_keydata < b.m_keydata; }
+};
+
 struct CExtPubKey {
     unsigned char nDepth;
     unsigned char vchFingerprint[4];

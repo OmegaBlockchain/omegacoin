@@ -86,6 +86,12 @@ const char* ScriptErrorString(const ScriptError serror)
             return "Public key is neither compressed or uncompressed";
         case SCRIPT_ERR_CLEANSTACK:
             return "Extra items left on stack after execution";
+        case SCRIPT_ERR_SCHNORR_SIG_SIZE:
+            return "Schnorr signature must be exactly 64 bytes";
+        case SCRIPT_ERR_SCHNORR_SIG_HASHTYPE:
+            return "Invalid Schnorr signature hash type";
+        case SCRIPT_ERR_SCHNORR_SIG:
+            return "Schnorr signature verification failed";
         case SCRIPT_ERR_OP_CODESEPARATOR:
             return "Using OP_CODESEPARATOR";
         case SCRIPT_ERR_SIG_FINDANDDELETE:

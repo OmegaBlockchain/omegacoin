@@ -90,6 +90,8 @@ struct Params {
     int DIP0008Height;
     /** Block height at which BRR becomes active */
     int BRRHeight;
+    /** Block height at which Schnorr signatures (BIP340) become active */
+    int nSchnorrHeight;
     /** Don't warn about unknown BIP 9 activations below this height.
      * This prevents us from warning about the CSV and DIP activations. */
     int MinBIP9WarningHeight;

@@ -95,6 +95,18 @@ bool static IsCompressedOrUncompressedPubKey(const valtype &vchPubKey) {
 }
 
 /**
+ * A Schnorr signature on the stack is exactly 65 bytes:
+ * 64 bytes of BIP340 signature + 1 byte hashtype.
+ * This is unambiguous with DER-encoded ECDSA signatures,
+ * which are 9-73 bytes but structurally cannot be exactly 65 bytes
+ * with a valid DER prefix (0x30).
+ */
+bool static IsSchnorrSignature(const valtype &vchSig)
+{
+    return vchSig.size() == 65;
+}
+
+/**
  * A canonical signature exists of: <30> <total len> <02> <len R> <R> <02> <len S> <S> <hashtype>
  * Where R and S are not negative (their first byte has its highest bit not set), and not
  * excessively padded (do not start with a 0 byte, unless an otherwise negative number follows,
@@ -201,6 +213,15 @@ bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned i
     // Empty signature. Not strictly DER encoded, but allowed to provide a
     // compact way to provide an invalid signature for use with CHECK(MULTI)SIG
     if (vchSig.size() == 0) {
+        return true;
+    }
+    // Schnorr signatures are 65 bytes (64-byte sig + 1-byte hashtype).
+    // When SCRIPT_ENABLE_SCHNORR is active, bypass DER and low-S checks
+    // for these signatures — they use a different encoding entirely.
+    if ((flags & SCRIPT_ENABLE_SCHNORR) && IsSchnorrSignature(vchSig)) {
+        if ((flags & SCRIPT_VERIFY_STRICTENC) != 0 && !IsDefinedHashtypeSignature(vchSig)) {
+            return set_error(serror, SCRIPT_ERR_SCHNORR_SIG_HASHTYPE);
+        }
         return true;
     }
     if ((flags & (SCRIPT_VERIFY_DERSIG | SCRIPT_VERIFY_LOW_S | SCRIPT_VERIFY_STRICTENC)) != 0 && !IsValidSignatureEncoding(vchSig)) {
@@ -978,6 +999,11 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     valtype& vchSig    = stacktop(-2);
                     valtype& vchPubKey = stacktop(-1);
 
+                    if (!CheckSignatureEncoding(vchSig, flags, serror) || !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
+                        //serror is set
+                        return false;
+                    }
+
                     // Subset of script starting at the most recent codeseparator
                     CScript scriptCode(pbegincodehash, pend);
 
@@ -988,11 +1014,17 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                             return set_error(serror, SCRIPT_ERR_SIG_FINDANDDELETE);
                     }
 
-                    if (!CheckSignatureEncoding(vchSig, flags, serror) || !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
-                        //serror is set
-                        return false;
+                    bool fSuccess = false;
+
+                    // Schnorr path: 65-byte sig (64 Schnorr + 1 hashtype)
+                    if ((flags & SCRIPT_ENABLE_SCHNORR) && IsSchnorrSignature(vchSig)) {
+                        int nHashType = vchSig.back();
+                        valtype vchSchnorrSig(vchSig.begin(), vchSig.begin() + 64);
+                        fSuccess = checker.CheckSchnorrSig(vchSchnorrSig, vchPubKey, scriptCode, nHashType);
+                    } else {
+                        // ECDSA path (existing behaviour)
+                        fSuccess = checker.CheckSig(vchSig, vchPubKey, scriptCode, sigversion);
                     }
-                    bool fSuccess = checker.CheckSig(vchSig, vchPubKey, scriptCode, sigversion);
 
                     if (!fSuccess && (flags & SCRIPT_VERIFY_NULLFAIL) && vchSig.size())
                         return set_error(serror, SCRIPT_ERR_SIG_NULLFAIL);
@@ -1512,6 +1544,18 @@ bool GenericTransactionSignatureChecker<T>::CheckSig(const std::vector<unsigned 
         return false;
 
     return true;
+}
+
+template <class T>
+bool GenericTransactionSignatureChecker<T>::CheckSchnorrSig(const std::vector<unsigned char>& sig64, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, int nHashType) const
+{
+    CPubKey pubkey(vchPubKey);
+    if (!pubkey.IsValid() || !pubkey.IsCompressed())
+        return false;
+
+    XOnlyPubKey xpubkey(pubkey);
+    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, SigVersion::SCHNORR, this->txdata);
+    return xpubkey.VerifySchnorr(sighash, sig64);
 }
 
 template <class T>

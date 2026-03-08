@@ -7,6 +7,8 @@
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
+#include <secp256k1_extrakeys.h>
+#include <secp256k1_schnorrsig.h>
 
 namespace
 {
@@ -248,6 +250,24 @@ bool CPubKey::Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChi
     secp256k1_ec_pubkey_serialize(secp256k1_context_verify, pub, &publen, &pubkey, SECP256K1_EC_COMPRESSED);
     pubkeyChild.Set(pub, pub + publen);
     return true;
+}
+
+XOnlyPubKey::XOnlyPubKey(const CPubKey& pubkey)
+{
+    assert(pubkey.IsCompressed());
+    // Compressed pubkey is 0x02/0x03 + 32 bytes of x coordinate.
+    memcpy(m_keydata.begin(), pubkey.data() + 1, 32);
+}
+
+bool XOnlyPubKey::VerifySchnorr(const uint256& msg, const std::vector<unsigned char>& sig) const
+{
+    if (sig.size() != SCHNORR_SIGNATURE_SIZE)
+        return false;
+    assert(secp256k1_context_verify && "secp256k1_context_verify must be initialised to use XOnlyPubKey.");
+    secp256k1_xonly_pubkey pubkey;
+    if (!secp256k1_xonly_pubkey_parse(secp256k1_context_verify, &pubkey, m_keydata.begin()))
+        return false;
+    return secp256k1_schnorrsig_verify(secp256k1_context_verify, sig.data(), msg.begin(), 32, &pubkey);
 }
 
 void CExtPubKey::Encode(unsigned char code[BIP32_EXTKEY_SIZE]) const {

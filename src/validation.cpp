@@ -1921,6 +1921,11 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_ENABLE_DIP0020_OPCODES;
     }
 
+    // Start enforcing Schnorr signature support (BIP340)
+    if (pindex->nHeight >= consensusparams.nSchnorrHeight) {
+        flags |= SCRIPT_ENABLE_SCHNORR;
+    }
+
     return flags;
 }
 

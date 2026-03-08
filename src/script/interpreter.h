@@ -102,6 +102,11 @@ enum
     // Making OP_CODESEPARATOR and FindAndDelete fail
     //
     SCRIPT_VERIFY_CONST_SCRIPTCODE = (1U << 16),
+
+    // Enable Schnorr signature verification (BIP340) in OP_CHECKSIG.
+    // A 65-byte signature on the stack (64-byte Schnorr + 1-byte hashtype)
+    // is interpreted as a Schnorr signature when this flag is active.
+    SCRIPT_ENABLE_SCHNORR = (1U << 17),
 };
 
 bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
@@ -124,6 +129,7 @@ struct PrecomputedTransactionData
 enum class SigVersion
 {
     BASE = 0,
+    SCHNORR = 1,
 };
 
 template <class T>
@@ -133,6 +139,11 @@ class BaseSignatureChecker
 {
 public:
     virtual bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const
+    {
+        return false;
+    }
+
+    virtual bool CheckSchnorrSig(const std::vector<unsigned char>& sig64, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, int nHashType) const
     {
         return false;
     }
@@ -166,6 +177,7 @@ public:
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(nullptr) {}
     GenericTransactionSignatureChecker(const T* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, SigVersion sigversion) const override;
+    bool CheckSchnorrSig(const std::vector<unsigned char>& sig64, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, int nHashType) const override;
     bool CheckLockTime(const CScriptNum& nLockTime) const override;
     bool CheckSequence(const CScriptNum& nSequence) const override;
 };

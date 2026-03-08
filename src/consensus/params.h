@@ -94,6 +94,8 @@ struct Params {
     int nSchnorrHeight;
     /** Block height at which extended script element size (4096 bytes) becomes active */
     int nLargeElementsHeight;
+    /** Block height at which SMSG room transactions (type 8) become active */
+    int nSmsgRoomHeight;
     /** Don't warn about unknown BIP 9 activations below this height.
      * This prevents us from warning about the CSV and DIP activations. */
     int MinBIP9WarningHeight;

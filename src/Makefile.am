@@ -175,6 +175,7 @@ BITCOIN_CORE_H = \
   evo/mnauth.h \
   evo/mnhftx.h \
   evo/providertx.h \
+  evo/smsgroomtx.h \
   evo/simplifiedmns.h \
   evo/specialtx.h \
   evo/specialtxman.h \
@@ -394,6 +395,7 @@ libbitcoin_server_a_SOURCES = \
   evo/mnauth.cpp \
   evo/mnhftx.cpp \
   evo/providertx.cpp \
+  evo/smsgroomtx.cpp \
   evo/simplifiedmns.cpp \
   evo/specialtx.cpp \
   evo/specialtxman.cpp \

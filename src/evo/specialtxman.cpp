@@ -9,6 +9,7 @@
 #include <evo/cbtx.h>
 #include <evo/deterministicmns.h>
 #include <evo/mnhftx.h>
+#include <evo/smsgroomtx.h>
 #include <evo/providertx.h>
 #include <hash.h>
 #include <llmq/blockprocessor.h>
@@ -44,6 +45,10 @@ bool CheckSpecialTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CVali
             return llmq::CheckLLMQCommitment(tx, pindexPrev, state);
         case TRANSACTION_MNHF_SIGNAL:
             return VersionBitsTipState(Params().GetConsensus(), Consensus::DEPLOYMENT_DIP0024) == ThresholdState::ACTIVE && CheckMNHFTx(tx, pindexPrev, state);
+        case TRANSACTION_SMSG_ROOM:
+            if (pindexPrev && pindexPrev->nHeight + 1 < Params().GetConsensus().nSmsgRoomHeight)
+                return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-tx-smsgroom-not-active");
+            return CheckSmsgRoomTx(tx, pindexPrev, state);
         }
     } catch (const std::exception& e) {
         LogPrintf("%s -- failed: %s\n", __func__, e.what());
@@ -71,6 +76,8 @@ bool ProcessSpecialTx(const CTransaction& tx, const CBlockIndex* pindex, CValida
         return true; // handled per block
     case TRANSACTION_MNHF_SIGNAL:
         return true; // handled per block
+    case TRANSACTION_SMSG_ROOM:
+        return true; // room creation is validated in CheckSpecialTx
     }
 
     return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-tx-type-proc");
@@ -94,6 +101,8 @@ bool UndoSpecialTx(const CTransaction& tx, const CBlockIndex* pindex)
         return true; // handled per block
     case TRANSACTION_MNHF_SIGNAL:
         return true; // handled per block
+    case TRANSACTION_SMSG_ROOM:
+        return true; // nothing to undo
     }
 
     return false;

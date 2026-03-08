@@ -22,6 +22,7 @@ enum {
     TRANSACTION_COINBASE = 5,
     TRANSACTION_QUORUM_COMMITMENT = 6,
     TRANSACTION_MNHF_SIGNAL = 7,
+    TRANSACTION_SMSG_ROOM = 8,
 };
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */

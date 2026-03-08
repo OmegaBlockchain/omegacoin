@@ -1926,6 +1926,11 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_ENABLE_SCHNORR;
     }
 
+    // Start enforcing extended script element size (520 -> 4096 bytes)
+    if (pindex->nHeight >= consensusparams.nLargeElementsHeight) {
+        flags |= SCRIPT_ENABLE_LARGE_ELEMENTS;
+    }
+
     return flags;
 }
 

@@ -317,6 +317,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
         return set_error(serror, SCRIPT_ERR_SCRIPT_SIZE);
     int nOpCount = 0;
     bool fRequireMinimal = (flags & SCRIPT_VERIFY_MINIMALDATA) != 0;
+    const unsigned int nMaxElementSize = (flags & SCRIPT_ENABLE_LARGE_ELEMENTS) ? MAX_SCRIPT_ELEMENT_SIZE_EXTENDED : MAX_SCRIPT_ELEMENT_SIZE;
 
     try
     {
@@ -329,7 +330,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
             //
             if (!script.GetOp(pc, opcode, vchPushValue))
                 return set_error(serror, SCRIPT_ERR_BAD_OPCODE);
-            if (vchPushValue.size() > MAX_SCRIPT_ELEMENT_SIZE)
+            if (vchPushValue.size() > nMaxElementSize)
                 return set_error(serror, SCRIPT_ERR_PUSH_SIZE);
 
             // Note how OP_RESERVED does not count towards the opcode limit.
@@ -1207,7 +1208,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
 
                     valtype &vch1 = stacktop(-2);
                     valtype &vch2 = stacktop(-1);
-                    if (vch1.size() + vch2.size() > MAX_SCRIPT_ELEMENT_SIZE) {
+                    if (vch1.size() + vch2.size() > nMaxElementSize) {
                         return set_error(serror, SCRIPT_ERR_PUSH_SIZE);
                     }
 
@@ -1262,7 +1263,7 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     }
 
                     uint64_t size = CScriptNum(stacktop(-1), fRequireMinimal).getint();
-                    if (size > MAX_SCRIPT_ELEMENT_SIZE) {
+                    if (size > nMaxElementSize) {
                         return set_error(serror, SCRIPT_ERR_PUSH_SIZE);
                     }
 

@@ -103,6 +103,10 @@ enum
     //
     SCRIPT_VERIFY_CONST_SCRIPTCODE = (1U << 16),
 
+    // Raise MAX_SCRIPT_ELEMENT_SIZE from 520 to 4096 bytes.
+    // Permits larger stack elements for multi-party proofs and OP_CAT usage.
+    SCRIPT_ENABLE_LARGE_ELEMENTS = (1U << 18),
+
     // Enable Schnorr signature verification (BIP340) in OP_CHECKSIG.
     // A 65-byte signature on the stack (64-byte Schnorr + 1-byte hashtype)
     // is interpreted as a Schnorr signature when this flag is active.

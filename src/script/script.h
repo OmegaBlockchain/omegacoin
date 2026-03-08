@@ -19,8 +19,11 @@
 #include <string>
 #include <vector>
 
-// Maximum number of bytes pushable to the stack
+// Maximum number of bytes pushable to the stack (legacy)
 static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520;
+
+// Extended maximum after hard fork activation
+static const unsigned int MAX_SCRIPT_ELEMENT_SIZE_EXTENDED = 4096;
 
 // Maximum number of non-push operations per script
 static const int MAX_OPS_PER_SCRIPT = 201;

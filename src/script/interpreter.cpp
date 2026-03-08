@@ -1054,18 +1054,30 @@ bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& 
                     valtype &vchMessage = stacktop(-2);
                     valtype &vchPubKey = stacktop(-1);
 
-                    if (!CheckSignatureEncoding(vchSig, flags, serror) || !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
-                        // serror is set
-                        return false;
-                    }
-
                     bool fSuccess = false;
                     if (vchSig.size()) {
                         valtype vchHash(32);
                         CSHA256()
                             .Write(vchMessage.data(), vchMessage.size())
                             .Finalize(vchHash.data());
-                        fSuccess = CPubKey(vchPubKey).Verify(uint256(vchHash), vchSig);
+
+                        // Schnorr path: 64-byte sig, compressed pubkey.
+                        // OP_CHECKDATASIG has no hashtype byte, so raw 64 bytes.
+                        if ((flags & SCRIPT_ENABLE_SCHNORR) && vchSig.size() == 64 &&
+                            vchPubKey.size() == CPubKey::COMPRESSED_SIZE) {
+                            CPubKey pubkey(vchPubKey);
+                            if (pubkey.IsValid()) {
+                                XOnlyPubKey xpubkey(pubkey);
+                                fSuccess = xpubkey.VerifySchnorr(uint256(vchHash), vchSig);
+                            }
+                        } else {
+                            // ECDSA path (existing behaviour)
+                            if (!CheckSignatureEncoding(vchSig, flags, serror) ||
+                                !CheckPubKeyEncoding(vchPubKey, flags, sigversion, serror)) {
+                                return false;
+                            }
+                            fSuccess = CPubKey(vchPubKey).Verify(uint256(vchHash), vchSig);
+                        }
                     }
 
                     if (!fSuccess && (flags & SCRIPT_VERIFY_NULLFAIL) && vchSig.size()) {

@@ -379,10 +379,10 @@ public:
         consensus.DIP0003EnforcementHash = uint256();
         consensus.DIP0008Height = 2;
         consensus.BRRHeight = std::numeric_limits<int>::max();
-        consensus.nSchnorrHeight = 1500;
-        consensus.nLargeElementsHeight = 1500;
-        consensus.nSmsgRoomHeight = 1500;
-        consensus.nConfidentialSmsgHeight = 1500;
+        consensus.nSchnorrHeight = 50;
+        consensus.nLargeElementsHeight = 50;
+        consensus.nSmsgRoomHeight = 50;
+        consensus.nConfidentialSmsgHeight = 50;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day

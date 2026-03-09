@@ -1022,7 +1022,14 @@ CAmount GetBlockSubsidy(int nPrevBits, int nPrevHeight, const Consensus::Params&
         dDiff = ConvertBitsToDouble(nPrevBits);
     }
 
-    if (nPrevHeight < 1) {
+    if (Params().NetworkIDString() == CBaseChainParams::TESTNET) {
+        // Testnet: 10,000 coin premine at block 1, then 50 coins per block
+        if (nPrevHeight < 1) {
+            nSubsidyBase = 10000;
+        } else {
+            nSubsidyBase = 50;
+        }
+    } else if (nPrevHeight < 1) {
         nSubsidyBase = 580000; //  PREMINE 1 BLOCKS, 0.5%
     } else if (nPrevHeight < 1000) {
         nSubsidyBase = 10;

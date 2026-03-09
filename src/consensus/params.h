@@ -96,6 +96,8 @@ struct Params {
     int nLargeElementsHeight;
     /** Block height at which SMSG room transactions (type 8) become active */
     int nSmsgRoomHeight;
+    /** Block height at which confidential SMSG funding becomes active */
+    int nConfidentialSmsgHeight;
     /** Don't warn about unknown BIP 9 activations below this height.
      * This prevents us from warning about the CSV and DIP activations. */
     int MinBIP9WarningHeight;

@@ -315,7 +315,7 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
             if (psmsg->version[0] == 3) {
                 uint256 txid;
                 uint160 msgId;
-                if (0 != smsgModule.HashMsg(*psmsg, pPayload, psmsg->nPayload-32, msgId)
+                if (0 != smsgModule.HashMsg(*psmsg, pPayload, psmsg->nPayload - psmsg->GetPaidTailSize(), msgId)
                     || !GetFundingTxid(pPayload, psmsg->nPayload, txid)) {
                     LogPrintf("%s: Get msgID or Txn Hash failed.\n", __func__);
                     LOCK(cs_smsgDB);
@@ -2452,7 +2452,7 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
         SecureMessage *psmsg = (SecureMessage*) pHeader;
 
         uint160 hash;
-        HashMsg(*psmsg, pPayload, nPayload-(psmsg->IsPaidVersion() ? 32 : 0), hash);
+        HashMsg(*psmsg, pPayload, nPayload - psmsg->GetPaidTailSize(), hash);
 
         std::string sPrefix("im");
         uint8_t chKey[30];
@@ -3254,7 +3254,8 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
 
         uint256 txid;
         uint160 msgId;
-        if (0 != HashMsg(*psmsg, pPayload, psmsg->nPayload-32, msgId)
+        uint32_t nTailSize = psmsg->GetPaidTailSize();
+        if (0 != HashMsg(*psmsg, pPayload, psmsg->nPayload - nTailSize, msgId)
             || !GetFundingTxid(pPayload, psmsg->nPayload, txid)) {
             LogPrintf("%s: Get msgID or Txn Hash failed.\n", __func__);
             return SMSG_GENERAL_ERROR;
@@ -3284,34 +3285,65 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
             }
 
             bool fFound = false;
-            // Find OP_RETURN output with SMSG funding data
+            // Find OP_RETURN output with SMSG funding data.
+            // Two formats are supported:
+            //   Legacy:  'F' <20-byte msgId> <4-byte fee>   (plaintext)
+            //   Blinded: 'B' <20-byte commitment>           (confidential)
             static const uint8_t DO_FUND_MSG = 'F';
+            static const uint8_t DO_FUND_MSG_BLIND = 'B';
             for (const auto &v : txOut->vout) {
-                if (v.scriptPubKey.size() < 26 || v.scriptPubKey[0] != OP_RETURN) {
+                if (v.scriptPubKey.size() < 23 || v.scriptPubKey[0] != OP_RETURN) {
                     continue;
                 }
-                // Expected format: OP_RETURN <push> DO_FUND_MSG <20 byte msgId> <4 byte fee>
                 const std::vector<uint8_t> vData(v.scriptPubKey.begin() + 2, v.scriptPubKey.end());
-                if (vData.size() < 25 || vData[0] != DO_FUND_MSG) {
+                if (vData.size() < 21) {
                     continue;
                 }
 
-                size_t n = (vData.size()-1) / 24;
+                if (vData[0] == DO_FUND_MSG_BLIND) {
+                    // Blinded format: 'B' <20-byte commitment>
+                    // Retrieve blinding key from the message payload
+                    std::vector<uint8_t> blindKey;
+                    if (!GetFundingBlindKey(pPayload, psmsg->nPayload, blindKey)) {
+                        continue;
+                    }
+                    // Recompute commitment: RIPEMD160(blindKey || msgId || fee_le32)
+                    uint32_t feeLE = (uint32_t)nExpectFee;
+                    uint160 expectedCommitment;
+                    CRIPEMD160()
+                        .Write(blindKey.data(), blindKey.size())
+                        .Write(msgId.begin(), 20)
+                        .Write((const uint8_t*)&feeLE, 4)
+                        .Finalize(expectedCommitment.begin());
 
-                for (size_t k = 0; k < n; ++k) {
-                    uint160 msgIdTx;
-                    memcpy(msgIdTx.begin(), &vData[1+k*24], 20);
-                    uint32_t nAmount;
-                    memcpy(&nAmount, &vData[1+k*24+20], 4);
-
-                    if (msgIdTx == msgId) {
-                        if (nAmount < nExpectFee) {
-                            LogPrintf("%s: Transaction %s underfunded message %s, expected %d paid %d.\n", __func__, txid.ToString(), msgId.ToString(), nExpectFee, nAmount);
-                            return SMSG_FUND_FAILED;
+                    size_t n = (vData.size()-1) / 20;
+                    for (size_t k = 0; k < n; ++k) {
+                        uint160 commitTx;
+                        memcpy(commitTx.begin(), &vData[1+k*20], 20);
+                        if (commitTx == expectedCommitment) {
+                            fFound = true;
+                            break;
                         }
-                        fFound = true;
+                    }
+                } else if (vData[0] == DO_FUND_MSG && vData.size() >= 25) {
+                    // Legacy plaintext format: 'F' <20-byte msgId> <4-byte fee>
+                    size_t n = (vData.size()-1) / 24;
+                    for (size_t k = 0; k < n; ++k) {
+                        uint160 msgIdTx;
+                        memcpy(msgIdTx.begin(), &vData[1+k*24], 20);
+                        uint32_t nAmount;
+                        memcpy(&nAmount, &vData[1+k*24+20], 4);
+
+                        if (msgIdTx == msgId) {
+                            if (nAmount < nExpectFee) {
+                                LogPrintf("%s: Transaction %s underfunded message %s, expected %d paid %d.\n", __func__, txid.ToString(), msgId.ToString(), nExpectFee, nAmount);
+                                return SMSG_FUND_FAILED;
+                            }
+                            fFound = true;
+                        }
                     }
                 }
+                if (fFound) break;
             }
 
             if (!fFound) {
@@ -3585,13 +3617,13 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         return errorN(SMSG_ENCRYPT_FAILED, "%s: Encrypt failed.", __func__);
     }
 
-    bool fPaid = smsg.version[0] == 3;
-    try { smsg.pPayload = new uint8_t[vchCiphertext.size() + (fPaid ? 32 : 0)]; } catch (std::exception &e) {
+    uint32_t nTailSize = smsg.GetPaidTailSize();
+    try { smsg.pPayload = new uint8_t[vchCiphertext.size() + nTailSize]; } catch (std::exception &e) {
         return errorN(SMSG_ALLOCATE_FAILED, "%s: Could not allocate pPayload, exception: %s.", __func__, e.what());
     }
 
     memcpy(smsg.pPayload, vchCiphertext.data(), vchCiphertext.size());
-    smsg.nPayload = vchCiphertext.size() + (fPaid ? 32 : 0);
+    smsg.nPayload = vchCiphertext.size() + nTailSize;
 
     // Calculate a 32 byte MAC with HMACSHA256, using key_m as salt
     //  Message authentication code, (hash of timestamp + iv + destination + payload)
@@ -3672,7 +3704,12 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     }
 
     int rv;
-    smsg = SecureMessage(fPaid, nDaysRetention);
+    bool fBlinded = false;
+    if (fPaid) {
+        LOCK(cs_main);
+        fBlinded = ::ChainActive().Height() >= Params().GetConsensus().nConfidentialSmsgHeight;
+    }
+    smsg = SecureMessage(fPaid, nDaysRetention, fBlinded);
     if ((rv = Encrypt(smsg, addressFrom, addressTo, sData)) != 0) {
         sError = GetString(rv);
         return errorN(rv, "%s: %s.", __func__, sError);
@@ -3696,7 +3733,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     // Place message in send queue, proof of work will happen in a thread.
     uint160 msgId;
-    HashMsg(smsg, smsg.pPayload, smsg.nPayload-(fPaid ? 32 : 0), msgId);
+    HashMsg(smsg, smsg.pPayload, smsg.nPayload - smsg.GetPaidTailSize(), msgId);
 
     std::string sPrefix("qm");
     uint8_t chKey[30];
@@ -3755,7 +3792,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
             LogPrintf("Encrypting a copy for outbox, using address %s\n", EncodeDestination(PKHash(addressOutbox)));
         }
 
-        SecureMessage smsgForOutbox(fPaid, nDaysRetention);
+        SecureMessage smsgForOutbox(fPaid, nDaysRetention, fBlinded);
         smsgForOutbox.timestamp = smsg.timestamp;
         if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData)) != 0) {
             LogPrintf("%s: Encrypt for outbox failed, %d.\n", __func__, rv);
@@ -3765,8 +3802,13 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
                 if (!smsg.GetFundingTxid(txfundId)) {
                     return errorN(SMSG_GENERAL_ERROR, "%s: GetFundingTxid failed.\n");
                 }
-                // SecureMsgEncrypt will alloc an extra 32 bytes when smsg version describes paid msg
-                memcpy(smsgForOutbox.pPayload+smsgForOutbox.nPayload-32, txfundId.begin(), 32);
+                // Copy funding txid to outbox message tail
+                memcpy(smsgForOutbox.pPayload + smsgForOutbox.nPayload - 32, txfundId.begin(), 32);
+                if (fBlinded) {
+                    // Copy blinding key to outbox message tail
+                    memcpy(smsgForOutbox.pPayload + smsgForOutbox.nPayload - 64,
+                           smsg.pPayload + smsg.nPayload - 64, SMSG_BLIND_KEY_LEN);
+                }
             }
 
             // Save sent message to db
@@ -3829,7 +3871,6 @@ int CSMSG::HashMsg(const SecureMessage &smsg, const uint8_t *pPayload, uint32_t 
 
 int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmount *nFee)
 {
-    // smsg.pPayload must have smsg.nPayload + 32 bytes allocated
 #ifdef ENABLE_WALLET
     if (!pwallet) {
         return SMSG_WALLET_UNSET;
@@ -3844,11 +3885,14 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
         return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Bad message ttl.");
     }
 
+    bool fBlinded = smsg.IsBlindedPaid();
+    uint32_t nTailSize = smsg.GetPaidTailSize();
+
     uint256 txfundId;
     uint160 msgId;
     CMutableTransaction txFund;
 
-    if (0 != HashMsg(smsg, smsg.pPayload, smsg.nPayload-32, msgId)) {
+    if (0 != HashMsg(smsg, smsg.pPayload, smsg.nPayload - nTailSize, msgId)) {
         return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Message hash failed.");
     }
 
@@ -3864,15 +3908,36 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
     assert(nMsgFee <= std::numeric_limits<uint32_t>::max());
     uint32_t msgFee = nMsgFee;
 
-    // Build OP_RETURN output with SMSG funding data
-    static const uint8_t DO_FUND_MSG = 'F';
-    std::vector<uint8_t> vData(25);
-    vData[0] = DO_FUND_MSG;
-    memcpy(&vData[1], msgId.begin(), 20);
-    memcpy(&vData[21], &msgFee, 4);
-
     CScript scriptData;
-    scriptData << OP_RETURN << vData;
+    if (fBlinded) {
+        // Generate random blinding key
+        std::vector<uint8_t> blindKey(SMSG_BLIND_KEY_LEN);
+        GetStrongRandBytes(blindKey.data(), SMSG_BLIND_KEY_LEN);
+
+        // Compute commitment: RIPEMD160(blindKey || msgId || fee_le32)
+        uint160 commitment;
+        CRIPEMD160()
+            .Write(blindKey.data(), SMSG_BLIND_KEY_LEN)
+            .Write(msgId.begin(), 20)
+            .Write((const uint8_t*)&msgFee, 4)
+            .Finalize(commitment.begin());
+
+        // Store blinding key in payload tail
+        memcpy(smsg.pPayload + (smsg.nPayload - 64), blindKey.data(), SMSG_BLIND_KEY_LEN);
+
+        // Build OP_RETURN: 'B' <20-byte commitment>
+        std::vector<uint8_t> vData(21);
+        vData[0] = 'B';
+        memcpy(&vData[1], commitment.begin(), 20);
+        scriptData << OP_RETURN << vData;
+    } else {
+        // Legacy plaintext format: 'F' <20-byte msgId> <4-byte fee>
+        std::vector<uint8_t> vData(25);
+        vData[0] = 'F';
+        memcpy(&vData[1], msgId.begin(), 20);
+        memcpy(&vData[21], &msgFee, 4);
+        scriptData << OP_RETURN << vData;
+    }
 
     CTxOut out0(nMsgFee, scriptData);
     txFund.vout.push_back(out0);
@@ -3910,7 +3975,8 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
         CTransactionRef txRef = MakeTransactionRef(txFund);
         pwallet->CommitTransaction(txRef, {}, {});
     }
-    memcpy(smsg.pPayload+(smsg.nPayload-32), txfundId.begin(), 32);
+    // Store funding txid at the end of the payload tail
+    memcpy(smsg.pPayload + (smsg.nPayload - 32), txfundId.begin(), 32);
 #else
     return SMSG_WALLET_UNSET;
 #endif
@@ -3923,7 +3989,7 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage *psmsg, const uint8_t *
     int64_t timestamp_be = bswap_64(psmsg->timestamp);
     memcpy(rv.data(), &timestamp_be, 8);
 
-    HashMsg(*psmsg, pPayload, psmsg->nPayload-(psmsg->IsPaidVersion() ? 32 : 0), *((uint160*)&rv[8]));
+    HashMsg(*psmsg, pPayload, psmsg->nPayload - psmsg->GetPaidTailSize(), *((uint160*)&rv[8]));
 
     return rv;
 };
@@ -3934,7 +4000,7 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
     int64_t timestamp_be = bswap_64(smsg.timestamp);
     memcpy(rv.data(), &timestamp_be, 8);
 
-    HashMsg(smsg, smsg.pPayload, smsg.nPayload-(smsg.IsPaidVersion() ? 32 : 0), *((uint160*)&rv[8]));
+    HashMsg(smsg, smsg.pPayload, smsg.nPayload - smsg.GetPaidTailSize(), *((uint160*)&rv[8]));
 
     return rv;
 };
@@ -3961,7 +4027,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
 
     SecureMessage *psmsg = (SecureMessage*) pHeader;
     if (psmsg->version[0] == 3) {
-        nPayload -= 32; // Exclude funding txid
+        nPayload -= psmsg->GetPaidTailSize(); // Exclude funding tail (blind key + txid)
     } else
     if (psmsg->version[0] != 2) {
         return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown version number.", __func__);

@@ -166,6 +166,7 @@ public:
         consensus.nSchnorrHeight = 3320000;
         consensus.nLargeElementsHeight = 3320000;
         consensus.nSmsgRoomHeight = 3320000;
+        consensus.nConfidentialSmsgHeight = 3320000;
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 600; // Omega: each 10 minutes
@@ -381,6 +382,7 @@ public:
         consensus.nSchnorrHeight = 4002;
         consensus.nLargeElementsHeight = 4002;
         consensus.nSmsgRoomHeight = 4002;
+        consensus.nConfidentialSmsgHeight = 4002;
         consensus.MinBIP9WarningHeight = 850100 + 2016;  // v19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
@@ -585,6 +587,7 @@ public:
         consensus.nSchnorrHeight = 2;
         consensus.nLargeElementsHeight = 2;
         consensus.nSmsgRoomHeight = 2;
+        consensus.nConfidentialSmsgHeight = 2;
         consensus.MinBIP9WarningHeight = 300 + 2016; // v19 activation height + miner confirmation window
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day
@@ -874,6 +877,7 @@ public:
         consensus.nSchnorrHeight = 0;
         consensus.nLargeElementsHeight = 0;
         consensus.nSmsgRoomHeight = 0;
+        consensus.nConfidentialSmsgHeight = 0;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Dash: 1 day

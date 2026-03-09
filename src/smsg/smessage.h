@@ -88,6 +88,8 @@ static const int MIN_SMSG_PROTO_VERSION = 90007;
 const CAmount nFundingTxnFeePerK = 200000;
 const CAmount nMsgFeePerKPerDay =   50000;
 
+const unsigned int SMSG_BLIND_KEY_LEN = 32;   // blinding key length for confidential funding
+
 #define SMSG_MASK_UNREAD (1 << 0)
 
 class SecMsgStored;
@@ -113,16 +115,28 @@ inline bool GetFundingTxid(const uint8_t *pPayload, size_t nPayload, uint256 &tx
     return true;
 };
 
+/** Retrieve the blinding key from a confidential paid message payload.
+ *  The blinding key occupies 32 bytes before the funding txid. */
+inline bool GetFundingBlindKey(const uint8_t *pPayload, size_t nPayload, std::vector<uint8_t> &blindKey)
+{
+    if (!pPayload || nPayload < 64) {
+        return false;
+    }
+    blindKey.resize(SMSG_BLIND_KEY_LEN);
+    memcpy(blindKey.data(), pPayload+(nPayload-64), SMSG_BLIND_KEY_LEN);
+    return true;
+};
+
 #pragma pack(push, 1)
 class SecureMessage
 {
 public:
     SecureMessage() {};
-    SecureMessage(bool fPaid, size_t nDaysRetention)
+    SecureMessage(bool fPaid, size_t nDaysRetention, bool fBlinded = false)
     {
         if (fPaid) {
             version[0] = 3;
-            version[1] = 0;
+            version[1] = fBlinded ? 1 : 0;
 
             nonce[0] = nDaysRetention;
         }
@@ -145,6 +159,19 @@ public:
     bool IsPaidVersion() const
     {
         return version[0] == 3;
+    };
+
+    bool IsBlindedPaid() const
+    {
+        return version[0] == 3 && version[1] == 1;
+    };
+
+    /** Return the number of tail bytes appended after the ciphertext.
+     *  Blinded paid: 64 (32 blind key + 32 txid), legacy paid: 32 (txid), free: 0. */
+    uint32_t GetPaidTailSize() const
+    {
+        if (!IsPaidVersion()) return 0;
+        return IsBlindedPaid() ? 64 : 32;
     };
 
     bool GetFundingTxid(uint256 &txid) const

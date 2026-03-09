@@ -21,7 +21,7 @@ static const unsigned int DEFAULT_BLOCK_MAX_SIZE = 2000000;
 /** Default for -blockmintxfee, which sets the minimum feerate for a transaction in blocks created by mining code **/
 static const unsigned int DEFAULT_BLOCK_MIN_TX_FEE = 1000;
 /** The maximum size for transactions we're willing to relay/mine */
-static const unsigned int MAX_STANDARD_TX_SIZE = 100000;
+static const unsigned int MAX_STANDARD_TX_SIZE = 400000;
 /** The minimum size for transactions we're willing to relay/mine (1 empty scriptSig input + 1 P2SH output = 83 bytes) */
 static const unsigned int MIN_STANDARD_TX_SIZE = 83;
 /** Maximum number of signature check operations in an IsStandard() P2SH script */

@@ -4445,7 +4445,7 @@ std::shared_ptr<CWallet> CWallet::Create(interfaces::Chain& chain, const std::st
         walletInstance->m_min_fee = CFeeRate{min_tx_fee.value()};
     }
 
-    walletInstance->m_allow_fallback_fee = Params().IsTestChain();
+    walletInstance->m_allow_fallback_fee = true; // Always allow fallback fee; low-traffic chains rarely have enough data for smart estimation
     if (gArgs.IsArgSet("-fallbackfee")) {
         std::optional<CAmount> fallback_fee = ParseMoney(gArgs.GetArg("-fallbackfee", ""));
         if (!fallback_fee) {

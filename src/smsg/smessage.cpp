@@ -3942,7 +3942,7 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
     CTxOut out0(nMsgFee, scriptData);
     txFund.vout.push_back(out0);
 
-    int nChangePosInOut;
+    int nChangePosInOut = -1;
     CAmount nFeeRet;
     const std::set<int> setSubtractFeeFromOutputs;
 

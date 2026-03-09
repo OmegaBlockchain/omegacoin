@@ -1908,18 +1908,22 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consens
         flags |= SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY;
     }
 
-    // Start enforcing BIP68 (sequence locks) and BIP112 (CHECKSEQUENCEVERIFY) using versionbits logic.
-    if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE) {
+    // BIP68/BIP112 (CHECKSEQUENCEVERIFY), BIP147 (NULLDUMMY), DIP0020 opcodes:
+    // Buried at the hard fork height; use BIP9 for pre-fork blocks during IBD.
+    if (pindex->nHeight >= consensusparams.nSchnorrHeight) {
         flags |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
-    }
-
-    // Start enforcing BIP147 (NULLDUMMY) rule using versionbits logic.
-    if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_BIP147, versionbitscache) == ThresholdState::ACTIVE) {
         flags |= SCRIPT_VERIFY_NULLDUMMY;
-    }
-
-    if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_DIP0020, versionbitscache) == ThresholdState::ACTIVE) {
         flags |= SCRIPT_ENABLE_DIP0020_OPCODES;
+    } else {
+        if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE) {
+            flags |= SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
+        }
+        if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_BIP147, versionbitscache) == ThresholdState::ACTIVE) {
+            flags |= SCRIPT_VERIFY_NULLDUMMY;
+        }
+        if (VersionBitsState(pindex->pprev, consensusparams, Consensus::DEPLOYMENT_DIP0020, versionbitscache) == ThresholdState::ACTIVE) {
+            flags |= SCRIPT_ENABLE_DIP0020_OPCODES;
+        }
     }
 
     // Start enforcing Schnorr signature support (BIP340)
@@ -2094,9 +2098,10 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     }
     /// END DASH
 
-    // Start enforcing BIP68 (sequence locks) and BIP112 (CHECKSEQUENCEVERIFY) using versionbits logic.
+    // BIP68 sequence locks — buried at hard fork height; BIP9 for pre-fork blocks.
     int nLockTimeFlags = 0;
-    if (VersionBitsState(pindex->pprev, chainparams.GetConsensus(), Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE) {
+    if (pindex->nHeight >= chainparams.GetConsensus().nSchnorrHeight
+        || VersionBitsState(pindex->pprev, chainparams.GetConsensus(), Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE) {
         nLockTimeFlags |= LOCKTIME_VERIFY_SEQUENCE;
     }
 
@@ -3856,9 +3861,10 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     AssertLockHeld(cs_main);
     const int nHeight = pindexPrev == nullptr ? 0 : pindexPrev->nHeight + 1;
 
-    // Start enforcing BIP113 (Median Time Past) using versionbits logic.
+    // BIP113 (Median Time Past) — buried at hard fork height; BIP9 for pre-fork blocks.
     int nLockTimeFlags = 0;
-    if (VersionBitsState(pindexPrev, consensusParams, Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE) {
+    if (nHeight >= consensusParams.nSchnorrHeight
+        || (pindexPrev != nullptr && VersionBitsState(pindexPrev, consensusParams, Consensus::DEPLOYMENT_CSV, versionbitscache) == ThresholdState::ACTIVE)) {
         assert(pindexPrev != nullptr);
         nLockTimeFlags |= LOCKTIME_MEDIAN_TIME_PAST;
     }

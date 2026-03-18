@@ -349,6 +349,10 @@
            </property>
           </widget>
          </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="keysActionLayout">
          <item>
           <spacer name="keysSpacer">
            <property name="orientation">
@@ -373,6 +377,13 @@
           <widget class="QPushButton" name="addAddressButton">
            <property name="text">
             <string>Add Address</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="generateKeyButton">
+           <property name="text">
+            <string>Generate Key</string>
            </property>
           </widget>
          </item>

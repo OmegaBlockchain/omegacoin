@@ -124,6 +124,8 @@ void MessagingPage::setupInboxTab()
     inboxContextMenu->addAction(tr("Mark as Read"), this, &MessagingPage::markRead);
     inboxContextMenu->addAction(tr("Mark as Unread"), this, &MessagingPage::markUnread);
     inboxContextMenu->addSeparator();
+    inboxContextMenu->addAction(tr("Reply"), this, &MessagingPage::replyToSelected);
+    inboxContextMenu->addSeparator();
     inboxContextMenu->addAction(tr("Delete"), this, &MessagingPage::deleteSelectedInbox);
     inboxContextMenu->addAction(tr("Purge from Network"), this, &MessagingPage::purgeSelectedInbox);
 
@@ -195,6 +197,7 @@ void MessagingPage::setupKeysTab()
 
     connect(ui->scanChainButton, &QPushButton::clicked, this, &MessagingPage::onScanChainClicked);
     connect(ui->addAddressButton, &QPushButton::clicked, this, &MessagingPage::onAddAddressClicked);
+    connect(ui->generateKeyButton, &QPushButton::clicked, this, &MessagingPage::onGenerateKeyClicked);
 
     connect(ui->keysFilterLineEdit, &QLineEdit::textChanged, this, &MessagingPage::filterKeys);
 }
@@ -1125,6 +1128,67 @@ void MessagingPage::onAddAddressClicked()
 
     QMessageBox::information(this, tr("Success"), tr("Address added successfully."));
     updateKeysList();
+}
+
+void MessagingPage::replyToSelected()
+{
+    int row = ui->inboxTable->currentRow();
+    if (row < 0) return;
+
+    QTableWidgetItem* fromItem = ui->inboxTable->item(row, INBOX_COL_FROM);
+    QTableWidgetItem* toItem   = ui->inboxTable->item(row, INBOX_COL_TO);
+    if (!fromItem || !toItem) return;
+
+    QString replyTo   = fromItem->text(); // original sender becomes our recipient
+    QString replyFrom = toItem->text();   // address that received the message
+
+    // Switch to Compose tab first so updateFromAddresses() is called
+    ui->tabWidget->setCurrentIndex(2);
+
+    ui->toAddressEdit->setText(replyTo);
+
+    int idx = ui->fromAddressCombo->findText(replyFrom);
+    if (idx >= 0)
+        ui->fromAddressCombo->setCurrentIndex(idx);
+}
+
+void MessagingPage::onGenerateKeyClicked()
+{
+    if (!smsg::fSecMsgEnabled) {
+        QMessageBox::warning(this, tr("Messaging"), tr("Secure messaging is not enabled."));
+        return;
+    }
+
+    bool ok;
+    QString label = QInputDialog::getText(this, tr("Generate Key"),
+        tr("Label (optional):"), QLineEdit::Normal, QString(), &ok);
+    if (!ok)
+        return;
+
+    CKey key;
+    key.MakeNewKey(true);
+
+    int rv = smsgModule.ImportPrivkey(key, label.toStdString());
+    if (rv != smsg::SMSG_NO_ERROR) {
+        QMessageBox::warning(this, tr("Error"),
+            tr("Failed to store key: %1").arg(QString::fromStdString(smsg::GetString(rv))));
+        return;
+    }
+
+    CKeyID keyID = key.GetPubKey().GetID();
+    std::string sAddr = EncodeDestination(PKHash(keyID));
+    std::string sWIF  = EncodeSecret(key);
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Key Generated"));
+    msgBox.setText(tr("New SMSG key generated.\n\nAddress:\n%1\n\nPrivate key (WIF) — back this up:\n%2")
+        .arg(QString::fromStdString(sAddr))
+        .arg(QString::fromStdString(sWIF)));
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
+
+    updateKeysList();
+    updateFromAddresses();
 }
 
 // ----- Filter handlers -----

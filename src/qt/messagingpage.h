@@ -49,8 +49,10 @@ private Q_SLOTS:
 
     void onScanChainClicked();
     void onAddAddressClicked();
+    void onGenerateKeyClicked();
 
     // Inbox context menu actions
+    void replyToSelected();
     void copyFromAddress();
     void copyToAddress();
     void copyMessageId();

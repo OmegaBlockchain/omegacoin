@@ -105,6 +105,7 @@ static CBlock FindDevNetGenesisBlock(const CBlock &prevBlock, const CAmount& rew
     // iteration of the above loop will give a result already
     error("FindDevNetGenesisBlock: could not find devnet genesis block for %s", devNetName);
     assert(false);
+    __builtin_unreachable();
 }
 
 void CChainParams::AddLLMQ(Consensus::LLMQType llmqType)

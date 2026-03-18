@@ -12,6 +12,7 @@ $(package)_dependencies=libxcb
 define $(package)_set_vars
 $(package)_config_opts = --enable-option-checking --disable-dependency-tracking
 $(package)_config_opts += --disable-shared --enable-static --disable-docs
+$(package)_config_opts += --enable-x11
 $(package)_cflags += -Wno-error=array-bounds
 endef
 

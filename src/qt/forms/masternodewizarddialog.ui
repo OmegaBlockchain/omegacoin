@@ -41,7 +41,7 @@
       <set>Qt::AlignCenter</set>
      </property>
      <property name="styleSheet">
-      <string>font-weight: bold; font-size: 13px; color: #888;</string>
+      <string>font-weight: bold; font-size: 10pt; color: #888;</string>
      </property>
     </widget>
    </item>
@@ -69,7 +69,7 @@
           <set>Qt::AlignCenter</set>
          </property>
          <property name="styleSheet">
-          <string>font-size: 18px; font-weight: bold;</string>
+          <string>font-size: 14pt; font-weight: bold;</string>
          </property>
         </widget>
        </item>
@@ -133,7 +133,7 @@ You will need a server (VPS) with a static IP address already running the master
           <string>Server Configuration</string>
          </property>
          <property name="styleSheet">
-          <string>font-size: 16px; font-weight: bold;</string>
+          <string>font-size: 12pt; font-weight: bold;</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -226,7 +226,7 @@ You will need a server (VPS) with a static IP address already running the master
           <string>Keys and Addresses</string>
          </property>
          <property name="styleSheet">
-          <string>font-size: 16px; font-weight: bold;</string>
+          <string>font-size: 12pt; font-weight: bold;</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -352,7 +352,7 @@ masternodeblsprivkey=&lt;BLS Secret Key&gt;</string>
           <string>Review and Register</string>
          </property>
          <property name="styleSheet">
-          <string>font-size: 16px; font-weight: bold;</string>
+          <string>font-size: 12pt; font-weight: bold;</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

@@ -2412,6 +2412,10 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
             return InitError(strprintf(_("Failed to clear fulfilled requests cache at %s"),(pathDB / strDBName).string()));
         }
     }
+    // Discard any "full-sync" flags persisted from the previous session.
+    // ProcessTick checks these flags before masternodeSync has a chance to
+    // reset, causing it to disconnect every peer immediately on startup.
+    ::masternodeSync->Reset(true, false);
 
     // ********************************************************* Step 10b: schedule Dash-specific tasks
 

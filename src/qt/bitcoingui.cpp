@@ -1888,9 +1888,6 @@ void BitcoinGUI::updateWindowTitle()
         if (!userWindowTitle.isEmpty()) {
             window_title += " - " + userWindowTitle;
         }
-        if (wallet_model && !wallet_model->getWalletName().isEmpty()) {
-            window_title += " - " + wallet_model->getDisplayName();
-        }
     }
 #endif
     if (!m_network_style->getTitleAddText().isEmpty()) {

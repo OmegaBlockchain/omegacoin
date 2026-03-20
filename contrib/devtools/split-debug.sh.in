@@ -4,7 +4,15 @@ if [ $# -ne 3 ];
     then echo "usage: $0 <input> <stripped-binary> <debug-binary>"
 fi
 
-@OBJCOPY@ --enable-deterministic-archives -p --only-keep-debug $1 $3
-@OBJCOPY@ --enable-deterministic-archives -p --strip-debug $1 $2
-@STRIP@ --enable-deterministic-archives -p -s $2
-@OBJCOPY@ --enable-deterministic-archives -p --add-gnu-debuglink=$3 $2
+# Use the configured tool paths; fall back to basename if the full path is
+# not accessible (e.g. when running inside a guix container where the host
+# profile is not bind-mounted).
+OBJCOPY=@OBJCOPY@
+STRIP=@STRIP@
+command -v "$OBJCOPY" >/dev/null 2>&1 || OBJCOPY=$(basename "$OBJCOPY")
+command -v "$STRIP" >/dev/null 2>&1 || STRIP=$(basename "$STRIP")
+
+"$OBJCOPY" --enable-deterministic-archives -p --only-keep-debug $1 $3
+"$OBJCOPY" --enable-deterministic-archives -p --strip-debug $1 $2
+"$STRIP" --enable-deterministic-archives -p -s $2
+"$OBJCOPY" --enable-deterministic-archives -p --add-gnu-debuglink=$3 $2

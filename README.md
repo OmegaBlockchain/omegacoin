@@ -1,82 +1,133 @@
-Dash Core staging tree 18.0
-===========================
+Omega Core 0.20
+===============
 
-|CI|master|develop|
-|-|-|-|
-|Gitlab|[![Build Status](https://gitlab.com/dashpay/dash/badges/master/pipeline.svg)](https://gitlab.com/dashpay/dash/-/tree/master)|[![Build Status](https://gitlab.com/dashpay/dash/badges/develop/pipeline.svg)](https://gitlab.com/dashpay/dash/-/tree/develop)|
+https://omegablockchain.net
 
-https://www.dash.org
+What is Omega?
+--------------
 
+Omega is a peer-to-peer digital currency and blockchain platform launched on 2 January 2018.
+It is forked from Dash Core and extends it with a number of protocol-level features including
+on-chain encrypted messaging, Schnorr signatures, and an improved proof-of-work difficulty
+algorithm. The network runs with 60-second block times and masternode-based governance.
 
-What is Dash?
--------------
+- **Port:** 7777 (mainnet), 17778 (testnet)
+- **Block time:** 60 seconds
+- **Addresses start with:** `o`
+- **Script addresses start with:** `7`
+- **Genesis block:** 2 January 2018
+- **Seed node:** seed.omegablockchain.net
 
-Dash is an experimental digital currency that enables instant, private
-payments to anyone, anywhere in the world. Dash uses peer-to-peer technology
-to operate with no central authority: managing transactions and issuing money
-are carried out collectively by the network. Dash Core is the name of the open
-source software which enables the use of this currency.
+What's New in 2025-2026
+-----------------------
 
-Pre-Built Binary
-----------------
+The following features and improvements have been implemented this development cycle,
+starting from the Dash 19.3 base:
 
-For more information, as well as an immediately usable, binary version of
-the Dash Core software, see https://www.dash.org/downloads/.
+### Consensus Protocol Upgrades
+
+- **Schnorr Signatures** — Full Schnorr signature consensus activated at block 3,205,000.
+  Includes `OP_CHECKDATASIG` and `OP_CHECKDATASIGVERIFY` opcodes, enabling compact
+  multi-party signing and cross-chain atomic swap constructions.
+
+- **LWMA Difficulty Algorithm** — Zawy's LWMA (Linearly Weighted Moving Average) difficulty
+  adjustment activated at block 3,220,000 with a 60-block window. Provides faster and more
+  stable difficulty retargeting compared to the legacy algorithm, improving resistance to
+  hash rate fluctuations.
+
+- **Increased Script Element Size** — `MAX_SCRIPT_ELEMENT_SIZE` raised from 520 to 4096 bytes,
+  enabling more complex script constructions.
+
+- **Increased Standard Transaction Size** — `MAX_STANDARD_TX_SIZE` raised to 400 KB.
+
+- **Legacy Fork Activations Buried** — Old soft fork activation logic (BIP65, BIP66, CSV)
+  buried at their historical heights, simplifying validation.
+
+### Secure Messaging (SMSG)
+
+On-chain encrypted peer-to-peer messaging ported from Particl, integrated directly into
+the Omega consensus layer:
+
+- **SMSG Library** — Full secure messaging implementation (`src/smsg/`) including encrypted
+  message storage, key management, and P2P relay.
+
+- **TRANSACTION_SMSG_ROOM** — New transaction type (type 8) for funding decentralised
+  messaging rooms on-chain.
+
+- **Confidential SMSG Funding** — Confidential transaction support for SMSG room funding,
+  activated at block 3,205,000 on mainnet.
+
+- **SMSG Key Generation UI** — GUI button in the Qt wallet to generate and manage SMSG keys.
+
+- **Messages Tab** — Dedicated messaging tab in the Qt wallet interface.
+
+### Wallet & GUI
+
+- **Masternode Wizard** — Step-by-step masternode setup wizard added to the Qt GUI.
+
+- **Rebranding** — Full Omega branding applied throughout: splash screen, colour scheme,
+  icons, window titles, and copyright notices updated.
+
+- **Qt Upgrade** — Qt upgraded from 5.12.11 to 5.15.18 for improved compatibility and
+  security.
+
+### Build System
+
+- **Guix Reproducible Builds** — Full GNU Guix reproducible build support upgraded and
+  working for Linux (x86\_64, aarch64) and Windows (x86\_64-w64-mingw32).
+
+- **Dependency Cache Persistence** — Built dependency cache now stored at
+  `~/.cache/guix-base-cache` by default, surviving `guix-clean` between builds.
+
+- **Python 3.12 Compatibility** — Build scripts updated to support Python 3.12.
+
+- **Seeds Updated** — DNS seed list refreshed.
+
+Building
+--------
+
+### Linux / macOS
+
+```bash
+./autogen.sh
+./configure
+make -j$(nproc)
+```
+
+### Reproducible builds via GNU Guix
+
+```bash
+# All platforms (Linux x86_64, Linux aarch64, Windows x86_64)
+./contrib/guix/guix-build
+
+# Single platform
+HOSTS="x86_64-w64-mingw32" ./contrib/guix/guix-build
+HOSTS="x86_64-linux-gnu" ./contrib/guix/guix-build
+HOSTS="aarch64-linux-gnu" ./contrib/guix/guix-build
+```
+
+Built dependency tarballs are cached at `~/.cache/guix-base-cache` and source tarballs
+at `~/.cache/guix-sources`, so they survive `guix-clean`.
+
+### Dependencies
+
+```bash
+cd depends
+make HOST=x86_64-linux-gnu -j$(nproc)
+```
 
 License
 -------
 
-Dash Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Omega Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
+
+Omega Core is derived from Dash Core, which is derived from Bitcoin Core.
 
 Development Process
 -------------------
 
-The `master` branch is meant to be stable. Development is normally done in separate branches.
-[Tags](https://github.com/dashpay/dash/tags) are created to indicate new official,
-stable release versions of Dash Core.
+The `master` branch is the stable release branch. Development work is done in feature branches
+and merged when stable.
 
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md)
-and useful hints for developers can be found in [doc/developer-notes.md](doc/developer-notes.md).
-
-Testing
--------
-
-Testing and code review is the bottleneck for development; we get more pull
-requests than we can review and test on short notice. Please be patient and help out by testing
-other people's pull requests, and remember this is a security-critical project where any mistake might cost people
-lots of money.
-
-### Automated Testing
-
-Developers are strongly encouraged to write [unit tests](src/test/README.md) for new code, and to
-submit new unit tests for old code. Unit tests can be compiled and run
-(assuming they weren't disabled in configure) with: `make check`. Further details on running
-and extending unit tests can be found in [/src/test/README.md](/src/test/README.md).
-
-There are also [regression and integration tests](/test), written
-in Python, that are run automatically on the build server.
-These tests can be run (if the [test dependencies](/test) are installed) with: `test/functional/test_runner.py`
-
-The Travis CI system makes sure that every pull request is built for Windows, Linux, and macOS, and that unit/sanity tests are run automatically.
-
-### Manual Quality Assurance (QA) Testing
-
-Changes should be tested by somebody other than the developer who wrote the
-code. This is especially important for large or high-risk changes. It is useful
-to add a test plan to the pull request description if testing the changes is
-not straightforward.
-
-Translations
-------------
-
-Changes to translations as well as new translations can be submitted to
-[Dash Core's Transifex page](https://www.transifex.com/projects/p/dash/).
-
-Translations are periodically pulled from Transifex and merged into the git repository. See the
-[translation process](doc/translation_process.md) for details on how this works.
-
-**Important**: We do not accept translation changes as GitHub pull requests because the next
-pull from Transifex would automatically overwrite them again.
-
-Translators should also follow the [forum](https://www.dash.org/forum/topic/dash-worldwide-collaboration.88/).
+Issues and contributions: https://github.com/OmegaBlockchain/omega/issues

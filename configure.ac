@@ -780,6 +780,8 @@ case $host in
      ;;
    *linux*)
      TARGET_OS=linux
+     dnl Ensure build-id is generated so guix packaging can create debug symbol trees.
+     AX_CHECK_LINK_FLAG([[-Wl,--build-id]], [LDFLAGS="$LDFLAGS -Wl,--build-id"])
      ;;
 esac
 
@@ -894,7 +896,6 @@ AX_CHECK_COMPILE_FLAG([-fstack-reuse=none],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAG
 if test x$use_hardening != xno; then
   use_hardening=yes
   AX_CHECK_COMPILE_FLAG([-Wstack-protector],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -Wstack-protector"])
-  AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
 
   dnl -fcf-protection used with Clang 7 causes ld to emit warnings:
   dnl ld: error: ... <corrupt x86 feature size: 0x8>
@@ -903,10 +904,14 @@ if test x$use_hardening != xno; then
 
   case $host in
     *mingw*)
-      dnl stack-clash-protection doesn't currently work, and likely should just be skipped for Windows.
+      dnl Skip -fstack-protector-all on mingw: it causes the compiler to auto-link libssp.dll.a
+      dnl which conflicts with the explicitly linked libssp.a below, producing a duplicate
+      dnl definition of __stack_chk_fail. Stack protection is still provided via -lssp below.
+      dnl stack-clash-protection also doesn't work on mingw.
       dnl See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90458 for more details.
       ;;
     *)
+      AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
       AX_CHECK_COMPILE_FLAG([-fstack-clash-protection], [HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-clash-protection"], [], [$CXXFLAG_WERROR])
       ;;
   esac

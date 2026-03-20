@@ -1,11 +1,48 @@
 #!/usr/bin/env bash
+# Copyright (c) 2019-2021 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
 export LC_ALL=C
 set -e -o pipefail
 export TZ=UTC
 
-# Check that environment variables assumed to be set by the environment are set
-echo "Building for platform triple ${HOST:?not set} with reference timestamp ${SOURCE_DATE_EPOCH:?not set}..."
-echo "At most ${MAX_JOBS:?not set} jobs will run at once..."
+# Although Guix _does_ set umask when building its own packages (in our case,
+# this is all packages in manifest.scm), it does not set it for `guix
+# shell`. It does make sense for at least `guix shell --container`
+# to set umask, so if that change gets merged upstream and we bump the
+# time-machine to a commit which includes the aforementioned change, we can
+# remove this line.
+#
+# This line should be placed before any commands which creates files.
+umask 0022
+
+if [ -n "$V" ]; then
+    # Print both unexpanded (-v) and expanded (-x) forms of commands as they are
+    # read from this file.
+    set -vx
+    # Set VERBOSE for CMake-based builds
+    export VERBOSE="$V"
+fi
+
+# Check that required environment variables are set
+cat << EOF
+Required environment variables as seen inside the container:
+    DIST_ARCHIVE_BASE: ${DIST_ARCHIVE_BASE:?not set}
+    DISTNAME: ${DISTNAME:?not set}
+    HOST: ${HOST:?not set}
+    SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:?not set}
+    JOBS: ${JOBS:?not set}
+    DISTSRC: ${DISTSRC:?not set}
+    OUTDIR: ${OUTDIR:?not set}
+EOF
+
+cat << EOF
+Optional environment variables as seen inside the container:
+    CONFIGFLAGS: ${CONFIGFLAGS}
+EOF
+
+ACTUAL_OUTDIR="${OUTDIR}"
+OUTDIR="${DISTSRC}/output"
 
 #####################
 # Environment Setup #
@@ -15,59 +52,70 @@ echo "At most ${MAX_JOBS:?not set} jobs will run at once..."
 # $HOSTs after successfully building.
 BASEPREFIX="${PWD}/depends"
 
-# Setup an output directory for our build
-OUTDIR="${OUTDIR:-${PWD}/output}"
-[ -e "$OUTDIR" ] || mkdir -p "$OUTDIR"
-
-# Setup the directory where our Bitcoin Core build for HOST will occur
-DISTSRC="${DISTSRC:-${PWD}/distsrc-${HOST}}"
-if [ -e "$DISTSRC" ]; then
-    echo "DISTSRC directory '${DISTSRC}' exists, probably because of previous builds... Aborting..."
-    exit 1
-else
-    mkdir -p "$DISTSRC"
-fi
-
-# Given a package name and an output name, return the path of that output in our
-# current guix environment
+# Given a package name and an output name, return the path of that output in the
+# current Guix container profile
 store_path() {
     grep --extended-regexp "/[^-]{32}-${1}-[^-]+${2:+-${2}}" "${GUIX_ENVIRONMENT}/manifest" \
         | head --lines=1 \
-        | sed --expression='s|^[[:space:]]*"||' \
+        | sed --expression='s|\x29*$||' \
+              --expression='s|^[[:space:]]*"||' \
               --expression='s|"[[:space:]]*$||'
 }
 
-# Set environment variables to point Guix's cross-toolchain to the right
+
+# Set environment variables to point the NATIVE toolchain to the right
+# includes/libs
+NATIVE_GCC="$(store_path gcc-toolchain)"
+
+unset LIBRARY_PATH
+unset CPATH
+unset C_INCLUDE_PATH
+unset CPLUS_INCLUDE_PATH
+unset OBJC_INCLUDE_PATH
+unset OBJCPLUS_INCLUDE_PATH
+
+export C_INCLUDE_PATH="${NATIVE_GCC}/include"
+export CPLUS_INCLUDE_PATH="${NATIVE_GCC}/include/c++:${NATIVE_GCC}/include"
+
+case "$HOST" in
+    *mingw*) export LIBRARY_PATH="${NATIVE_GCC}/lib" ;;
+    *)
+        NATIVE_GCC_STATIC="$(store_path gcc-toolchain static)"
+        export LIBRARY_PATH="${NATIVE_GCC}/lib:${NATIVE_GCC_STATIC}/lib"
+        ;;
+esac
+
+# Set environment variables to point the CROSS toolchain to the right
 # includes/libs for $HOST
 case "$HOST" in
     *mingw*)
         # Determine output paths to use in CROSS_* environment variables
         CROSS_GLIBC="$(store_path "mingw-w64-x86_64-winpthreads")"
         CROSS_GCC="$(store_path "gcc-cross-${HOST}")"
-        CROSS_GCC_LIBS=( "${CROSS_GCC}/lib/gcc/${HOST}"/* ) # This expands to an array of directories...
+        CROSS_GCC_LIB_STORE="$(store_path "gcc-cross-${HOST}" lib)"
+        CROSS_GCC_LIBS=( "${CROSS_GCC_LIB_STORE}/lib/gcc/${HOST}"/* ) # This expands to an array of directories...
         CROSS_GCC_LIB="${CROSS_GCC_LIBS[0]}" # ...we just want the first one (there should only be one)
 
-        NATIVE_GCC="$(store_path gcc-glibc-2.27-toolchain)"
-        export LIBRARY_PATH="${NATIVE_GCC}/lib:${NATIVE_GCC}/lib64"
-        export CPATH="${NATIVE_GCC}/include"
-
+        # The search path ordering is generally:
+        #    1. gcc-related search paths
+        #    2. libc-related search paths
+        #    2. kernel-header-related search paths (not applicable to mingw-w64 hosts)
         export CROSS_C_INCLUDE_PATH="${CROSS_GCC_LIB}/include:${CROSS_GCC_LIB}/include-fixed:${CROSS_GLIBC}/include"
         export CROSS_CPLUS_INCLUDE_PATH="${CROSS_GCC}/include/c++:${CROSS_GCC}/include/c++/${HOST}:${CROSS_GCC}/include/c++/backward:${CROSS_C_INCLUDE_PATH}"
-        export CROSS_LIBRARY_PATH="${CROSS_GCC}/lib:${CROSS_GCC}/${HOST}/lib:${CROSS_GCC_LIB}:${CROSS_GLIBC}/lib"
+        export CROSS_LIBRARY_PATH="${CROSS_GCC_LIB_STORE}/lib:${CROSS_GCC_LIB}:${CROSS_GLIBC}/lib"
         ;;
     *linux*)
         CROSS_GLIBC="$(store_path "glibc-cross-${HOST}")"
         CROSS_GLIBC_STATIC="$(store_path "glibc-cross-${HOST}" static)"
         CROSS_KERNEL="$(store_path "linux-libre-headers-cross-${HOST}")"
         CROSS_GCC="$(store_path "gcc-cross-${HOST}")"
-        CROSS_GCC_LIBS=( "${CROSS_GCC}/lib/gcc/${HOST}"/* ) # This expands to an array of directories...
+        CROSS_GCC_LIB_STORE="$(store_path "gcc-cross-${HOST}" lib)"
+        CROSS_GCC_LIBS=( "${CROSS_GCC_LIB_STORE}/lib/gcc/${HOST}"/* ) # This expands to an array of directories...
         CROSS_GCC_LIB="${CROSS_GCC_LIBS[0]}" # ...we just want the first one (there should only be one)
 
-        # NOTE: CROSS_C_INCLUDE_PATH is missing ${CROSS_GCC_LIB}/include-fixed, because
-        # the limits.h in it is missing a '#include_next <limits.h>'
-        export CROSS_C_INCLUDE_PATH="${CROSS_GCC_LIB}/include:${CROSS_GLIBC}/include:${CROSS_KERNEL}/include"
+        export CROSS_C_INCLUDE_PATH="${CROSS_GCC_LIB}/include:${CROSS_GCC_LIB}/include-fixed:${CROSS_GLIBC}/include:${CROSS_KERNEL}/include"
         export CROSS_CPLUS_INCLUDE_PATH="${CROSS_GCC}/include/c++:${CROSS_GCC}/include/c++/${HOST}:${CROSS_GCC}/include/c++/backward:${CROSS_C_INCLUDE_PATH}"
-        export CROSS_LIBRARY_PATH="${CROSS_GCC}/lib:${CROSS_GCC}/${HOST}/lib:${CROSS_GCC_LIB}:${CROSS_GLIBC}/lib:${CROSS_GLIBC_STATIC}/lib"
+        export CROSS_LIBRARY_PATH="${CROSS_GCC_LIB_STORE}/lib:${CROSS_GCC_LIB}:${CROSS_GLIBC}/lib:${CROSS_GLIBC_STATIC}/lib"
         ;;
     *)
         exit 1 ;;
@@ -76,7 +124,7 @@ esac
 # Sanity check CROSS_*_PATH directories
 IFS=':' read -ra PATHS <<< "${CROSS_C_INCLUDE_PATH}:${CROSS_CPLUS_INCLUDE_PATH}:${CROSS_LIBRARY_PATH}"
 for p in "${PATHS[@]}"; do
-    if [ ! -d "$p" ]; then
+    if [ -n "$p" ] && [ ! -d "$p" ]; then
         echo "'$p' doesn't exist or isn't a directory... Aborting..."
         exit 1
     fi
@@ -97,20 +145,19 @@ case "$HOST" in
     *linux*)
         glibc_dynamic_linker=$(
             case "$HOST" in
-                i686-linux-gnu)      echo /lib/ld-linux.so.2 ;;
-                x86_64-linux-gnu)    echo /lib64/ld-linux-x86-64.so.2 ;;
-                arm-linux-gnueabihf) echo /lib/ld-linux-armhf.so.3 ;;
-                aarch64-linux-gnu)   echo /lib/ld-linux-aarch64.so.1 ;;
-                riscv64-linux-gnu)   echo /lib/ld-linux-riscv64-lp64d.so.1 ;;
-                *)                   exit 1 ;;
+                x86_64-linux-gnu)      echo /lib64/ld-linux-x86-64.so.2 ;;
+                arm-linux-gnueabihf)   echo /lib/ld-linux-armhf.so.3 ;;
+                aarch64-linux-gnu)     echo /lib/ld-linux-aarch64.so.1 ;;
+                riscv64-linux-gnu)     echo /lib/ld-linux-riscv64-lp64d.so.1 ;;
+                powerpc64-linux-gnu)   echo /lib64/ld64.so.1;;
+                powerpc64le-linux-gnu) echo /lib64/ld64.so.2;;
+                *)                     exit 1 ;;
             esac
         )
         ;;
 esac
 
 # Environment variables for determinism
-export QT_RCC_TEST=1
-export QT_RCC_SOURCE_DATE_OVERRIDE=1
 export TAR_OPTIONS="--owner=0 --group=0 --numeric-owner --mtime='@${SOURCE_DATE_EPOCH}' --sort=name"
 export TZ="UTC"
 
@@ -119,52 +166,46 @@ export TZ="UTC"
 ####################
 
 # Build the depends tree, overriding variables that assume multilib gcc
-make -C depends --jobs="$MAX_JOBS" HOST="$HOST" \
+make -C depends --jobs="$JOBS" HOST="$HOST" \
                                    ${V:+V=1} \
                                    ${SOURCES_PATH+SOURCES_PATH="$SOURCES_PATH"} \
-                                   i686_linux_CC=i686-linux-gnu-gcc \
-                                   i686_linux_CXX=i686-linux-gnu-g++ \
-                                   i686_linux_AR=i686-linux-gnu-ar \
-                                   i686_linux_RANLIB=i686-linux-gnu-ranlib \
-                                   i686_linux_NM=i686-linux-gnu-nm \
-                                   i686_linux_STRIP=i686-linux-gnu-strip \
+                                   ${BASE_CACHE+BASE_CACHE="$BASE_CACHE"} \
                                    x86_64_linux_CC=x86_64-linux-gnu-gcc \
                                    x86_64_linux_CXX=x86_64-linux-gnu-g++ \
-                                   x86_64_linux_AR=x86_64-linux-gnu-ar \
-                                   x86_64_linux_RANLIB=x86_64-linux-gnu-ranlib \
-                                   x86_64_linux_NM=x86_64-linux-gnu-nm \
-                                   x86_64_linux_STRIP=x86_64-linux-gnu-strip \
-                                   qt_config_opts_i686_linux='-platform linux-g++ -xplatform bitcoin-linux-g++'
+                                   x86_64_linux_AR=x86_64-linux-gnu-gcc-ar \
+                                   x86_64_linux_RANLIB=x86_64-linux-gnu-gcc-ranlib \
+                                   x86_64_linux_NM=x86_64-linux-gnu-gcc-nm \
+                                   x86_64_linux_STRIP=x86_64-linux-gnu-strip
 
+# macOS builds not supported in this fork.
 
 ###########################
 # Source Tarball Building #
 ###########################
 
-# Define DISTNAME variable.
-# shellcheck source=contrib/gitian-descriptors/assign_DISTNAME
-source contrib/gitian-descriptors/assign_DISTNAME
-
-GIT_ARCHIVE="${OUTDIR}/src/${DISTNAME}.tar.gz"
+GIT_ARCHIVE="${DIST_ARCHIVE_BASE}/${DISTNAME}.tar.gz"
 
 # Create the source tarball if not already there
 if [ ! -e "$GIT_ARCHIVE" ]; then
     mkdir -p "$(dirname "$GIT_ARCHIVE")"
-    git archive --output="$GIT_ARCHIVE" HEAD
+    git archive --prefix="${DISTNAME}/" --output="$GIT_ARCHIVE" HEAD
 fi
+
+mkdir -p "$OUTDIR"
 
 ###########################
 # Binary Tarball Building #
 ###########################
 
 # CONFIGFLAGS
-CONFIGFLAGS="--enable-reduce-exports --disable-bench --disable-gui-tests"
+CONFIGFLAGS+=" --enable-reduce-exports --disable-bench --disable-gui-tests --disable-fuzz-binary --with-gui"
 case "$HOST" in
-    *linux*) CONFIGFLAGS+=" --enable-glibc-back-compat" ;;
+    *mingw*) CONFIGFLAGS+=" --disable-miner" ;;
 esac
 
 # CFLAGS
 HOST_CFLAGS="-O2 -g"
+HOST_CFLAGS+=$(find /gnu/store -maxdepth 1 -mindepth 1 -type d -exec echo -n " -ffile-prefix-map={}=/usr" \;)
 case "$HOST" in
     *linux*)  HOST_CFLAGS+=" -ffile-prefix-map=${PWD}=." ;;
     *mingw*)  HOST_CFLAGS+=" -fno-ident" ;;
@@ -173,19 +214,27 @@ esac
 # CXXFLAGS
 HOST_CXXFLAGS="$HOST_CFLAGS"
 
+case "$HOST" in
+    arm-linux-gnueabihf) HOST_CXXFLAGS="${HOST_CXXFLAGS} -Wno-psabi" ;;
+esac
+
 # LDFLAGS
 case "$HOST" in
-    *linux*)  HOST_LDFLAGS="-Wl,--as-needed -Wl,--dynamic-linker=$glibc_dynamic_linker -static-libstdc++ -Wl,-O2" ;;
+    *linux*)  HOST_LDFLAGS="-Wl,--as-needed -Wl,--dynamic-linker=$glibc_dynamic_linker -Wl,-O2" ;;
     *mingw*)  HOST_LDFLAGS="-Wl,--no-insert-timestamp" ;;
 esac
 
-# Make $HOST-specific native binaries from depends available in $PATH
-export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
+# EXE FLAGS
+case "$HOST" in
+    *linux*)  HOST_LDFLAGS+=" -static-libstdc++ -static-libgcc" ;;
+esac
+
+mkdir -p "$DISTSRC"
 (
     cd "$DISTSRC"
 
     # Extract the source tarball
-    tar -xf "${GIT_ARCHIVE}"
+    tar --strip-components=1 -xf "${GIT_ARCHIVE}"
 
     ./autogen.sh
 
@@ -197,26 +246,24 @@ export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
                     --disable-maintainer-mode \
                     --disable-dependency-tracking \
                     ${CONFIGFLAGS} \
-                    CFLAGS="${HOST_CFLAGS}" \
-                    CXXFLAGS="${HOST_CXXFLAGS}" \
+                    ${HOST_CFLAGS:+CFLAGS="${HOST_CFLAGS}"} \
+                    ${HOST_CXXFLAGS:+CXXFLAGS="${HOST_CXXFLAGS}"} \
                     ${HOST_LDFLAGS:+LDFLAGS="${HOST_LDFLAGS}"}
 
     sed -i.old 's/-lstdc++ //g' {./,src/dashbls/,src/secp256k1/}{config.status,libtool}
 
 
-    # Build Bitcoin Core
-    make --jobs="$MAX_JOBS" ${V:+V=1}
+    # Build Dash Core
+    make --jobs="$JOBS" ${V:+V=1}
 
-    # Perform basic ELF security checks on a series of executables.
+    # macOS builds not supported in this fork.
+
+    # Perform basic security checks on a series of executables.
     make -C src --jobs=1 check-security ${V:+V=1}
+    # Check that executables only contain allowed version symbols.
+    make -C src --jobs=1 check-symbols  ${V:+V=1}
 
-    case "$HOST" in
-        *linux*|*mingw*)
-            # Check that executables only contain allowed gcc, glibc and libstdc++
-            # version symbols for Linux distro back-compatibility.
-            make -C src --jobs=1 check-symbols  ${V:+V=1}
-            ;;
-    esac
+    mkdir -p "$OUTDIR"
 
     # Make the os-specific installers
     case "$HOST" in
@@ -225,14 +272,15 @@ export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
             ;;
     esac
 
-    # Setup the directory where our Bitcoin Core build for HOST will be
+    # Setup the directory where our Dash Core build for HOST will be
     # installed. This directory will also later serve as the input for our
     # binary tarballs.
     INSTALLPATH="${PWD}/installed/${DISTNAME}"
     mkdir -p "${INSTALLPATH}"
-    # Install built Bitcoin Core to $INSTALLPATH
+    # Install built Dash Core to $INSTALLPATH
     make install DESTDIR="${INSTALLPATH}" ${V:+V=1}
 
+    # macOS builds not supported in this fork.
     (
         cd installed
 
@@ -247,13 +295,72 @@ export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
         find . -name "lib*.a" -delete
 
         # Prune pkg-config files
-        rm -r "${DISTNAME}/lib/pkgconfig"
+        rm -rf "${DISTNAME}/lib/pkgconfig"
 
-        # Split binaries and libraries from their debug symbols
-        {
-            find "${DISTNAME}/bin" -type f -executable -print0
-            find "${DISTNAME}/lib" -type f -print0
-        } | xargs -0 -n1 -P"$MAX_JOBS" -I{} "${DISTSRC}/contrib/devtools/split-debug.sh" {} {} {}.dbg
+        case "$HOST" in
+            *)
+                # Split binaries and libraries from their debug symbols
+                {
+                    find "${DISTNAME}/bin" -type f -executable -print0
+                    find "${DISTNAME}/lib" -type f -print0
+                } | xargs -0 -P"$JOBS" -I{} "${DISTSRC}/contrib/devtools/split-debug.sh" {} {} {}.dbg
+
+                case "$HOST" in
+                    *linux*)
+                        # Compress DWARF sections in debug files and set proper permissions
+                        find "${DISTNAME}" -name "*.dbg" -type f -print0 | xargs -0 -P"$JOBS" -I{} sh -c "${HOST}-objcopy --compress-debug-sections=zlib \"\$1\" \"\$1.tmp\" && mv \"\$1.tmp\" \"\$1\" && chmod 644 \"\$1\"" _ {}
+
+                        # Create .build-id tree for perf auto-discovery
+                        mkdir -p "${DISTNAME}/usr/lib/debug/.build-id"
+                        {
+                            find "${DISTNAME}/bin" -type f -executable -print0
+                            find "${DISTNAME}/lib" -type f -print0
+                        } | while IFS= read -r -d '' elf; do
+                            if file "$elf" | grep -q "ELF.*executable\|ELF.*shared object"; then
+                                build_id=$("${HOST}"-readelf -n "$elf" 2>/dev/null | awk '/Build ID/ {print $3; exit}')
+                                if [ -n "$build_id" ] && [ -f "${elf}.dbg" ]; then
+                                    dir="${DISTNAME}/usr/lib/debug/.build-id/${build_id:0:2}"
+                                    mkdir -p "$dir"
+                                    cp "${elf}.dbg" "${dir}/${build_id:2}.debug"
+                                    chmod 644 "${dir}/${build_id:2}.debug"
+                                fi
+                            fi
+                        done
+
+                        # Verify build-ids and debug links
+                        verification_output=$(
+                            {
+                                find "${DISTNAME}/bin" -type f -executable -print0
+                                find "${DISTNAME}/lib" -type f -print0
+                            } | {
+                                verification_failed=0
+                                while IFS= read -r -d '' elf; do
+                                    if file "$elf" | grep -q "ELF.*executable\|ELF.*shared object"; then
+                                        # Check for build-id
+                                        if ! "${HOST}"-readelf -n "$elf" 2>/dev/null | grep -q "Build ID"; then
+                                            echo "ERROR: No build-id found in $elf" >&2
+                                            verification_failed=1
+                                        fi
+
+                                        # Check for .gnu_debuglink
+                                        if ! "${HOST}"-readelf --string-dump=.gnu_debuglink "$elf" >/dev/null 2>&1; then
+                                            echo "ERROR: No .gnu_debuglink found in $elf" >&2
+                                            verification_failed=1
+                                        fi
+                                    fi
+                                done
+                                exit "$verification_failed"
+                            } 2>&1
+                        )
+                        verification_status=$?
+                        if [ "$verification_status" -ne 0 ]; then
+                            echo "$verification_output" >&2
+                            exit 1
+                        fi
+                        ;;
+                esac
+                ;;
+        esac
 
         case "$HOST" in
             *mingw*)
@@ -263,6 +370,12 @@ export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
                 cp "${DISTSRC}/README.md" "${DISTNAME}/"
                 ;;
         esac
+
+        # copy over the example dash.conf file. if contrib/devtools/gen-dash-conf.sh
+        # has not been run before buildling, this file will be a stub
+        cp "${DISTSRC}/contrib/debian/examples/dash.conf" "${DISTNAME}/"
+
+        cp -r "${DISTSRC}/share/rpcauth" "${DISTNAME}/share/"
 
         # Finally, deterministically produce {non-,}debug binary tarballs ready
         # for release
@@ -282,33 +395,50 @@ export PATH="${BASEPREFIX}/${HOST}/native/bin:${PATH}"
                     || ( rm -f "${OUTDIR}/${DISTNAME}-${HOST//x86_64-w64-mingw32/win64}-debug.zip" && exit 1 )
                 ;;
             *linux*)
-                find "${DISTNAME}" -not -name "*.dbg" -print0 \
+                # Main (non-debug) tarball: exclude separate debug files and the build-id debug tree
+                find "${DISTNAME}" -not -name "*.dbg" -not -path "${DISTNAME}/usr/lib/debug/*" -print0 \
                     | sort --zero-terminated \
                     | tar --create --no-recursion --mode='u+rw,go+r-w,a+X' --null --files-from=- \
                     | gzip -9n > "${OUTDIR}/${DISTNAME}-${HOST}.tar.gz" \
                     || ( rm -f "${OUTDIR}/${DISTNAME}-${HOST}.tar.gz" && exit 1 )
-                find "${DISTNAME}" -name "*.dbg" -print0 \
+                # Debug tarball: include .dbg files and the build-id debug tree
+                find "${DISTNAME}" \( -name "*.dbg" -o -path "${DISTNAME}/usr/lib/debug/*" \) -print0 \
                     | sort --zero-terminated \
                     | tar --create --no-recursion --mode='u+rw,go+r-w,a+X' --null --files-from=- \
                     | gzip -9n > "${OUTDIR}/${DISTNAME}-${HOST}-debug.tar.gz" \
                     || ( rm -f "${OUTDIR}/${DISTNAME}-${HOST}-debug.tar.gz" && exit 1 )
                 ;;
         esac
-    )
-)
+    )  # $DISTSRC/installed
 
-case "$HOST" in
-    *mingw*)
-        cp -rf --target-directory=. contrib/windeploy
-        (
-            cd ./windeploy
-            mkdir unsigned
-            cp --target-directory=unsigned/ "${OUTDIR}/${DISTNAME}-win64-setup-unsigned.exe"
-            find . -print0 \
-                | sort --zero-terminated \
-                | tar --create --no-recursion --mode='u+rw,go+r-w,a+X' --null --files-from=- \
-                | gzip -9n > "${OUTDIR}/${DISTNAME}-win-unsigned.tar.gz" \
-                || ( rm -f "${OUTDIR}/${DISTNAME}-win-unsigned.tar.gz" && exit 1 )
-        )
-        ;;
-esac
+    case "$HOST" in
+        *mingw*)
+            cp -rf --target-directory=. contrib/windeploy
+            (
+                cd ./windeploy
+                mkdir -p unsigned
+                cp --target-directory=unsigned/ "${OUTDIR}/${DISTNAME}-win64-setup-unsigned.exe"
+                find . -print0 \
+                    | sort --zero-terminated \
+                    | tar --create --no-recursion --mode='u+rw,go+r-w,a+X' --null --files-from=- \
+                    | gzip -9n > "${OUTDIR}/${DISTNAME}-win64-unsigned.tar.gz" \
+                    || ( rm -f "${OUTDIR}/${DISTNAME}-win64-unsigned.tar.gz" && exit 1 )
+            )
+            ;;
+    esac
+)  # $DISTSRC
+
+rm -rf "$ACTUAL_OUTDIR"
+mv --no-target-directory "$OUTDIR" "$ACTUAL_OUTDIR" \
+    || ( rm -rf "$ACTUAL_OUTDIR" && exit 1 )
+
+(
+    cd /outdir-base
+    {
+        echo "$GIT_ARCHIVE"
+        find "$ACTUAL_OUTDIR" -type f
+    } | xargs realpath --relative-base="$PWD" \
+      | xargs sha256sum \
+      | sort -k2 \
+      | sponge "$ACTUAL_OUTDIR"/SHA256SUMS.part
+)

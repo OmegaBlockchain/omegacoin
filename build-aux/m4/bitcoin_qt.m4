@@ -150,6 +150,7 @@ AC_DEFUN([BITCOIN_QT_CONFIGURE],[
     elif test "x$TARGET_OS" = xlinux; then
       dnl workaround for https://bugreports.qt.io/browse/QTBUG-74874
       AX_CHECK_LINK_FLAG([-lxcb-shm], [QT_LIBS="$QT_LIBS -lxcb-shm"], [AC_MSG_ERROR([could not link against -lxcb-shm])])
+      AX_CHECK_LINK_FLAG([-lxcb-util], [QT_LIBS="$QT_LIBS -lxcb-util"], [AC_MSG_ERROR([could not link against -lxcb-util])])
       _BITCOIN_QT_CHECK_STATIC_PLUGIN([QXcbIntegrationPlugin], [-lqxcb])
       AC_DEFINE(QT_QPA_PLATFORM_XCB, 1, [Define this symbol if the qt platform is xcb])
     elif test "x$TARGET_OS" = xdarwin; then

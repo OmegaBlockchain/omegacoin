@@ -169,3 +169,4 @@ dist/
 
 # flake8 cache location
 .cache/*
+contrib/guix_old_prototype/

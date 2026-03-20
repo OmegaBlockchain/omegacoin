@@ -250,8 +250,11 @@ static UniValue smsglocalkeys(const JSONRPCRequest &request)
                 if (smsgModule.pwallet)
                 {
                     LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*smsgModule.pwallet);
-                    if (!spk_man.GetPubKey(keyID, pubKey))
+                    if (!spk_man.GetPubKey(keyID, pubKey)) {
+                        LogPrintf("%s: GetPubKey failed for %s — key in addresses but not in wallet\n",
+                            __func__, EncodeDestination(PKHash(keyID)));
                         continue;
+                    }
                     if (!pubKey.IsValid()
                         || !pubKey.IsCompressed())
                     {
@@ -679,11 +682,19 @@ static UniValue smsgsend(const JSONRPCRequest &request)
     std::string addrTo    = request.params[1].get_str();
     std::string msg       = request.params[2].get_str();
 
-    bool fPaid = request.params[3].isNull() ? false : request.params[3].get_bool();
-    int nRetention = request.params[4].isNull() ? 1 : request.params[4].get_int();
-    bool fTestFee = request.params[5].isNull() ? false : request.params[5].get_bool();
-    bool fFromFile = request.params[6].isNull() ? false : request.params[6].get_bool();
-    bool fDecodeHex = request.params[7].isNull() ? false : request.params[7].get_bool();
+    auto parseBool = [](const UniValue &v, bool def) -> bool {
+        if (v.isNull()) return def;
+        if (v.isBool()) return v.get_bool();
+        const std::string &s = v.get_str();
+        if (s == "true" || s == "1") return true;
+        if (s == "false" || s == "0") return false;
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Expected bool (true/false)");
+    };
+    bool fPaid      = parseBool(request.params[3], false);
+    int nRetention  = request.params[4].isNull() ? 1 : request.params[4].get_int();
+    bool fTestFee   = parseBool(request.params[5], false);
+    bool fFromFile  = parseBool(request.params[6], false);
+    bool fDecodeHex = parseBool(request.params[7], false);
 
     if (fFromFile && fDecodeHex)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Can't use decodehex with fromfile.");

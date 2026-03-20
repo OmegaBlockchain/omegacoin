@@ -858,6 +858,13 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 #ifdef ENABLE_WALLET
     if (pwallet) {
         m_handler_unload = interfaces::MakeHandler(pwallet->NotifyUnload.connect(boost::bind(&NotifyUnload, this)));
+        // When the wallet is unlocked, scan any messages that arrived while locked.
+        m_handler_status = interfaces::MakeHandler(pwallet->NotifyStatusChanged.connect(
+            [this](CWallet *w) {
+                if (fSecMsgEnabled && w && !w->IsLocked()) {
+                    WalletUnlocked();
+                }
+            }));
     }
 #endif
 
@@ -956,6 +963,9 @@ bool CSMSG::Shutdown()
     if (m_handler_unload) {
         m_handler_unload->disconnect();
     }
+    if (m_handler_status) {
+        m_handler_status->disconnect();
+    }
 #endif
     pwallet.reset();
     return true;
@@ -980,11 +990,13 @@ bool CSMSG::Enable(std::shared_ptr<CWallet> pwallet)
         }
     } // cs_smsg
 
-    // Ping each peer advertising smsg
+    // Ping all connected peers to initiate the SMSG handshake.
+    // Filter by peer's advertised services (nServices), not by our own
+    // stale per-connection local services which predate this enable call.
     {
         LOCK(g_connman->cs_vNodes);
         for(auto *pnode : g_connman->vNodes) {
-            if (!(pnode->GetLocalServices() & NODE_SMSG)) {
+            if (!(pnode->nServices & NODE_SMSG)) {
                 continue;
             }
             g_connman->PushMessage(pnode,
@@ -1512,8 +1524,9 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
         } // cs_smsg
 
         if (vchDataOut.size() > 8) {
+            uint32_t n_messages = (vchDataOut.size() - 8) / 16;
             if (LogAcceptCategory(BCLog::SMSG)) {
-                LogPrintf("Asking peer for %u messages.\n", (vchDataOut.size() - 8) / 16);
+                LogPrintf("Asking peer for %u messages.\n", n_messages);
                 LogPrintf("Locking bucket %u for peer %d.\n", time, pfrom->GetId());
             }
             {
@@ -1521,6 +1534,8 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 buckets[time].nLockCount   = 3; // lock this bucket for at most 3 * SMSG_THREAD_DELAY seconds, unset when peer sends smsgMsg
                 buckets[time].nLockPeerId  = pfrom->GetId();
             }
+            LOCK(pfrom->smsgData.cs_smsg_net);
+            pfrom->smsgData.m_num_want_sent += n_messages;
             g_connman->PushMessage(pfrom,
                 CNetMsgMaker(INIT_PROTO_VERSION).Make("smsgWant", vchDataOut));
         }
@@ -2179,6 +2194,9 @@ int CSMSG::ManageLocalKey(CKeyID &keyId, ChangeType mode)
                 break;
         };
     } // cs_smsg
+
+    // Persist immediately so keys survive disable/enable cycles and crashes.
+    WriteIni();
 
     return SMSG_NO_ERROR;
 };
@@ -2956,6 +2974,15 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
         itb->second.nLockPeerId = 0;
         itb->second.hashBucket();
     } // cs_smsg
+
+    {
+        LOCK(pfrom->smsgData.cs_smsg_net);
+        if (nBunch <= pfrom->smsgData.m_num_want_sent) {
+            pfrom->smsgData.m_num_want_sent -= nBunch;
+        } else {
+            pfrom->smsgData.m_num_want_sent = 0;
+        }
+    }
 
     return SMSG_NO_ERROR;
 };

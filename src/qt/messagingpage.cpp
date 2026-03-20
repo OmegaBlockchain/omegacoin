@@ -12,6 +12,9 @@
 #include <smsg/smessage.h>
 #include <smsg/db.h>
 #include <util/string.h>
+#ifdef ENABLE_WALLET
+#include <wallet/wallet.h>
+#endif
 
 #include <QApplication>
 #include <QClipboard>
@@ -177,7 +180,7 @@ void MessagingPage::setupKeysTab()
     QTableWidget* table = ui->keysTable;
     table->setColumnCount(KEYS_COL_COUNT);
     table->setHorizontalHeaderLabels({
-        tr("Address"), tr("Label"), tr("Receive"), tr("Anon"), tr("Source")
+        tr("Address"), tr("Label"), tr("Receive"), tr("Anon"), tr("Type")
     });
     table->horizontalHeader()->setStretchLastSection(true);
     table->setColumnWidth(KEYS_COL_ADDRESS, 280);
@@ -533,7 +536,13 @@ void MessagingPage::updateKeysList()
                 table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
                 table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
                 table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
-                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Wallet")));
+                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("My Key")));
+                // Highlight own keys so they are visually distinct from contacts
+                QColor ownKeyColor(210, 240, 210); // light green
+                for (int col = 0; col < KEYS_COL_COUNT; ++col) {
+                    if (table->item(row, col))
+                        table->item(row, col)->setBackground(QBrush(ownKeyColor));
+                }
             }
         }
 #endif
@@ -558,7 +567,7 @@ void MessagingPage::updateKeysList()
             table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
             table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
             table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("SMSG")));
+            table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Contact")));
         }
     } // cs_smsg
 }
@@ -586,13 +595,8 @@ void MessagingPage::updateFromAddresses()
         }
 #endif
 
-        for (auto& p : smsgModule.keyStore.mapKeys)
-        {
-            if (!(p.second.nFlags & smsg::SMK_RECEIVE_ON))
-                continue;
-            std::string sAddr = EncodeDestination(PKHash(p.first));
-            ui->fromAddressCombo->addItem(QString::fromStdString(sAddr));
-        }
+        // Contact keys (keyStore.mapKeys) are NOT added here — they have no
+        // private key in the local wallet and cannot be used as senders.
     }
 
     // Restore previous selection if possible
@@ -1165,6 +1169,45 @@ void MessagingPage::onGenerateKeyClicked()
     if (!ok)
         return;
 
+#ifdef ENABLE_WALLET
+    // Generate key inside the wallet so the private key is wallet-managed and
+    // survives backup/restore. Then register the address with SMSG.
+    if (smsgModule.pwallet) {
+        if (smsgModule.pwallet->IsLocked()) {
+            QMessageBox::warning(this, tr("Wallet Locked"),
+                tr("Please unlock the wallet before generating a messaging address.\n\n"
+                   "Settings → Unlock Wallet"));
+            return;
+        }
+        CTxDestination dest;
+        std::string error;
+        if (!smsgModule.pwallet->GetNewDestination(label.toStdString(), dest, error)) {
+            QMessageBox::warning(this, tr("Error"),
+                tr("Failed to generate wallet address: %1").arg(QString::fromStdString(error)));
+            return;
+        }
+
+        std::string sAddr = EncodeDestination(dest);
+        int rv = smsgModule.AddLocalAddress(sAddr);
+        if (rv != smsg::SMSG_NO_ERROR) {
+            QMessageBox::warning(this, tr("Error"),
+                tr("Failed to register address with SMSG: %1").arg(QString::fromStdString(smsg::GetString(rv))));
+            return;
+        }
+
+        QMessageBox::information(this, tr("Key Generated"),
+            tr("New messaging address created and registered.\n\nAddress:\n%1\n\n"
+               "The private key is stored in your wallet and protected by your wallet backup.")
+            .arg(QString::fromStdString(sAddr)));
+
+        updateKeysList();
+        updateFromAddresses();
+        return;
+    }
+#endif
+
+    // Fallback when no wallet is available: generate a standalone SMSG key.
+    // The private key is NOT in the wallet — the WIF shown below is the only copy.
     CKey key;
     key.MakeNewKey(true);
 
@@ -1180,8 +1223,10 @@ void MessagingPage::onGenerateKeyClicked()
     std::string sWIF  = EncodeSecret(key);
 
     QMessageBox msgBox(this);
-    msgBox.setWindowTitle(tr("Key Generated"));
-    msgBox.setText(tr("New SMSG key generated.\n\nAddress:\n%1\n\nPrivate key (WIF) — back this up:\n%2")
+    msgBox.setWindowTitle(tr("Key Generated (no wallet)"));
+    msgBox.setText(tr("New SMSG key generated (standalone — no wallet attached).\n\n"
+                      "Address:\n%1\n\n"
+                      "Private key (WIF) — this is the ONLY copy, back it up now:\n%2")
         .arg(QString::fromStdString(sAddr))
         .arg(QString::fromStdString(sWIF)));
     msgBox.setStandardButtons(QMessageBox::Ok);

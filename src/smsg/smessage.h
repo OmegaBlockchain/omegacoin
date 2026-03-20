@@ -355,7 +355,7 @@ public:
         // Default options
         fNewAddressRecv = true;
         fNewAddressAnon = true;
-        fScanIncoming   = false;
+        fScanIncoming   = true;
     };
 
     bool fNewAddressRecv;
@@ -505,6 +505,7 @@ public:
     std::shared_ptr<CWallet> pactive_wallet;
     std::vector<std::shared_ptr<CWallet>> m_vpwallets;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
+    std::unique_ptr<interfaces::Handler> m_handler_status;
     std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
 
     int64_t nLastProcessedPurged = 0;

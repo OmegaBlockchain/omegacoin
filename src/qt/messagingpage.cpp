@@ -197,6 +197,7 @@ void MessagingPage::setupKeysTab()
     keysContextMenu->addAction(tr("Toggle Anon"), this, &MessagingPage::toggleAnon);
     keysContextMenu->addSeparator();
     keysContextMenu->addAction(tr("Copy Address"), this, &MessagingPage::copyKeyAddress);
+    keysContextMenu->addAction(tr("Copy Public Key"), this, &MessagingPage::copyKeyPublicKey);
 
     connect(ui->scanChainButton, &QPushButton::clicked, this, &MessagingPage::onScanChainClicked);
     connect(ui->addAddressButton, &QPushButton::clicked, this, &MessagingPage::onAddAddressClicked);
@@ -530,9 +531,23 @@ void MessagingPage::updateKeysList()
                         continue;
                 }
 
+                // Get pubkey for "Copy Public Key"
+                QString sPubKey;
+                {
+                    LOCK(smsgModule.pwallet->cs_wallet);
+                    auto spk = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
+                    if (spk) {
+                        CPubKey pubKey;
+                        if (spk->GetPubKey(CKeyID(it->address), pubKey) && pubKey.IsValid())
+                            sPubKey = QString::fromStdString(HexStr(pubKey));
+                    }
+                }
+
                 int row = table->rowCount();
                 table->insertRow(row);
-                table->setItem(row, KEYS_COL_ADDRESS, new QTableWidgetItem(sAddr));
+                QTableWidgetItem* addrItem = new QTableWidgetItem(sAddr);
+                addrItem->setData(Qt::UserRole, sPubKey);
+                table->setItem(row, KEYS_COL_ADDRESS, addrItem);
                 table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
                 table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
                 table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
@@ -550,6 +565,7 @@ void MessagingPage::updateKeysList()
         for (auto& p : smsgModule.keyStore.mapKeys)
         {
             auto& key = p.second;
+            bool fContact = (key.nFlags & smsg::SMK_CONTACT_ONLY) != 0;
             QString sAddr = QString::fromStdString(EncodeDestination(PKHash(p.first)));
             QString sLabel = QString::fromStdString(key.sLabel);
             bool fRecv = (key.nFlags & smsg::SMK_RECEIVE_ON) != 0;
@@ -561,13 +577,38 @@ void MessagingPage::updateKeysList()
                     continue;
             }
 
+            // Get pubkey for "Copy Public Key"
+            QString sPubKey;
+            if (fContact) {
+                // Contact: pubkey is in addrpkdb
+                LOCK(smsg::cs_smsgDB);
+                smsg::SecMsgDB db;
+                if (db.Open("cr+")) {
+                    CPubKey pubKey;
+                    if (db.ReadPK(p.first, pubKey) && pubKey.IsValid())
+                        sPubKey = QString::fromStdString(HexStr(pubKey));
+                }
+            } else if (key.key.IsValid()) {
+                CPubKey pubKey = key.key.GetPubKey();
+                if (pubKey.IsValid())
+                    sPubKey = QString::fromStdString(HexStr(pubKey));
+            }
+
             int row = table->rowCount();
             table->insertRow(row);
-            table->setItem(row, KEYS_COL_ADDRESS, new QTableWidgetItem(sAddr));
+            QTableWidgetItem* addrItem = new QTableWidgetItem(sAddr);
+            addrItem->setData(Qt::UserRole, sPubKey);
+            table->setItem(row, KEYS_COL_ADDRESS, addrItem);
             table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
-            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Contact")));
+            if (fContact) {
+                table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(tr("N/A")));
+                table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(tr("N/A")));
+                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Contact")));
+            } else {
+                table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
+                table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
+                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Imported Key")));
+            }
         }
     } // cs_smsg
 }
@@ -1076,6 +1117,21 @@ void MessagingPage::copyKeyAddress()
         QApplication::clipboard()->setText(item->text());
 }
 
+void MessagingPage::copyKeyPublicKey()
+{
+    int row = ui->keysTable->currentRow();
+    if (row < 0) return;
+    QTableWidgetItem* item = ui->keysTable->item(row, KEYS_COL_ADDRESS);
+    if (!item) return;
+    QString pubkey = item->data(Qt::UserRole).toString();
+    if (pubkey.isEmpty()) {
+        QMessageBox::warning(this, tr("No Public Key"),
+            tr("Public key is not available for this entry."));
+        return;
+    }
+    QApplication::clipboard()->setText(pubkey);
+}
+
 void MessagingPage::onScanChainClicked()
 {
     if (!smsg::fSecMsgEnabled) {
@@ -1110,27 +1166,33 @@ void MessagingPage::onAddAddressClicked()
     }
 
     bool ok;
-    QString address = QInputDialog::getText(this, tr("Add Address"),
+    QString address = QInputDialog::getText(this, tr("Add Contact"),
         tr("Enter address:"), QLineEdit::Normal, QString(), &ok);
     if (!ok || address.isEmpty())
         return;
 
-    QString pubkey = QInputDialog::getText(this, tr("Add Address"),
-        tr("Enter public key:"), QLineEdit::Normal, QString(), &ok);
+    QString pubkey = QInputDialog::getText(this, tr("Add Contact"),
+        tr("Enter public key (hex):"), QLineEdit::Normal, QString(), &ok);
     if (!ok || pubkey.isEmpty())
+        return;
+
+    QString label = QInputDialog::getText(this, tr("Add Contact"),
+        tr("Label:"), QLineEdit::Normal, QString(), &ok);
+    if (!ok || label.isEmpty())
         return;
 
     std::string sAddr = address.toStdString();
     std::string sPubKey = pubkey.toStdString();
+    std::string sLabel = label.toStdString();
 
-    int rv = smsgModule.AddAddress(sAddr, sPubKey);
+    int rv = smsgModule.AddContact(sAddr, sPubKey, sLabel);
     if (rv != 0) {
         QMessageBox::warning(this, tr("Error"),
-            tr("Failed to add address: %1").arg(QString::fromStdString(smsg::GetString(rv))));
+            tr("Failed to add contact: %1").arg(QString::fromStdString(smsg::GetString(rv))));
         return;
     }
 
-    QMessageBox::information(this, tr("Success"), tr("Address added successfully."));
+    QMessageBox::information(this, tr("Success"), tr("Contact added successfully."));
     updateKeysList();
 }
 
@@ -1165,8 +1227,8 @@ void MessagingPage::onGenerateKeyClicked()
 
     bool ok;
     QString label = QInputDialog::getText(this, tr("Generate Key"),
-        tr("Label (optional):"), QLineEdit::Normal, QString(), &ok);
-    if (!ok)
+        tr("Label:"), QLineEdit::Normal, QString(), &ok);
+    if (!ok || label.isEmpty())
         return;
 
 #ifdef ENABLE_WALLET

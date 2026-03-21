@@ -450,6 +450,7 @@ public:
     int GetLocalPublicKey(const std::string &strAddress, std::string &strPublicKey);
 
     int AddAddress(std::string &address, std::string &publicKey);
+    int AddContact(std::string &address, std::string &publicKey, const std::string &label);
     int AddLocalAddress(const std::string &sAddress);
     int ImportPrivkey(const CKey &vchSecret, const std::string &sLabel);
 

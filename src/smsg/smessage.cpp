@@ -697,7 +697,7 @@ int CSMSG::LoadKeyStore()
     SecMsgKey key;
     leveldb::Iterator *it = db.pdb->NewIterator(leveldb::ReadOptions());
     while (db.NextPrivKey(it, sPrefix, idk, key)) {
-        if (!(key.nFlags & SMK_RECEIVE_ON)) {
+        if (!(key.nFlags & (SMK_RECEIVE_ON | SMK_CONTACT_ONLY))) {
             continue;
         }
         keyStore.AddKey(idk, key);
@@ -1130,7 +1130,16 @@ std::string CSMSG::GetWalletName()
 std::string CSMSG::LookupLabel(PKHash &hash)
 {
 #ifdef ENABLE_WALLET
+    // Check pwallet first (it may not be in m_vpwallets if LoadWallet wasn't called)
+    if (pwallet) {
+        LOCK(pwallet->cs_wallet);
+        auto mi(pwallet->mapAddressBook.find(hash));
+        if (mi != pwallet->mapAddressBook.end()) {
+            return mi->second.name;
+        }
+    }
     for (const auto &pw : m_vpwallets) {
+        if (pw == pwallet) continue; // already checked above
         LOCK(pw->cs_wallet);
         auto mi(pw->mapAddressBook.find(hash));
         if (mi != pw->mapAddressBook.end()) {
@@ -2637,6 +2646,68 @@ int CSMSG::AddAddress(std::string &address, std::string &publicKey)
     }
 
     return InsertAddress(idk, pubKey);
+};
+
+int CSMSG::AddContact(std::string &address, std::string &publicKey, const std::string &label)
+{
+    /*
+    Add address and public key as a named contact.
+    Stores pubkey in addrpkdb (for encryption) and a SecMsgKey contact record
+    (SMK_CONTACT_ONLY, no private key) so the contact appears in the keys list.
+    */
+
+    CTxDestination dest = DecodeDestination(address);
+    const PKHash *pkHash = std::get_if<PKHash>(&dest);
+    if (!pkHash) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - Address is not valid: %s.", __func__, address);
+    }
+    CKeyID idk(*pkHash);
+
+    std::vector<uint8_t> vchTest;
+    if (IsHex(publicKey)) {
+        vchTest = ParseHex(publicKey);
+    } else {
+        if (!DecodeBase58(publicKey, vchTest, 65)) {
+            return errorN(SMSG_INVALID_PUBKEY, "%s - DecodeBase58 failed.", __func__);
+        }
+    }
+
+    CPubKey pubKey(vchTest);
+    if (!pubKey.IsValid()) {
+        return errorN(SMSG_INVALID_PUBKEY, "%s - Invalid PubKey.", __func__);
+    }
+
+    CKeyID keyIDT = pubKey.GetID();
+    if (idk != keyIDT) {
+        return errorN(SMSG_PUBKEY_MISMATCH, "%s - Public key does not hash to address %s.", __func__, address);
+    }
+
+    // Store pubkey in address-pubkey DB (for message encryption)
+    int rv = InsertAddress(idk, pubKey);
+    if (rv != SMSG_NO_ERROR && rv != SMSG_PUBKEY_EXISTS) {
+        return rv;
+    }
+
+    // Store a contact record in the key DB so it appears in the keys list
+    SecMsgKey key;
+    key.sLabel = label;
+    key.nFlags = SMK_CONTACT_ONLY;
+    key.pubkey = pubKey; // store pubkey in memory (not serialized, but useful for in-session use)
+    // key.key is intentionally left as invalid CKey (no private key for contacts)
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        if (!db.WriteKey(idk, key)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s - WriteKey failed.", __func__);
+        }
+    }
+
+    keyStore.AddKey(idk, key);
+    return SMSG_NO_ERROR;
 };
 
 int CSMSG::AddLocalAddress(const std::string &sAddress)

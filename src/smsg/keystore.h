@@ -16,6 +16,7 @@ enum SMSGKeyFlagTypes
 {
     SMK_RECEIVE_ON       = (1 << 1),
     SMK_RECEIVE_ANON     = (1 << 2),
+    SMK_CONTACT_ONLY     = (1 << 3), // pubkey-only contact, no private key
 };
 
 class SecMsgKey

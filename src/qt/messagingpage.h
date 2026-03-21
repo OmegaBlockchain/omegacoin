@@ -71,6 +71,7 @@ private Q_SLOTS:
     void toggleReceive();
     void toggleAnon();
     void copyKeyAddress();
+    void copyKeyPublicKey();
 
 private:
     std::unique_ptr<Ui::MessagingPage> ui;

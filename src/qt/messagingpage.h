@@ -72,6 +72,7 @@ private Q_SLOTS:
     void toggleAnon();
     void copyKeyAddress();
     void copyKeyPublicKey();
+    void sendMessageToSelected();
 
 private:
     std::unique_ptr<Ui::MessagingPage> ui;
@@ -80,6 +81,7 @@ private:
     QMenu* inboxContextMenu;
     QMenu* outboxContextMenu;
     QMenu* keysContextMenu;
+    QAction* sendMessageAction;
 
     QTimer* updateTimer;
     bool fInboxChanged;

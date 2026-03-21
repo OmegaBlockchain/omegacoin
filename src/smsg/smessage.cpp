@@ -3692,7 +3692,12 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
         memcpy(&vchPayload[SMSG_PL_HDR_LEN], pMsgData, lenMsgData);
         // Compact signature proves ownership of from address and allows the public key to be recovered, recipient can always reply.
-        if (!pwallet->GetLegacyScriptPubKeyMan()->GetKey(ckidFrom, keyFrom)) {
+        bool fGotKey = pwallet && pwallet->GetLegacyScriptPubKeyMan()->GetKey(ckidFrom, keyFrom);
+        if (!fGotKey) {
+            // Fallback: key may be a standalone SMSG keystore key (e.g. generated without wallet)
+            fGotKey = (ReadSmsgKey(ckidFrom, keyFrom) == SMSG_NO_ERROR);
+        }
+        if (!fGotKey) {
             return errorN(SMSG_UNKNOWN_KEY_FROM, "%s: Could not get private key for addressFrom.", __func__);
         }
 
@@ -3754,10 +3759,10 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
             fSendAnonymous ? "anon" : EncodeDestination(PKHash(addressFrom)), EncodeDestination(PKHash(addressTo)));
     }
 
-    if (!pwallet) {
-        return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is not enabled");
+    if (!pwallet && fPaid) {
+        return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is not enabled (required for paid messages)");
     }
-    if (pwallet->IsLocked()) {
+    if (pwallet && pwallet->IsLocked()) {
         return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is locked, wallet must be unlocked to send messages");
     }
 
@@ -3871,18 +3876,20 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     CKeyID addressOutbox;
 
-    for (const auto &entry : pwallet->mapAddressBook) { // PAIRTYPE(CTxDestination, CAddressBookData)
-        // Get first owned address
-        if (!pwallet->IsMine(entry.first)) {
-            continue;
-        }
+    if (pwallet) {
+        for (const auto &entry : pwallet->mapAddressBook) { // PAIRTYPE(CTxDestination, CAddressBookData)
+            // Get first owned address
+            if (!pwallet->IsMine(entry.first)) {
+                continue;
+            }
 
-        const PKHash *pkHash = std::get_if<PKHash>(&entry.first);
-        if (!pkHash) {
-            continue;
+            const PKHash *pkHash = std::get_if<PKHash>(&entry.first);
+            if (!pkHash) {
+                continue;
+            }
+            addressOutbox = CKeyID(*pkHash);
+            break;
         }
-        addressOutbox = CKeyID(*pkHash);
-        break;
     }
 
     if (addressOutbox.IsNull()) {

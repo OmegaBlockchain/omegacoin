@@ -66,6 +66,7 @@ MessagingPage::MessagingPage(QWidget* parent) :
     inboxContextMenu(nullptr),
     outboxContextMenu(nullptr),
     keysContextMenu(nullptr),
+    sendMessageAction(nullptr),
     updateTimer(nullptr),
     fInboxChanged(false),
     fOutboxChanged(false)
@@ -198,6 +199,8 @@ void MessagingPage::setupKeysTab()
     keysContextMenu->addSeparator();
     keysContextMenu->addAction(tr("Copy Address"), this, &MessagingPage::copyKeyAddress);
     keysContextMenu->addAction(tr("Copy Public Key"), this, &MessagingPage::copyKeyPublicKey);
+    keysContextMenu->addSeparator();
+    sendMessageAction = keysContextMenu->addAction(tr("Send Message"), this, &MessagingPage::sendMessageToSelected);
 
     connect(ui->scanChainButton, &QPushButton::clicked, this, &MessagingPage::onScanChainClicked);
     connect(ui->addAddressButton, &QPushButton::clicked, this, &MessagingPage::onAddAddressClicked);
@@ -636,8 +639,20 @@ void MessagingPage::updateFromAddresses()
         }
 #endif
 
-        // Contact keys (keyStore.mapKeys) are NOT added here — they have no
-        // private key in the local wallet and cannot be used as senders.
+        // Also include standalone SMSG keys (keyStore) that have receive enabled
+        // and are not contact-only. These are used when no wallet is attached or
+        // when a key was generated via ImportPrivkey (e.g. unencrypted wallet path).
+        for (auto& p : smsgModule.keyStore.mapKeys) {
+            auto& key = p.second;
+            if (key.nFlags & smsg::SMK_CONTACT_ONLY)
+                continue;
+            if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
+                continue;
+            std::string sAddr = EncodeDestination(PKHash(p.first));
+            QString qAddr = QString::fromStdString(sAddr);
+            if (ui->fromAddressCombo->findText(qAddr) < 0)
+                ui->fromAddressCombo->addItem(qAddr);
+        }
     }
 
     // Restore previous selection if possible
@@ -826,8 +841,13 @@ void MessagingPage::showOutboxContextMenu(const QPoint& point)
 void MessagingPage::showKeysContextMenu(const QPoint& point)
 {
     QTableWidgetItem* item = ui->keysTable->itemAt(point);
-    if (item)
+    if (item) {
+        int row = ui->keysTable->row(item);
+        QTableWidgetItem* sourceItem = ui->keysTable->item(row, KEYS_COL_SOURCE);
+        bool isMyKey = sourceItem && sourceItem->text() == tr("My Key");
+        sendMessageAction->setVisible(!isMyKey);
         keysContextMenu->exec(QCursor::pos());
+    }
 }
 
 void MessagingPage::copyFromAddress()
@@ -1130,6 +1150,16 @@ void MessagingPage::copyKeyPublicKey()
         return;
     }
     QApplication::clipboard()->setText(pubkey);
+}
+
+void MessagingPage::sendMessageToSelected()
+{
+    int row = ui->keysTable->currentRow();
+    if (row < 0) return;
+    QTableWidgetItem* addrItem = ui->keysTable->item(row, KEYS_COL_ADDRESS);
+    if (!addrItem) return;
+    ui->toAddressEdit->setText(addrItem->text());
+    ui->tabWidget->setCurrentIndex(2); // Compose tab
 }
 
 void MessagingPage::onScanChainClicked()

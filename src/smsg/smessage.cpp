@@ -88,6 +88,7 @@ boost::thread_group threadGroupSmsg;
 boost::signals2::signal<void (SecMsgStored &inboxHdr)> NotifySecMsgInboxChanged;
 boost::signals2::signal<void (SecMsgStored &outboxHdr)> NotifySecMsgOutboxChanged;
 boost::signals2::signal<void ()> NotifySecMsgWalletUnlocked;
+boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxChanged;
 
 
 secp256k1_context *secp256k1_context_smsg = nullptr;
@@ -888,6 +889,31 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     if (LoadKeyStore() != 0) {
         return error("%s: LoadKeyStore failed.", __func__);
+    }
+
+    // Import Trollbox keypair — public chat, all nodes share this key
+    {
+        std::vector<uint8_t> vchPrivKey = ParseHex(TROLLBOX_PRIVKEY_HEX);
+        CKey trollboxKey;
+        trollboxKey.Set(vchPrivKey.begin(), vchPrivKey.end(), true);
+        if (trollboxKey.IsValid()) {
+            trollboxAddress = trollboxKey.GetPubKey().GetID();
+            if (!keyStore.HaveKey(trollboxAddress)) {
+                SecMsgKey smsgKey;
+                smsgKey.key = trollboxKey;
+                smsgKey.sLabel = "Trollbox";
+                smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
+                keyStore.AddKey(trollboxAddress, smsgKey);
+                LOCK(cs_smsgDB);
+                SecMsgDB db;
+                if (db.Open("cr+")) {
+                    db.WriteKey(trollboxAddress, smsgKey);
+                }
+            }
+            LogPrintf("Trollbox address: %s\n", EncodeDestination(PKHash(trollboxAddress)));
+        } else {
+            LogPrintf("Warning: Trollbox private key is invalid.\n");
+        }
     }
 
     if (secp256k1_context_smsg) {
@@ -2489,13 +2515,14 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
     }
 
     if (fOwnMessage) {
-        // Save to inbox
+        // Save to inbox (or trollbox if addressed to the trollbox channel)
         SecureMessage *psmsg = (SecureMessage*) pHeader;
 
         uint160 hash;
         HashMsg(*psmsg, pPayload, nPayload - psmsg->GetPaidTailSize(), hash);
 
-        std::string sPrefix("im");
+        bool fTrollbox = (addressTo == trollboxAddress);
+        std::string sPrefix(fTrollbox ? "tb" : "im");
         uint8_t chKey[30];
         int64_t timestamp_be = bswap_64(psmsg->timestamp);
         memcpy(&chKey[0], sPrefix.data(), 2);
@@ -2521,18 +2548,23 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
             if (dbInbox.Open("cw")) {
                 if (dbInbox.ExistsSmesg(chKey)) {
                     fExisted = true;
-                    LogPrint(BCLog::SMSG, "Message already exists in inbox db.\n");
+                    LogPrint(BCLog::SMSG, "Message already exists in %s db.\n", fTrollbox ? "trollbox" : "inbox");
                 } else {
                     dbInbox.WriteSmesg(chKey, smsgInbox);
                     if (reportToGui) {
-                        NotifySecMsgInboxChanged(smsgInbox);
+                        if (fTrollbox) {
+                            NotifySecMsgTrollboxChanged(smsgInbox);
+                        } else {
+                            NotifySecMsgInboxChanged(smsgInbox);
+                        }
                     }
-                    LogPrintf("SecureMsg saved to inbox, received with %s.\n", EncodeDestination(PKHash(addressTo)));
+                    LogPrintf("SecureMsg saved to %s, received with %s.\n",
+                        fTrollbox ? "trollbox" : "inbox", EncodeDestination(PKHash(addressTo)));
                 }
             }
         } // cs_smsgDB
 
-        if (!fExisted) {
+        if (!fExisted && !fTrollbox) {
             // notify an external script when a message comes in
             std::string strCmd = gArgs.GetArg("-smsgnotify", "");
 

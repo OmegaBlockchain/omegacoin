@@ -11,6 +11,8 @@
 #include <QTimer>
 
 #include <memory>
+#include <set>
+#include <string>
 
 #include <boost/signals2/signal.hpp>
 
@@ -76,6 +78,16 @@ private Q_SLOTS:
     void copyKeyPublicKey();
     void sendMessageToSelected();
 
+    // Trollbox actions
+    void onTrollboxSendClicked();
+    void updateTrollboxList();
+    void updateTrollboxFromAddresses();
+    void onTrollboxCooldownTick();
+    void showTrollboxContextMenu(const QPoint& point);
+    void copyTrollboxMessage();
+    void copyTrollboxSender();
+    void muteTrollboxSender();
+
 private:
     std::unique_ptr<Ui::MessagingPage> ui;
     ClientModel* clientModel;
@@ -83,20 +95,30 @@ private:
     QMenu* inboxContextMenu;
     QMenu* outboxContextMenu;
     QMenu* keysContextMenu;
+    QMenu* trollboxContextMenu;
     QAction* sendMessageAction;
 
     QTimer* updateTimer;
+    QTimer* trollboxCooldownTimer;
     bool fInboxChanged;
     bool fOutboxChanged;
+    bool fTrollboxChanged;
+
+    int nTrollboxCooldown;
+    std::set<std::string> trollboxMuteList;
+    QString trollboxSelectedSender;
+    QString trollboxSelectedMessage;
 
     boost::signals2::connection m_smsg_inbox_conn;
     boost::signals2::connection m_smsg_outbox_conn;
     boost::signals2::connection m_smsg_wallet_unlocked_conn;
+    boost::signals2::connection m_smsg_trollbox_conn;
 
     void setupInboxTab();
     void setupOutboxTab();
     void setupComposeTab();
     void setupKeysTab();
+    void setupTrollboxTab();
     void connectSignals();
     void disconnectSignals();
     void updateFromAddresses();

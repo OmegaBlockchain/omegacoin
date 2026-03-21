@@ -22,6 +22,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QMetaObject>
+#include <QTextCursor>
 
 // Inbox column indices
 enum InboxColumns {
@@ -66,10 +67,14 @@ MessagingPage::MessagingPage(QWidget* parent) :
     inboxContextMenu(nullptr),
     outboxContextMenu(nullptr),
     keysContextMenu(nullptr),
+    trollboxContextMenu(nullptr),
     sendMessageAction(nullptr),
     updateTimer(nullptr),
+    trollboxCooldownTimer(nullptr),
     fInboxChanged(false),
-    fOutboxChanged(false)
+    fOutboxChanged(false),
+    fTrollboxChanged(false),
+    nTrollboxCooldown(0)
 {
     ui->setupUi(this);
 
@@ -77,12 +82,18 @@ MessagingPage::MessagingPage(QWidget* parent) :
     setupOutboxTab();
     setupComposeTab();
     setupKeysTab();
+    setupTrollboxTab();
 
     // Update timer — 3-second cooldown matching MasternodeList pattern
     updateTimer = new QTimer(this);
     updateTimer->setInterval(3000);
     connect(updateTimer, &QTimer::timeout, this, &MessagingPage::updateScheduled);
     updateTimer->start();
+
+    // Trollbox cooldown timer — 1-second ticks
+    trollboxCooldownTimer = new QTimer(this);
+    trollboxCooldownTimer->setInterval(1000);
+    connect(trollboxCooldownTimer, &QTimer::timeout, this, &MessagingPage::onTrollboxCooldownTick);
 
     // Tab change handler
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MessagingPage::onTabChanged);
@@ -238,6 +249,12 @@ void MessagingPage::connectSignals()
         [this]() {
             fInboxChanged = true;
             fOutboxChanged = true;
+            fTrollboxChanged = true;
+        });
+
+    m_smsg_trollbox_conn = smsg::NotifySecMsgTrollboxChanged.connect(
+        [this](smsg::SecMsgStored& /*trollboxHdr*/) {
+            fTrollboxChanged = true;
         });
 }
 
@@ -246,6 +263,7 @@ void MessagingPage::disconnectSignals()
     m_smsg_inbox_conn.disconnect();
     m_smsg_outbox_conn.disconnect();
     m_smsg_wallet_unlocked_conn.disconnect();
+    m_smsg_trollbox_conn.disconnect();
 }
 
 void MessagingPage::updateSmsgEnabledState()
@@ -260,6 +278,8 @@ void MessagingPage::updateSmsgEnabledState()
         updateOutboxList();
         updateKeysList();
         updateFromAddresses();
+        updateTrollboxFromAddresses();
+        updateTrollboxList();
     }
 }
 
@@ -295,6 +315,10 @@ void MessagingPage::updateScheduled()
         fOutboxChanged = false;
         QMetaObject::invokeMethod(this, "updateOutboxList", Qt::QueuedConnection);
     }
+    if (fTrollboxChanged) {
+        fTrollboxChanged = false;
+        QMetaObject::invokeMethod(this, "updateTrollboxList", Qt::QueuedConnection);
+    }
 }
 
 void MessagingPage::onTabChanged(int index)
@@ -307,6 +331,9 @@ void MessagingPage::onTabChanged(int index)
         updateFromAddresses();
     } else if (index == 3) {
         updateKeysList();
+    } else if (index == 4) {
+        updateTrollboxFromAddresses();
+        updateTrollboxList();
     }
 }
 
@@ -575,6 +602,9 @@ void MessagingPage::updateKeysList()
 
         for (auto& p : smsgModule.keyStore.mapKeys)
         {
+            // Skip Trollbox shared key — not a user key
+            if (p.first == smsgModule.trollboxAddress)
+                continue;
             auto& key = p.second;
             bool fContact = (key.nFlags & smsg::SMK_CONTACT_ONLY) != 0;
             QString sAddr = QString::fromStdString(EncodeDestination(PKHash(p.first)));
@@ -650,7 +680,10 @@ void MessagingPage::updateFromAddresses()
         // Also include standalone SMSG keys (keyStore) that have receive enabled
         // and are not contact-only. These are used when no wallet is attached or
         // when a key was generated via ImportPrivkey (e.g. unencrypted wallet path).
+        // Skip the Trollbox address — it's a shared key, not a user address.
         for (auto& p : smsgModule.keyStore.mapKeys) {
+            if (p.first == smsgModule.trollboxAddress)
+                continue;
             auto& key = p.second;
             if (key.nFlags & smsg::SMK_CONTACT_ONLY)
                 continue;
@@ -1378,6 +1411,341 @@ void MessagingPage::onGenerateKeyClicked()
 
     updateKeysList();
     updateFromAddresses();
+}
+
+// ----- Trollbox -----
+
+void MessagingPage::setupTrollboxTab()
+{
+    connect(ui->trollboxSendButton, &QPushButton::clicked, this, &MessagingPage::onTrollboxSendClicked);
+
+    // Also send on Enter key
+    connect(ui->trollboxInput, &QLineEdit::returnPressed, this, &MessagingPage::onTrollboxSendClicked);
+
+    // Context menu on chat area
+    ui->trollboxChat->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->trollboxChat, &QTextBrowser::customContextMenuRequested, this, &MessagingPage::showTrollboxContextMenu);
+
+    trollboxContextMenu = new QMenu(this);
+    trollboxContextMenu->addAction(tr("Copy Message"), this, &MessagingPage::copyTrollboxMessage);
+    trollboxContextMenu->addAction(tr("Copy Sender Address"), this, &MessagingPage::copyTrollboxSender);
+    trollboxContextMenu->addSeparator();
+    trollboxContextMenu->addAction(tr("Mute Sender"), this, &MessagingPage::muteTrollboxSender);
+}
+
+void MessagingPage::updateTrollboxFromAddresses()
+{
+    if (!smsg::fSecMsgEnabled)
+        return;
+
+    QString current = ui->trollboxFromCombo->currentText();
+    ui->trollboxFromCombo->clear();
+
+    {
+        LOCK(smsgModule.cs_smsg);
+
+#ifdef ENABLE_WALLET
+        if (smsgModule.pwallet) {
+            for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it)
+            {
+                if (!it->fReceiveEnabled)
+                    continue;
+                // Skip the Trollbox address itself
+                if (it->address == smsgModule.trollboxAddress)
+                    continue;
+                std::string sAddr = EncodeDestination(PKHash(it->address));
+                ui->trollboxFromCombo->addItem(QString::fromStdString(sAddr));
+            }
+        }
+#endif
+
+        for (auto& p : smsgModule.keyStore.mapKeys) {
+            if (p.first == smsgModule.trollboxAddress)
+                continue;
+            auto& key = p.second;
+            if (key.nFlags & smsg::SMK_CONTACT_ONLY)
+                continue;
+            if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
+                continue;
+            std::string sAddr = EncodeDestination(PKHash(p.first));
+            QString qAddr = QString::fromStdString(sAddr);
+            if (ui->trollboxFromCombo->findText(qAddr) < 0)
+                ui->trollboxFromCombo->addItem(qAddr);
+        }
+    }
+
+    int idx = ui->trollboxFromCombo->findText(current);
+    if (idx >= 0)
+        ui->trollboxFromCombo->setCurrentIndex(idx);
+}
+
+void MessagingPage::updateTrollboxList()
+{
+    if (!smsg::fSecMsgEnabled)
+        return;
+
+    QTextBrowser* chat = ui->trollboxChat;
+    chat->clear();
+
+    struct TrollboxMsg {
+        int64_t time;
+        QString from;
+        QString text;
+        bool paid;
+    };
+    std::vector<TrollboxMsg> msgs;
+
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            return;
+
+        std::string sPrefix("tb");
+        uint8_t chKey[30];
+
+        smsg::SecMsgStored smsgStored;
+        smsg::MessageData msg;
+
+        leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesg(it, sPrefix, chKey, smsgStored))
+        {
+            uint8_t* pHeader = &smsgStored.vchMessage[0];
+            const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
+
+            uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+            int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+
+            if (rv != 0)
+                continue;
+
+            // Skip muted senders
+            if (trollboxMuteList.count(msg.sFromAddress))
+                continue;
+
+            TrollboxMsg tm;
+            tm.time = msg.timestamp;
+            tm.from = QString::fromStdString(msg.sFromAddress);
+            tm.text = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
+            tm.paid = psmsg->IsPaidVersion();
+            msgs.push_back(tm);
+        }
+        delete it;
+    } // cs_smsgDB
+
+    // Keep only the most recent messages
+    if ((int)msgs.size() > smsg::TROLLBOX_MAX_DISPLAY) {
+        msgs.erase(msgs.begin(), msgs.begin() + (msgs.size() - smsg::TROLLBOX_MAX_DISPLAY));
+    }
+
+    // Render messages as HTML
+    QString html;
+    for (const auto& m : msgs) {
+        QString timeStr = QDateTime::fromSecsSinceEpoch(m.time).toString("hh:mm");
+        QString senderShort = m.from;
+        if (senderShort.length() > 12)
+            senderShort = senderShort.left(6) + "..." + senderShort.right(4);
+
+        // Escape HTML in message text
+        QString escapedText = m.text.toHtmlEscaped().replace('\n', ' ');
+
+        if (m.paid) {
+            html += QString("<p style=\"margin:2px 0;\"><span style=\"color:gray;\">[%1]</span> "
+                "<b style=\"color:red;\">%2:</b> <span style=\"color:red;\">%3</span></p>")
+                .arg(timeStr, senderShort, escapedText);
+        } else {
+            html += QString("<p style=\"margin:2px 0;\"><span style=\"color:gray;\">[%1]</span> "
+                "<b>%2:</b> %3</p>")
+                .arg(timeStr, senderShort, escapedText);
+        }
+    }
+
+    chat->setHtml(html);
+
+    // Auto-scroll to bottom
+    QTextCursor cursor = chat->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    chat->setTextCursor(cursor);
+    chat->ensureCursorVisible();
+}
+
+void MessagingPage::onTrollboxSendClicked()
+{
+    if (!smsg::fSecMsgEnabled) {
+        ui->trollboxCooldownLabel->setText(tr("SMSG not enabled."));
+        return;
+    }
+
+    if (nTrollboxCooldown > 0) {
+        ui->trollboxCooldownLabel->setText(tr("Wait %1s...").arg(nTrollboxCooldown));
+        return;
+    }
+
+    QString addrFrom = ui->trollboxFromCombo->currentText();
+    QString message = ui->trollboxInput->text().trimmed();
+
+    if (addrFrom.isEmpty()) {
+        ui->trollboxCooldownLabel->setText(tr("Select a From address."));
+        return;
+    }
+    if (message.isEmpty()) {
+        return;
+    }
+    if ((unsigned int)message.toUtf8().size() > smsg::TROLLBOX_MAX_MSG_BYTES) {
+        ui->trollboxCooldownLabel->setText(tr("Message too long (max %1 chars).").arg(smsg::TROLLBOX_MAX_MSG_BYTES));
+        return;
+    }
+
+    CTxDestination destFrom = DecodeDestination(addrFrom.toStdString());
+    if (!IsValidDestination(destFrom)) {
+        ui->trollboxCooldownLabel->setText(tr("Invalid From address."));
+        return;
+    }
+
+    CKeyID kiFrom = ToKeyID(std::get<PKHash>(destFrom));
+    CKeyID kiTo = smsgModule.trollboxAddress;
+
+    std::string sMessage = message.toStdString();
+    std::string sError;
+    smsg::SecureMessage smsgOut;
+    bool fPaid = ui->trollboxPaidCheckBox->isChecked();
+
+    if (fPaid) {
+        // Estimate fee first, confirm with user
+        CAmount nFee = 0;
+        int rv = smsgModule.Send(kiFrom, kiTo, sMessage, smsgOut, sError, true, 1, true, &nFee);
+        if (rv != 0) {
+            ui->trollboxCooldownLabel->setText(tr("Fee estimate failed: %1").arg(QString::fromStdString(sError)));
+            return;
+        }
+
+        QMessageBox::StandardButton reply = QMessageBox::question(this, tr("Paid Trollbox Message"),
+            tr("Send paid message (red highlight)?\nFee: %1 OMEGA")
+                .arg(QString::number((double)nFee / 100000000.0, 'f', 8)),
+            QMessageBox::Yes | QMessageBox::No);
+
+        if (reply != QMessageBox::Yes)
+            return;
+    }
+
+    int rv = smsgModule.Send(kiFrom, kiTo, sMessage, smsgOut, sError, fPaid, fPaid ? 1 : 0);
+
+    if (rv != 0) {
+        ui->trollboxCooldownLabel->setText(tr("Send failed: %1").arg(QString::fromStdString(sError)));
+        return;
+    }
+
+    ui->trollboxInput->clear();
+    ui->trollboxPaidCheckBox->setChecked(false);
+
+    // Start cooldown
+    nTrollboxCooldown = smsg::TROLLBOX_RATE_LIMIT_SECS;
+    ui->trollboxSendButton->setEnabled(false);
+    ui->trollboxCooldownLabel->setText(tr("Wait %1s...").arg(nTrollboxCooldown));
+    trollboxCooldownTimer->start();
+
+    // Trigger immediate refresh
+    fTrollboxChanged = true;
+}
+
+void MessagingPage::onTrollboxCooldownTick()
+{
+    nTrollboxCooldown--;
+    if (nTrollboxCooldown <= 0) {
+        nTrollboxCooldown = 0;
+        trollboxCooldownTimer->stop();
+        ui->trollboxSendButton->setEnabled(true);
+        ui->trollboxCooldownLabel->setText("");
+    } else {
+        ui->trollboxCooldownLabel->setText(tr("Wait %1s...").arg(nTrollboxCooldown));
+    }
+}
+
+void MessagingPage::showTrollboxContextMenu(const QPoint& point)
+{
+    // Find which message line was clicked
+    QTextCursor cursor = ui->trollboxChat->cursorForPosition(point);
+    cursor.select(QTextCursor::BlockUnderCursor);
+    QString block = cursor.selectedText();
+
+    // Parse sender and message from the block
+    // Format: [HH:MM] Sender: message
+    trollboxSelectedSender.clear();
+    trollboxSelectedMessage.clear();
+
+    // Extract text between first "] " and ":" for sender
+    int bracketEnd = block.indexOf("] ");
+    int colonPos = block.indexOf(":", bracketEnd > 0 ? bracketEnd : 0);
+    if (bracketEnd > 0 && colonPos > bracketEnd) {
+        trollboxSelectedSender = block.mid(bracketEnd + 2, colonPos - bracketEnd - 2).trimmed();
+        trollboxSelectedMessage = block.mid(colonPos + 1).trimmed();
+    }
+
+    if (!trollboxSelectedSender.isEmpty()) {
+        trollboxContextMenu->exec(ui->trollboxChat->mapToGlobal(point));
+    }
+}
+
+void MessagingPage::copyTrollboxMessage()
+{
+    if (!trollboxSelectedMessage.isEmpty())
+        QApplication::clipboard()->setText(trollboxSelectedMessage);
+}
+
+void MessagingPage::copyTrollboxSender()
+{
+    if (!trollboxSelectedSender.isEmpty())
+        QApplication::clipboard()->setText(trollboxSelectedSender);
+}
+
+void MessagingPage::muteTrollboxSender()
+{
+    if (trollboxSelectedSender.isEmpty())
+        return;
+
+    // The displayed sender might be truncated — need to find full address
+    // For now, store truncated version and match on prefix+suffix in updateTrollboxList
+    QMessageBox::StandardButton reply = QMessageBox::question(this, tr("Mute Sender"),
+        tr("Mute messages from %1?").arg(trollboxSelectedSender),
+        QMessageBox::Yes | QMessageBox::No);
+
+    if (reply != QMessageBox::Yes)
+        return;
+
+    // Need to find the full address — scan trollbox messages for a match
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            return;
+
+        std::string sPrefix("tb");
+        uint8_t chKey[30];
+        smsg::SecMsgStored smsgStored;
+        smsg::MessageData msg;
+
+        leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesg(it, sPrefix, chKey, smsgStored))
+        {
+            uint8_t* pHeader = &smsgStored.vchMessage[0];
+            uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+            int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+            if (rv != 0) continue;
+
+            QString fullAddr = QString::fromStdString(msg.sFromAddress);
+            QString shortAddr = fullAddr;
+            if (shortAddr.length() > 12)
+                shortAddr = shortAddr.left(6) + "..." + shortAddr.right(4);
+
+            if (shortAddr == trollboxSelectedSender) {
+                trollboxMuteList.insert(msg.sFromAddress);
+                break;
+            }
+        }
+        delete it;
+    }
+
+    updateTrollboxList();
 }
 
 // ----- Filter handlers -----

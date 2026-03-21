@@ -2177,6 +2177,161 @@ static UniValue smsgdebug(const JSONRPCRequest &request)
     return result;
 }
 
+static UniValue trollboxsend(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2) {
+        throw std::runtime_error(
+            "trollboxsend \"message\" ( paid )\n"
+            "\nSend a message to the public Trollbox channel.\n"
+            "\nArguments:\n"
+            "1. \"message\"    (string, required) Message text (max 256 chars)\n"
+            "2. paid           (boolean, optional, default=false) Send as paid message (displayed in red)\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"result\": \"Sent.\"\n"
+            "}\n");
+    }
+
+    EnsureSMSGIsEnabled();
+
+    std::string sMessage = request.params[0].get_str();
+    if (sMessage.size() > smsg::TROLLBOX_MAX_MSG_BYTES) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER,
+            strprintf("Message too long (%d > %d)", sMessage.size(), smsg::TROLLBOX_MAX_MSG_BYTES));
+    }
+
+    bool fPaid = false;
+    if (request.params.size() > 1)
+        fPaid = request.params[1].get_bool();
+
+    // Rate limit
+    int64_t now = GetTime();
+    if (now - smsgModule.nLastTrollboxSend < smsg::TROLLBOX_RATE_LIMIT_SECS) {
+        int remaining = smsg::TROLLBOX_RATE_LIMIT_SECS - (int)(now - smsgModule.nLastTrollboxSend);
+        throw JSONRPCError(RPC_MISC_ERROR,
+            strprintf("Rate limited. Wait %d seconds.", remaining));
+    }
+
+    // Find first available sender address
+    CKeyID kiFrom;
+    {
+        LOCK(smsgModule.cs_smsg);
+#ifdef ENABLE_WALLET
+        if (smsgModule.pwallet) {
+            for (auto& a : smsgModule.addresses) {
+                if (a.fReceiveEnabled && a.address != smsgModule.trollboxAddress) {
+                    kiFrom = a.address;
+                    break;
+                }
+            }
+        }
+#endif
+        if (kiFrom.IsNull()) {
+            for (auto& p : smsgModule.keyStore.mapKeys) {
+                if (p.first == smsgModule.trollboxAddress) continue;
+                auto& key = p.second;
+                if (!(key.nFlags & smsg::SMK_RECEIVE_ON)) continue;
+                if (key.nFlags & smsg::SMK_CONTACT_ONLY) continue;
+                kiFrom = p.first;
+                break;
+            }
+        }
+    }
+
+    if (kiFrom.IsNull())
+        throw JSONRPCError(RPC_WALLET_ERROR, "No sending address available. Generate an SMSG key first.");
+
+    CKeyID kiTo = smsgModule.trollboxAddress;
+    std::string sError;
+    smsg::SecureMessage smsgOut;
+
+    int rv = smsgModule.Send(kiFrom, kiTo, sMessage, smsgOut, sError, fPaid, fPaid ? 1 : 0);
+    if (rv != 0) {
+        throw JSONRPCError(RPC_MISC_ERROR, strprintf("Send failed: %s", sError));
+    }
+
+    smsgModule.nLastTrollboxSend = GetTime();
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "Sent.");
+    result.pushKV("from", EncodeDestination(PKHash(kiFrom)));
+    result.pushKV("paid", fPaid);
+    return result;
+}
+
+static UniValue trollboxlist(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() > 1) {
+        throw std::runtime_error(
+            "trollboxlist ( count )\n"
+            "\nList recent Trollbox messages.\n"
+            "\nArguments:\n"
+            "1. count       (numeric, optional, default=50) Number of messages to return\n"
+            "\nResult:\n"
+            "[\n"
+            "  { \"time\": n, \"from\": \"addr\", \"text\": \"...\", \"paid\": true|false }\n"
+            "]\n");
+    }
+
+    EnsureSMSGIsEnabled();
+
+    int nCount = 50;
+    if (request.params.size() > 0)
+        nCount = request.params[0].get_int();
+    if (nCount <= 0 || nCount > 1000)
+        nCount = 50;
+
+    struct TbMsg { int64_t time; std::string from; std::string text; bool paid; };
+    std::vector<TbMsg> msgs;
+
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            throw JSONRPCError(RPC_DATABASE_ERROR, "Failed to open smsg DB.");
+
+        std::string sPrefix("tb");
+        uint8_t chKey[30];
+        smsg::SecMsgStored smsgStored;
+        smsg::MessageData msg;
+
+        leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesg(it, sPrefix, chKey, smsgStored))
+        {
+            uint8_t* pHeader = &smsgStored.vchMessage[0];
+            const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
+            uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+            int rv = smsgModule.Decrypt(false, smsgStored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+            if (rv != 0) continue;
+
+            TbMsg m;
+            m.time = msg.timestamp;
+            m.from = msg.sFromAddress;
+            m.text = std::string((char*)msg.vchMessage.data());
+            m.paid = psmsg->IsPaidVersion();
+            msgs.push_back(m);
+        }
+        delete it;
+    }
+
+    // Keep only most recent N
+    if ((int)msgs.size() > nCount) {
+        msgs.erase(msgs.begin(), msgs.begin() + (msgs.size() - nCount));
+    }
+
+    UniValue result(UniValue::VARR);
+    for (const auto& m : msgs) {
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("time", m.time);
+        obj.pushKV("from", m.from);
+        obj.pushKV("text", m.text);
+        obj.pushKV("paid", m.paid);
+        result.push_back(obj);
+    }
+
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -2214,6 +2369,9 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsgsetwallet",          &smsgsetwallet,          {"walletname"} },
     // Phase 3 — Debugging & Final Parity
     { "smsg",               "smsgdebug",              &smsgdebug,              {"command","arg1"} },
+    // Trollbox — public chat
+    { "smsg",               "trollboxsend",           &trollboxsend,           {"message","paid"} },
+    { "smsg",               "trollboxlist",           &trollboxlist,            {"count"} },
 };
 
 void RegisterSmsgRPCCommands(CRPCTable &t)

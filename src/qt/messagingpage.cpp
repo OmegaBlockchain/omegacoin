@@ -129,6 +129,7 @@ void MessagingPage::setupInboxTab()
 
     table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(table, &QTableWidget::customContextMenuRequested, this, &MessagingPage::showInboxContextMenu);
+    connect(table, &QTableWidget::cellDoubleClicked, this, [this](int, int){ showInboxMessage(); });
 
     // Context menu
     inboxContextMenu = new QMenu(this);
@@ -169,6 +170,7 @@ void MessagingPage::setupOutboxTab()
 
     table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(table, &QTableWidget::customContextMenuRequested, this, &MessagingPage::showOutboxContextMenu);
+    connect(table, &QTableWidget::cellDoubleClicked, this, [this](int, int){ showOutboxMessage(); });
 
     // Context menu
     outboxContextMenu = new QMenu(this);

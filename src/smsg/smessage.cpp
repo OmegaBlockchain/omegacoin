@@ -328,7 +328,7 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
                 uint256 hashBlock;
                 {
                     LOCK(cs_main);
-                    txOut = GetTransaction(pindex, nullptr, txid, Params().GetConsensus(), hashBlock);
+                    txOut = GetTransaction(nullptr, nullptr, txid, Params().GetConsensus(), hashBlock);
                 }
 
                 int blockDepth = -1;
@@ -343,7 +343,7 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
                     LogPrintf("Found txn %s at depth %d\n", txid.ToString(), blockDepth);
                 } else {
                     // Failure
-                    if (psmsg->timestamp > now + FUND_TXN_TIMEOUT) {
+                    if (now > psmsg->timestamp + FUND_TXN_TIMEOUT) {
                         LogPrintf("%s: Funding txn timeout, dropping message %s\n", __func__, msgId.ToString());
                         LOCK(cs_smsgDB);
                         dbOutbox.EraseSmesg(chKey);

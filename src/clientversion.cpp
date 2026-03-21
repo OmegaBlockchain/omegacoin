@@ -44,12 +44,6 @@ const std::string CLIENT_NAME("Omega Core");
 
 const std::string CLIENT_BUILD(BUILD_DESC BUILD_SUFFIX);
 
-#ifdef BUILD_GIT_DESCRIBE
-const std::string CLIENT_BUILD_FULL(BUILD_GIT_DESCRIBE);
-#else
-const std::string CLIENT_BUILD_FULL(BUILD_DESC BUILD_SUFFIX);
-#endif
-
 std::string FormatVersion(int nVersion)
 {
     return strprintf("%d.%d.%d", nVersion / 10000, (nVersion / 100) % 100, nVersion % 100);
@@ -62,7 +56,22 @@ std::string FormatFullVersion()
 
 std::string FormatBuildVersion()
 {
-    return CLIENT_BUILD_FULL;
+#ifdef BUILD_GIT_DESCRIBE
+    // Local build with git — full describe string like "v0.20.0-8-ga6bdbcf0e597"
+    return BUILD_GIT_DESCRIBE;
+#elif defined(BUILD_GIT_COMMIT)
+    // Local build with git but no describe — use commit hash
+    return "v" PACKAGE_VERSION "-" BUILD_GIT_COMMIT;
+#elif defined(GIT_COMMIT_ID)
+    // GUIX archive build — GIT_COMMIT_ID set by git export-subst
+    std::string commitId(GIT_COMMIT_ID);
+    if (!commitId.empty() && commitId[0] != '$') {
+        return "v" + std::string(PACKAGE_VERSION) + "-g" + commitId.substr(0, 12);
+    }
+    return "v" PACKAGE_VERSION;
+#else
+    return "v" PACKAGE_VERSION;
+#endif
 }
 
 /**

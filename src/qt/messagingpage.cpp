@@ -121,6 +121,8 @@ void MessagingPage::setupInboxTab()
 
     // Context menu
     inboxContextMenu = new QMenu(this);
+    inboxContextMenu->addAction(tr("Show Message"), this, &MessagingPage::showInboxMessage);
+    inboxContextMenu->addSeparator();
     inboxContextMenu->addAction(tr("Copy From Address"), this, &MessagingPage::copyFromAddress);
     inboxContextMenu->addAction(tr("Copy To Address"), this, &MessagingPage::copyToAddress);
     inboxContextMenu->addAction(tr("Copy Message ID"), this, &MessagingPage::copyMessageId);
@@ -159,6 +161,8 @@ void MessagingPage::setupOutboxTab()
 
     // Context menu
     outboxContextMenu = new QMenu(this);
+    outboxContextMenu->addAction(tr("Show Message"), this, &MessagingPage::showOutboxMessage);
+    outboxContextMenu->addSeparator();
     outboxContextMenu->addAction(tr("Copy From Address"), this, &MessagingPage::copyOutboxFromAddress);
     outboxContextMenu->addAction(tr("Copy To Address"), this, &MessagingPage::copyOutboxToAddress);
     outboxContextMenu->addAction(tr("Copy Message ID"), this, &MessagingPage::copyOutboxMessageId);
@@ -392,9 +396,11 @@ void MessagingPage::updateInboxList()
             retItem->setTextAlignment(Qt::AlignCenter);
             table->setItem(row, INBOX_COL_RETENTION, retItem);
 
-            // Text preview (first 80 chars)
+            // Text preview (first 80 chars), full text in UserRole
             QString preview = sText.left(80).replace('\n', ' ');
-            table->setItem(row, INBOX_COL_TEXT, new QTableWidgetItem(preview));
+            QTableWidgetItem* textItem = new QTableWidgetItem(preview);
+            textItem->setData(Qt::UserRole, sText);
+            table->setItem(row, INBOX_COL_TEXT, textItem);
 
             table->setItem(row, INBOX_COL_MSGID, new QTableWidgetItem(sMsgId));
 
@@ -490,9 +496,11 @@ void MessagingPage::updateOutboxList()
             retItem->setTextAlignment(Qt::AlignCenter);
             table->setItem(row, OUTBOX_COL_RETENTION, retItem);
 
-            // Text preview
+            // Text preview (first 80 chars), full text in UserRole
             QString preview = sText.left(80).replace('\n', ' ');
-            table->setItem(row, OUTBOX_COL_TEXT, new QTableWidgetItem(preview));
+            QTableWidgetItem* textItem = new QTableWidgetItem(preview);
+            textItem->setData(Qt::UserRole, sText);
+            table->setItem(row, OUTBOX_COL_TEXT, textItem);
 
             table->setItem(row, OUTBOX_COL_MSGID, new QTableWidgetItem(sMsgId));
 
@@ -850,6 +858,28 @@ void MessagingPage::showKeysContextMenu(const QPoint& point)
     }
 }
 
+void MessagingPage::showInboxMessage()
+{
+    int row = ui->inboxTable->currentRow();
+    if (row < 0) return;
+    QTableWidgetItem* textItem = ui->inboxTable->item(row, INBOX_COL_TEXT);
+    if (!textItem) return;
+
+    QString fullText = textItem->data(Qt::UserRole).toString();
+    if (fullText.isEmpty())
+        fullText = textItem->text();
+
+    QString from;
+    QTableWidgetItem* fromItem = ui->inboxTable->item(row, INBOX_COL_FROM);
+    if (fromItem) from = fromItem->text();
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Message from %1").arg(from));
+    msgBox.setText(fullText);
+    msgBox.setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    msgBox.exec();
+}
+
 void MessagingPage::copyFromAddress()
 {
     int row = ui->inboxTable->currentRow();
@@ -1010,6 +1040,28 @@ void MessagingPage::purgeSelectedInbox()
     }
 
     updateInboxList();
+}
+
+void MessagingPage::showOutboxMessage()
+{
+    int row = ui->outboxTable->currentRow();
+    if (row < 0) return;
+    QTableWidgetItem* textItem = ui->outboxTable->item(row, OUTBOX_COL_TEXT);
+    if (!textItem) return;
+
+    QString fullText = textItem->data(Qt::UserRole).toString();
+    if (fullText.isEmpty())
+        fullText = textItem->text();
+
+    QString to;
+    QTableWidgetItem* toItem = ui->outboxTable->item(row, OUTBOX_COL_TO);
+    if (toItem) to = toItem->text();
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("Message to %1").arg(to));
+    msgBox.setText(fullText);
+    msgBox.setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    msgBox.exec();
 }
 
 void MessagingPage::copyOutboxFromAddress()

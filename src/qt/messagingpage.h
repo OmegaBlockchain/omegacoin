@@ -52,6 +52,7 @@ private Q_SLOTS:
     void onGenerateKeyClicked();
 
     // Inbox context menu actions
+    void showInboxMessage();
     void replyToSelected();
     void copyFromAddress();
     void copyToAddress();
@@ -62,6 +63,7 @@ private Q_SLOTS:
     void purgeSelectedInbox();
 
     // Outbox context menu actions
+    void showOutboxMessage();
     void copyOutboxFromAddress();
     void copyOutboxToAddress();
     void copyOutboxMessageId();

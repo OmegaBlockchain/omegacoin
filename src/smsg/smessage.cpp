@@ -3991,6 +3991,11 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         }
     }
 
+    // Fallback: use the sender's own address for outbox encryption
+    if (addressOutbox.IsNull()) {
+        addressOutbox = addressFrom;
+    }
+
     if (addressOutbox.IsNull()) {
         LogPrintf("%s: Warning, could not find an address to encrypt outbox message with.\n", __func__);
     } else {

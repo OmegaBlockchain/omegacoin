@@ -38,7 +38,7 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
 
     GUIUtil::updateFonts();
 
-    QString version = QString{PACKAGE_NAME} + " " + QString::fromStdString(FormatFullVersion());
+    QString version = QString{PACKAGE_NAME} + " " + QString::fromStdString(FormatBuildVersion());
 
     if (helpMode == about)
     {

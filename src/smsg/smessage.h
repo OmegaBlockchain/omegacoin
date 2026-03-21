@@ -82,7 +82,7 @@ const unsigned int SMSG_MAX_MSG_BYTES_PAID = 512 * 1024;    // the user input pa
 const unsigned int SMSG_MAX_MSG_WORST = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES+SMSG_PL_HDR_LEN);
 const unsigned int SMSG_MAX_MSG_WORST_PAID = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN);
 
-static const int MIN_SMSG_PROTO_VERSION = 90007;
+static const int MIN_SMSG_PROTO_VERSION = 70200;
 
 
 const CAmount nFundingTxnFeePerK = 200000;

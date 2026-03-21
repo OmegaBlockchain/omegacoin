@@ -38,8 +38,7 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
 
     GUIUtil::updateFonts();
 
-    QString version = QString{PACKAGE_NAME} + " " + tr("version") + " " + QString::fromStdString(FormatVersion(CLIENT_VERSION));
-    QString build = tr("Build") + ": " + QString::fromStdString(FormatFullVersion());
+    QString version = QString{PACKAGE_NAME} + " " + QString::fromStdString(FormatFullVersion());
 
     if (helpMode == about)
     {
@@ -58,8 +57,8 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
 
         ui->aboutMessage->setTextFormat(Qt::RichText);
         ui->scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        text = version + "\n" + build + "\n" + QString::fromStdString(FormatParagraph(licenseInfo));
-        ui->aboutMessage->setText(version + "<br>" + build + "<br><br>" + licenseInfoHTML);
+        text = version + "\n" + QString::fromStdString(FormatParagraph(licenseInfo));
+        ui->aboutMessage->setText(version + "<br><br>" + licenseInfoHTML);
         ui->aboutMessage->setWordWrap(true);
         ui->helpMessage->setVisible(false);
     } else if (helpMode == cmdline) {
@@ -68,14 +67,12 @@ HelpMessageDialog::HelpMessageDialog(interfaces::Node& node, QWidget *parent, He
         QTextCursor cursor(ui->helpMessage->document());
         cursor.insertText(version);
         cursor.insertBlock();
-        cursor.insertText(build);
-        cursor.insertBlock();
         cursor.insertText(header);
         cursor.insertBlock();
 
         std::string strUsage = gArgs.GetHelpMessage();
         QString coreOptions = QString::fromStdString(strUsage);
-        text = version + "\n" + build + "\n\n" + header + "\n" + coreOptions;
+        text = version + "\n\n" + header + "\n" + coreOptions;
 
         QTextTableFormat tf;
         tf.setBorderStyle(QTextFrameFormat::BorderStyle_None);

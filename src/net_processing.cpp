@@ -5034,7 +5034,7 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
         }
     } // release cs_main
 
-    if (smsg::fSecMsgEnabled) {
+    if (smsg::fSecMsgEnabled && !pto->fFeeler) {
         smsgModule.SendData(pto, true);
     }
 

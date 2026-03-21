@@ -1266,6 +1266,7 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
     }
 
     if (pfrom->nVersion < MIN_SMSG_PROTO_VERSION) {
+        LogPrint(BCLog::SMSG, "Peer %d version %d too low for SMSG (minimum %d).\n", pfrom->GetId(), pfrom->nVersion, MIN_SMSG_PROTO_VERSION);
         return SMSG_NO_ERROR;
     }
 
@@ -1325,6 +1326,11 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
             p += 16;
 
             // Check time valid:
+            if (time % SMSG_BUCKET_LEN) {
+                LogPrint(BCLog::SMSG, "Not a valid bucket time %d.\n", time);
+                Misbehaving(pfrom->GetId(), 1);
+                continue;
+            }
             if (time < now - SMSG_RETENTION) {
                 LogPrint(BCLog::SMSG, "Not interested in peer bucket %d, has expired.\n", time);
 
@@ -1344,23 +1350,31 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 continue;
             }
 
-            if (LogAcceptCategory(BCLog::SMSG)) {
-                LogPrintf("Peer bucket %d %u %u.\n", time, ncontent, hash);
-                LogPrintf("This bucket %d %u %u.\n", time, buckets[time].setTokens.size(), buckets[time].hash);
-            }
             {
                 LOCK(cs_smsg);
-                if (buckets[time].nLockCount > 0) {
-                    LogPrint(BCLog::SMSG, "Bucket is locked %u, waiting for peer %u to send data.\n", buckets[time].nLockCount, buckets[time].nLockPeerId);
+                const auto it_lb = buckets.find(time);
+
+                if (LogAcceptCategory(BCLog::SMSG)) {
+                    LogPrintf("Peer bucket %d %u %u.\n", time, ncontent, hash);
+                    if (it_lb != buckets.end()) {
+                        LogPrintf("This bucket %d %u %u.\n", time, it_lb->second.setTokens.size(), it_lb->second.hash);
+                    }
+                }
+
+                if (it_lb != buckets.end() && it_lb->second.nLockCount > 0) {
+                    LogPrint(BCLog::SMSG, "Bucket is locked %u, waiting for peer %u to send data.\n", it_lb->second.nLockCount, it_lb->second.nLockPeerId);
                     nLocked++;
                     continue;
                 }
 
                 // If this node has more than the peer node, peer node will pull from this
-                //  if then peer node has more this node will pull fom peer
-                if (buckets[time].setTokens.size() < ncontent
-                    || (buckets[time].setTokens.size() == ncontent
-                        && buckets[time].hash != hash)) { // if same amount in buckets check hash
+                //  if then peer node has more this node will pull from peer
+                uint32_t nLocalActive = (it_lb != buckets.end()) ? it_lb->second.nActive : 0;
+                uint32_t nLocalHash = (it_lb != buckets.end()) ? it_lb->second.hash : 0;
+                if (it_lb == buckets.end()
+                    || nLocalActive < ncontent
+                    || (nLocalActive == ncontent
+                        && nLocalHash != hash)) { // if same amount in buckets check hash
                     LogPrint(BCLog::SMSG, "Requesting contents of bucket %d.\n", time);
 
                     uint32_t sz = vchDataOut.size();
@@ -1780,7 +1794,7 @@ bool CSMSG::SendData(CNode *pto, bool fSendTrickle)
             for (it = buckets.begin(); it != buckets.end(); ++it) {
                 SecMsgBucket &bkt = it->second;
 
-                uint32_t nMessages = bkt.setTokens.size();
+                uint32_t nMessages = bkt.nActive;
 
                 if (bkt.timeChanged < pto->smsgData.lastMatched     // peer was last sent all buckets at time of lastMatched. It should have this bucket
                     || nMessages < 1) {                             // this bucket is empty

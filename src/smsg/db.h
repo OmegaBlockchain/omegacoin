@@ -52,6 +52,9 @@ public:
 
     bool ReadKey(const CKeyID &idk, SecMsgKey &key);
     bool WriteKey(const CKeyID &idk, const SecMsgKey &key);
+    bool EraseKey(const CKeyID &idk);
+
+    bool ErasePK(const CKeyID &addr);
 
     bool NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored);
     bool NextSmesgKey(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey);

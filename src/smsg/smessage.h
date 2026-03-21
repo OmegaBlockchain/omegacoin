@@ -459,6 +459,10 @@ public:
 
     int ReadSmsgKey(const CKeyID &idk, CKey &key);
 
+    int DumpPrivkey(const CKeyID &idk, CKey &key_out);
+    int RemoveAddress(const std::string &addr);
+    int RemovePrivkey(const std::string &addr);
+
     int Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData);
     int Remove(const SecMsgToken &token);
 

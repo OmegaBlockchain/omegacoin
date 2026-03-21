@@ -2864,6 +2864,91 @@ int CSMSG::ReadSmsgKey(const CKeyID &idk, CKey &key)
     return SMSG_NO_ERROR;
 };
 
+int CSMSG::DumpPrivkey(const CKeyID &idk, CKey &key_out)
+{
+    LOCK(cs_smsgDB);
+
+    SecMsgDB db;
+    if (!db.Open("cr+")) {
+        return SMSG_GENERAL_ERROR;
+    }
+
+    SecMsgKey smk;
+    if (!db.ReadKey(idk, smk)) {
+        return SMSG_KEY_NOT_EXISTS;
+    }
+
+    key_out = smk.key;
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::RemoveAddress(const std::string &addr)
+{
+    CTxDestination dest = DecodeDestination(addr);
+    if (!IsValidDestination(dest)) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+    if (!pkhash) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    CKeyID idk = ToKeyID(*pkhash);
+
+    {
+        LOCK(cs_smsg);
+        auto it = addresses.begin();
+        for (; it != addresses.end(); ++it) {
+            if (it->address == idk) {
+                break;
+            }
+        }
+        if (it != addresses.end()) {
+            addresses.erase(it);
+        }
+    }
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        db.ErasePK(idk);
+    }
+
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::RemovePrivkey(const std::string &addr)
+{
+    CTxDestination dest = DecodeDestination(addr);
+    if (!IsValidDestination(dest)) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+    if (!pkhash) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    CKeyID idk = ToKeyID(*pkhash);
+
+    keyStore.EraseKey(idk);
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        db.EraseKey(idk);
+    }
+
+    return SMSG_NO_ERROR;
+};
+
 int CSMSG::Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData)
 {
     LogPrint(BCLog::SMSG, "%s: %d.\n", __func__, token.timestamp);

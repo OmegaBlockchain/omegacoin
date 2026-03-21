@@ -315,6 +315,57 @@ bool SecMsgDB::WriteKey(const CKeyID &idk, const SecMsgKey &key)
     return true;
 };
 
+bool SecMsgDB::EraseKey(const CKeyID &idk)
+{
+    if (!pdb)
+        return false;
+
+    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    ssKey.reserve(sizeof(idk) + 2);
+    ssKey << 's';
+    ssKey << 'k';
+    ssKey << idk;
+
+    if (activeBatch) {
+        activeBatch->Delete(ssKey.str());
+        return true;
+    }
+
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Status s = pdb->Delete(writeOptions, ssKey.str());
+
+    if (s.ok() || s.IsNotFound())
+        return true;
+    LogPrintf("SecMsgDB erase key failed: %s\n", s.ToString());
+    return false;
+};
+
+bool SecMsgDB::ErasePK(const CKeyID &addr)
+{
+    if (!pdb)
+        return false;
+
+    CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+    ssKey.reserve(sizeof(addr) + 2);
+    ssKey << 'p';
+    ssKey << 'k';
+    ssKey << addr;
+
+    if (activeBatch) {
+        activeBatch->Delete(ssKey.str());
+        return true;
+    }
+
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Status s = pdb->Delete(writeOptions, ssKey.str());
+
+    if (s.ok() || s.IsNotFound())
+        return true;
+    LogPrintf("SecMsgDB erase pk failed: %s\n", s.ToString());
+    return false;
+};
 
 bool SecMsgDB::NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored)
 {

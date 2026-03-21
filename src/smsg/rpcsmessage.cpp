@@ -1644,6 +1644,539 @@ static UniValue smsgpurge(const JSONRPCRequest &request)
     return NullUniValue;
 }
 
+// ---- Phase 1: Mobile Dashboard & Connection Health ----
+
+static UniValue smsggetinfo(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "smsggetinfo\n"
+            "Returns SMSG status information.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"enabled\": true|false,\n"
+            "  \"active_wallet\": \"str\",\n"
+            "  \"enabled_wallets\": [\"str\",...]\n"
+            "}\n");
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("enabled", smsg::fSecMsgEnabled);
+    result.pushKV("active_wallet", smsgModule.GetWalletName());
+
+    UniValue wallets(UniValue::VARR);
+    for (const auto &pw : smsgModule.m_vpwallets) {
+        if (pw) {
+            wallets.push_back(pw->GetName());
+        }
+    }
+    result.pushKV("enabled_wallets", wallets);
+
+    return result;
+}
+
+static UniValue smsgpeers(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+            "smsgpeers ( node_id )\n"
+            "Returns SMSG peer information.\n"
+            "\nArguments:\n"
+            "1. node_id    (numeric, optional) Return info for a specific peer.\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"id\": n,\n"
+            "    \"version\": n,\n"
+            "    \"ignoreuntil\": n,\n"
+            "    \"misbehaving\": n,\n"
+            "    \"numwantsent\": n,\n"
+            "    \"receivecounter\": n,\n"
+            "    \"ignoredcounter\": n\n"
+            "  }\n"
+            "]\n");
+
+    EnsureSMSGIsEnabled();
+
+    int node_id = -1;
+    if (request.params.size() > 0) {
+        node_id = request.params[0].get_int();
+    }
+
+    UniValue result(UniValue::VARR);
+    smsgModule.GetNodesStats(node_id, result);
+    return result;
+}
+
+static UniValue smsgaddresses(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "smsgaddresses\n"
+            "Returns SMSG receiving addresses.\n"
+            "\nResult:\n"
+            "[\n"
+            "  {\n"
+            "    \"address\": \"str\",\n"
+            "    \"receive_enabled\": true|false,\n"
+            "    \"receive_anon\": true|false\n"
+            "  }\n"
+            "]\n");
+
+    EnsureSMSGIsEnabled();
+
+    UniValue result(UniValue::VARR);
+    LOCK(smsgModule.cs_smsg);
+    for (const auto &addr : smsgModule.addresses) {
+        UniValue entry(UniValue::VOBJ);
+        entry.pushKV("address", EncodeDestination(PKHash(addr.address)));
+        entry.pushKV("receive_enabled", addr.fReceiveEnabled);
+        entry.pushKV("receive_anon", addr.fReceiveAnon);
+        result.push_back(entry);
+    }
+    return result;
+}
+
+static UniValue smsgzmqpush(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() > 2)
+        throw std::runtime_error(
+            "smsgzmqpush ( \"timefrom\" \"timeto\" )\n"
+            "Returns unread message IDs from inbox.\n"
+            "\nArguments:\n"
+            "1. timefrom    (numeric, optional, default=0) Skip messages received before timestamp.\n"
+            "2. timeto      (numeric, optional, default=max) Skip messages received after timestamp.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"numsent\": n,\n"
+            "  \"msgids\": [\"str\",...]\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    int64_t timeFrom = 0, timeTo = std::numeric_limits<int64_t>::max();
+    if (request.params.size() > 0)
+        timeFrom = request.params[0].get_int64();
+    if (request.params.size() > 1)
+        timeTo = request.params[1].get_int64();
+
+    UniValue result(UniValue::VOBJ);
+    UniValue msgids(UniValue::VARR);
+    int nSent = 0;
+
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Could not open DB.");
+
+        std::string sPrefix("im");
+        uint8_t chKey[30];
+        smsg::SecMsgStored smsgStored;
+
+        leveldb::Iterator *it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesg(it, sPrefix, chKey, smsgStored)) {
+            if (!(smsgStored.status & SMSG_MASK_UNREAD))
+                continue;
+            if (smsgStored.timeReceived < timeFrom || smsgStored.timeReceived > timeTo)
+                continue;
+            msgids.push_back(HexStr(Span<uint8_t>(&chKey[2], &chKey[2] + 28)));
+            nSent++;
+        }
+        delete it;
+    }
+
+    result.pushKV("numsent", nSent);
+    result.pushKV("msgids", msgids);
+    return result;
+}
+
+static UniValue smsggetfeerate(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "smsggetfeerate\n"
+            "Returns current SMSG fee rate.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"feeperkperday\": n,\n"
+            "  \"fundingtxnfeeperk\": n\n"
+            "}\n");
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("feeperkperday", smsg::nMsgFeePerKPerDay);
+    result.pushKV("fundingtxnfeeperk", smsg::nFundingTxnFeePerK);
+    return result;
+}
+
+static UniValue smsggetdifficulty(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "smsggetdifficulty\n"
+            "Returns current SMSG PoW difficulty.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"currentdifficulty\": n\n"
+            "}\n");
+
+    UniValue result(UniValue::VOBJ);
+    uint32_t nSecondsInDay = smsg::SMSGGetSecondsInDay();
+    result.pushKV("secondsinday", (uint64_t)nSecondsInDay);
+    return result;
+}
+
+// ---- Phase 2: Full CRUD & Backup/Restore ----
+
+static UniValue smsgremoveaddress(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgremoveaddress \"address\"\n"
+            "Remove address from SMSG address book and pubkey database.\n"
+            "\nArguments:\n"
+            "1. \"address\"    (string, required) The address to remove.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"result\": \"str\"\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string addr = request.params[0].get_str();
+    int rv = smsgModule.RemoveAddress(addr);
+    if (rv != smsg::SMSG_NO_ERROR)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Remove failed: %s", smsg::GetString(rv)));
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "Success");
+    return result;
+}
+
+static UniValue smsgremoveprivkey(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgremoveprivkey \"address\"\n"
+            "Remove private key for address from SMSG keystore.\n"
+            "\nArguments:\n"
+            "1. \"address\"    (string, required) The address whose private key to remove.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"result\": \"str\"\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string addr = request.params[0].get_str();
+    int rv = smsgModule.RemovePrivkey(addr);
+    if (rv != smsg::SMSG_NO_ERROR)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, strprintf("Remove failed: %s", smsg::GetString(rv)));
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "Success");
+    return result;
+}
+
+static UniValue smsgdumpprivkey(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgdumpprivkey \"address\"\n"
+            "Dump SMSG private key for address as WIF.\n"
+            "\nArguments:\n"
+            "1. \"address\"    (string, required) The address.\n"
+            "\nResult:\n"
+            "\"privkey\"    (string) The WIF-encoded private key.\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string addr = request.params[0].get_str();
+    CTxDestination dest = DecodeDestination(addr);
+    if (!IsValidDestination(dest))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address.");
+
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+    if (!pkhash)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address is not a P2PKH address.");
+
+    CKeyID idk = ToKeyID(*pkhash);
+    CKey key;
+    int rv = smsgModule.DumpPrivkey(idk, key);
+    if (rv != smsg::SMSG_NO_ERROR)
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Dump failed: %s", smsg::GetString(rv)));
+
+    return EncodeSecret(key);
+}
+
+static UniValue smsgfund(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "smsgfund \"msgid\" ( testfee )\n"
+            "Fund a paid secure message from the outbox.\n"
+            "\nArguments:\n"
+            "1. \"msgid\"     (string, required) The message ID (28 bytes, hex encoded).\n"
+            "2. testfee      (bool, optional, default=false) Only estimate the fee, don't submit.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"txid\": \"str\",\n"
+            "  \"fee\": n\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string sMsgId = request.params[0].get_str();
+    if (!IsHex(sMsgId) || sMsgId.size() != 56)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "msgid must be 28 bytes in hex string.");
+
+    bool fTestFee = false;
+    if (request.params.size() > 1)
+        fTestFee = request.params[1].get_bool();
+
+    std::vector<uint8_t> vMsgId = ParseHex(sMsgId.c_str());
+
+    // Read message from outbox
+    smsg::SecMsgStored smsgStored;
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Could not open DB.");
+
+        uint8_t chKey[30];
+        chKey[0] = 's';
+        chKey[1] = 'm';
+        memcpy(&chKey[2], vMsgId.data(), 28);
+        if (!db.ReadSmesg(chKey, smsgStored))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Message not found in outbox.");
+    }
+
+    if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Message too short.");
+
+    smsg::SecureMessage secMsg;
+    memcpy(&secMsg, smsgStored.vchMessage.data(), smsg::SMSG_HDR_LEN);
+    uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+    // Point pPayload into smsgStored's buffer — must null before secMsg destructor runs
+    secMsg.pPayload = &smsgStored.vchMessage[smsg::SMSG_HDR_LEN];
+    secMsg.nPayload = nPayload;
+
+    std::string sError;
+    CAmount nFee = 0;
+    int rv = smsgModule.FundMsg(secMsg, sError, fTestFee, &nFee);
+
+    UniValue result(UniValue::VOBJ);
+    if (rv != smsg::SMSG_NO_ERROR) {
+        secMsg.pPayload = nullptr; // prevent double-free
+        throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("FundMsg failed: %s", sError));
+    }
+
+    result.pushKV("fee", ValueFromAmount(nFee));
+    if (!fTestFee) {
+        // Copy funded header back into stored message
+        memcpy(smsgStored.vchMessage.data(), &secMsg, smsg::SMSG_HDR_LEN);
+
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (db.Open("cr+")) {
+            uint8_t chKey[30];
+            chKey[0] = 's';
+            chKey[1] = 'm';
+            memcpy(&chKey[2], vMsgId.data(), 28);
+            db.WriteSmesg(chKey, smsgStored);
+        }
+        result.pushKV("result", "Funded successfully.");
+    } else {
+        result.pushKV("result", "Fee estimated.");
+    }
+    secMsg.pPayload = nullptr; // prevent double-free — destructor will delete[] pPayload
+    return result;
+}
+
+static UniValue smsgimport(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgimport \"hex\"\n"
+            "Import a secure message from hex.\n"
+            "\nArguments:\n"
+            "1. \"hex\"    (string, required) The message in hex (header + payload).\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"msgid\": \"str\"\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string sHex = request.params[0].get_str();
+    if (!IsHex(sHex))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Argument must be hex encoded.");
+
+    std::vector<uint8_t> vData = ParseHex(sHex);
+    if (vData.size() < smsg::SMSG_HDR_LEN)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Data too short.");
+
+    const uint8_t *pHeader = vData.data();
+    const uint8_t *pPayload = vData.data() + smsg::SMSG_HDR_LEN;
+    uint32_t nPayload = vData.size() - smsg::SMSG_HDR_LEN;
+
+    int rv = smsgModule.Validate(pHeader, pPayload, nPayload);
+    if (rv != smsg::SMSG_NO_ERROR)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Validation failed: %s", smsg::GetString(rv)));
+
+    {
+        LOCK(smsgModule.cs_smsg);
+        rv = smsgModule.Store(pHeader, pPayload, nPayload, true);
+    }
+    if (rv != smsg::SMSG_NO_ERROR)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Store failed: %s", smsg::GetString(rv)));
+
+    rv = smsgModule.ScanMessage(pHeader, pPayload, nPayload, true);
+
+    const smsg::SecureMessage *psmsg = (const smsg::SecureMessage*)pHeader;
+    std::vector<uint8_t> vMsgId = smsgModule.GetMsgID(psmsg, pPayload);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("msgid", HexStr(vMsgId));
+    return result;
+}
+
+static UniValue smsgsetwallet(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgsetwallet \"walletname\"\n"
+            "Set the active wallet for SMSG.\n"
+            "\nArguments:\n"
+            "1. \"walletname\"    (string, required) The wallet name.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"result\": \"str\",\n"
+            "  \"wallet\": \"str\"\n"
+            "}\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string walletName = request.params[0].get_str();
+
+    std::shared_ptr<CWallet> pFound = nullptr;
+    for (const auto &pw : smsgModule.m_vpwallets) {
+        if (pw && pw->GetName() == walletName) {
+            pFound = pw;
+            break;
+        }
+    }
+
+    if (!pFound)
+        throw JSONRPCError(RPC_WALLET_NOT_FOUND, strprintf("Wallet \"%s\" not found in SMSG wallet list.", walletName));
+
+    if (!smsgModule.SetActiveWallet(pFound))
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "SetActiveWallet failed.");
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "Active wallet set.");
+    result.pushKV("wallet", walletName);
+    return result;
+}
+
+// ---- Phase 3: Debugging & Final Parity ----
+
+static UniValue smsgdebug(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() > 2)
+        throw std::runtime_error(
+            "smsgdebug ( \"command\" \"arg1\" )\n"
+            "Commands useful for debugging.\n"
+            "\nArguments:\n"
+            "1. \"command\"    (string, optional) \"clearbanned\"|\"dumpids\".\n"
+            "2. \"arg1\"      (string, optional) For dumpids: \"true\" = active only (default), \"false\" = all.\n"
+            "\nResult:\n"
+            "Varies by command.\n"
+            "\nWith no arguments returns bucket summary.\n");
+
+    EnsureSMSGIsEnabled();
+
+    std::string mode = "none";
+    if (request.params.size() > 0)
+        mode = request.params[0].get_str();
+
+    UniValue result(UniValue::VOBJ);
+
+    if (mode == "clearbanned") {
+        result.pushKV("command", mode);
+        smsgModule.ClearBanned();
+        result.pushKV("result", "Cleared banned peers.");
+    } else
+    if (mode == "dumpids") {
+        fs::path filepath = GetDataDir() / "smsg_ids.txt";
+        if (fs::exists(filepath))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "smsg_ids.txt already exists in the datadir. Please move it out of the way first.");
+
+        bool active_only = true;
+        if (request.params.size() > 1) {
+            std::string sArg = request.params[1].get_str();
+            if (sArg == "false" || sArg == "0")
+                active_only = false;
+        }
+
+        int64_t now = GetAdjustedTime();
+
+        FILE *fp = fopen(filepath.string().c_str(), "w");
+        if (!fp)
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Cannot open dump file.");
+
+        int num_messages = 0;
+        {
+            LOCK(smsgModule.cs_smsg);
+            std::vector<uint8_t> vch_msg;
+            for (auto it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it) {
+                const std::set<smsg::SecMsgToken> &tokenSet = it->second.setTokens;
+                for (const auto &token : tokenSet) {
+                    if (active_only && token.timestamp + token.ttl * smsg::SMSGGetSecondsInDay() < now)
+                        continue;
+                    if (smsgModule.Retrieve(token, vch_msg) != smsg::SMSG_NO_ERROR) {
+                        LogPrintf("SecureMsgRetrieve failed %d.\n", token.timestamp);
+                        continue;
+                    }
+                    if (vch_msg.size() < smsg::SMSG_HDR_LEN)
+                        continue;
+                    const smsg::SecureMessage *psmsg = (const smsg::SecureMessage*)vch_msg.data();
+                    if (psmsg->version[0] == 0 && psmsg->version[1] == 0)
+                        continue; // skip purged
+                    std::vector<uint8_t> msgId = smsgModule.GetMsgID(psmsg, vch_msg.data() + smsg::SMSG_HDR_LEN);
+                    fprintf(fp, "%d,%s\n", (int)it->first, HexStr(msgId).c_str());
+                    num_messages++;
+                }
+            }
+        } // cs_smsg
+        fclose(fp);
+
+        result.pushKV("active_only", active_only);
+        result.pushKV("messages", num_messages);
+        result.pushKV("file", filepath.string());
+    } else
+    if (mode == "none") {
+        // Return summary info
+        LOCK(smsgModule.cs_smsg);
+        uint32_t nBuckets = smsgModule.buckets.size();
+        uint32_t nMessages = 0;
+        for (auto it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it) {
+            nMessages += it->second.nActive;
+        }
+        result.pushKV("enabled", smsg::fSecMsgEnabled);
+        result.pushKV("buckets", (int)nBuckets);
+        result.pushKV("active_messages", (int)nMessages);
+        result.pushKV("purged", (int)smsgModule.setPurged.size());
+        result.pushKV("addresses", (int)smsgModule.addresses.size());
+        result.pushKV("keystore_keys", (int)smsgModule.keyStore.mapKeys.size());
+    } else {
+        result.pushKV("error", "Unknown command.");
+        result.pushKV("expected", "clearbanned|dumpids");
+    }
+
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -1665,6 +2198,22 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsgview",               &smsgview,               {}},
     { "smsg",               "smsg",                   &smsgone,                {"msgid","options"} },
     { "smsg",               "smsgpurge",              &smsgpurge,              {"msgid"} },
+    // Phase 1 — Mobile Dashboard & Connection Health
+    { "smsg",               "smsggetinfo",            &smsggetinfo,            {} },
+    { "smsg",               "smsgpeers",              &smsgpeers,              {"node_id"} },
+    { "smsg",               "smsgaddresses",          &smsgaddresses,          {} },
+    { "smsg",               "smsgzmqpush",            &smsgzmqpush,            {"timefrom","timeto"} },
+    { "smsg",               "smsggetfeerate",         &smsggetfeerate,         {} },
+    { "smsg",               "smsggetdifficulty",      &smsggetdifficulty,      {} },
+    // Phase 2 — Full CRUD & Backup/Restore
+    { "smsg",               "smsgremoveaddress",      &smsgremoveaddress,      {"address"} },
+    { "smsg",               "smsgremoveprivkey",      &smsgremoveprivkey,      {"address"} },
+    { "smsg",               "smsgdumpprivkey",        &smsgdumpprivkey,        {"address"} },
+    { "smsg",               "smsgfund",               &smsgfund,              {"msgid","testfee"} },
+    { "smsg",               "smsgimport",             &smsgimport,             {"hex"} },
+    { "smsg",               "smsgsetwallet",          &smsgsetwallet,          {"walletname"} },
+    // Phase 3 — Debugging & Final Parity
+    { "smsg",               "smsgdebug",              &smsgdebug,              {"command","arg1"} },
 };
 
 void RegisterSmsgRPCCommands(CRPCTable &t)

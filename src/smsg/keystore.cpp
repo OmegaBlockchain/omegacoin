@@ -10,7 +10,9 @@ namespace smsg {
 bool SecMsgKeyStore::AddKey(const CKeyID &idk, SecMsgKey &key)
 {
     LOCK(cs_KeyStore);
-    key.pubkey = key.key.GetPubKey();
+    if (key.key.IsValid()) {
+        key.pubkey = key.key.GetPubKey();
+    }
     mapKeys[idk] = key;
     return true;
 };

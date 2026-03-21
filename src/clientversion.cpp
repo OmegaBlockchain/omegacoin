@@ -54,6 +54,26 @@ std::string FormatFullVersion()
     return CLIENT_BUILD;
 }
 
+std::string FormatBuildVersion()
+{
+#ifdef BUILD_GIT_DESCRIBE
+    // Local build with git — full describe string like "v0.20.0-8-ga6bdbcf0e597"
+    return BUILD_GIT_DESCRIBE;
+#elif defined(BUILD_GIT_COMMIT)
+    // Local build with git but no describe — use commit hash
+    return "v" PACKAGE_VERSION "-" BUILD_GIT_COMMIT;
+#elif defined(GIT_COMMIT_ID)
+    // GUIX archive build — GIT_COMMIT_ID set by git export-subst
+    std::string commitId(GIT_COMMIT_ID);
+    if (!commitId.empty() && commitId[0] != '$') {
+        return "v" + std::string(PACKAGE_VERSION) + "-g" + commitId.substr(0, 12);
+    }
+    return "v" PACKAGE_VERSION;
+#else
+    return "v" PACKAGE_VERSION;
+#endif
+}
+
 /**
  * Format the subversion field according to BIP 14 spec (https://github.com/bitcoin/bips/blob/master/bip-0014.mediawiki)
  */

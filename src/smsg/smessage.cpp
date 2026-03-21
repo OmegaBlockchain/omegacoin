@@ -88,6 +88,7 @@ boost::thread_group threadGroupSmsg;
 boost::signals2::signal<void (SecMsgStored &inboxHdr)> NotifySecMsgInboxChanged;
 boost::signals2::signal<void (SecMsgStored &outboxHdr)> NotifySecMsgOutboxChanged;
 boost::signals2::signal<void ()> NotifySecMsgWalletUnlocked;
+boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxChanged;
 
 
 secp256k1_context *secp256k1_context_smsg = nullptr;
@@ -327,7 +328,7 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
                 uint256 hashBlock;
                 {
                     LOCK(cs_main);
-                    txOut = GetTransaction(pindex, nullptr, txid, Params().GetConsensus(), hashBlock);
+                    txOut = GetTransaction(nullptr, nullptr, txid, Params().GetConsensus(), hashBlock);
                 }
 
                 int blockDepth = -1;
@@ -342,7 +343,7 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
                     LogPrintf("Found txn %s at depth %d\n", txid.ToString(), blockDepth);
                 } else {
                     // Failure
-                    if (psmsg->timestamp > now + FUND_TXN_TIMEOUT) {
+                    if (now > psmsg->timestamp + FUND_TXN_TIMEOUT) {
                         LogPrintf("%s: Funding txn timeout, dropping message %s\n", __func__, msgId.ToString());
                         LOCK(cs_smsgDB);
                         dbOutbox.EraseSmesg(chKey);
@@ -697,7 +698,7 @@ int CSMSG::LoadKeyStore()
     SecMsgKey key;
     leveldb::Iterator *it = db.pdb->NewIterator(leveldb::ReadOptions());
     while (db.NextPrivKey(it, sPrefix, idk, key)) {
-        if (!(key.nFlags & SMK_RECEIVE_ON)) {
+        if (!(key.nFlags & (SMK_RECEIVE_ON | SMK_CONTACT_ONLY))) {
             continue;
         }
         keyStore.AddKey(idk, key);
@@ -858,6 +859,13 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 #ifdef ENABLE_WALLET
     if (pwallet) {
         m_handler_unload = interfaces::MakeHandler(pwallet->NotifyUnload.connect(boost::bind(&NotifyUnload, this)));
+        // When the wallet is unlocked, scan any messages that arrived while locked.
+        m_handler_status = interfaces::MakeHandler(pwallet->NotifyStatusChanged.connect(
+            [this](CWallet *w) {
+                if (fSecMsgEnabled && w && !w->IsLocked()) {
+                    WalletUnlocked();
+                }
+            }));
     }
 #endif
 
@@ -881,6 +889,31 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     if (LoadKeyStore() != 0) {
         return error("%s: LoadKeyStore failed.", __func__);
+    }
+
+    // Import Trollbox keypair — public chat, all nodes share this key
+    {
+        std::vector<uint8_t> vchPrivKey = ParseHex(TROLLBOX_PRIVKEY_HEX);
+        CKey trollboxKey;
+        trollboxKey.Set(vchPrivKey.begin(), vchPrivKey.end(), true);
+        if (trollboxKey.IsValid()) {
+            trollboxAddress = trollboxKey.GetPubKey().GetID();
+            if (!keyStore.HaveKey(trollboxAddress)) {
+                SecMsgKey smsgKey;
+                smsgKey.key = trollboxKey;
+                smsgKey.sLabel = "Trollbox";
+                smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
+                keyStore.AddKey(trollboxAddress, smsgKey);
+                LOCK(cs_smsgDB);
+                SecMsgDB db;
+                if (db.Open("cr+")) {
+                    db.WriteKey(trollboxAddress, smsgKey);
+                }
+            }
+            LogPrintf("Trollbox address: %s\n", EncodeDestination(PKHash(trollboxAddress)));
+        } else {
+            LogPrintf("Warning: Trollbox private key is invalid.\n");
+        }
     }
 
     if (secp256k1_context_smsg) {
@@ -956,6 +989,9 @@ bool CSMSG::Shutdown()
     if (m_handler_unload) {
         m_handler_unload->disconnect();
     }
+    if (m_handler_status) {
+        m_handler_status->disconnect();
+    }
 #endif
     pwallet.reset();
     return true;
@@ -980,11 +1016,13 @@ bool CSMSG::Enable(std::shared_ptr<CWallet> pwallet)
         }
     } // cs_smsg
 
-    // Ping each peer advertising smsg
+    // Ping all connected peers to initiate the SMSG handshake.
+    // Filter by peer's advertised services (nServices), not by our own
+    // stale per-connection local services which predate this enable call.
     {
         LOCK(g_connman->cs_vNodes);
         for(auto *pnode : g_connman->vNodes) {
-            if (!(pnode->GetLocalServices() & NODE_SMSG)) {
+            if (!(pnode->nServices & NODE_SMSG)) {
                 continue;
             }
             g_connman->PushMessage(pnode,
@@ -1118,7 +1156,16 @@ std::string CSMSG::GetWalletName()
 std::string CSMSG::LookupLabel(PKHash &hash)
 {
 #ifdef ENABLE_WALLET
+    // Check pwallet first (it may not be in m_vpwallets if LoadWallet wasn't called)
+    if (pwallet) {
+        LOCK(pwallet->cs_wallet);
+        auto mi(pwallet->mapAddressBook.find(hash));
+        if (mi != pwallet->mapAddressBook.end()) {
+            return mi->second.name;
+        }
+    }
     for (const auto &pw : m_vpwallets) {
+        if (pw == pwallet) continue; // already checked above
         LOCK(pw->cs_wallet);
         auto mi(pw->mapAddressBook.find(hash));
         if (mi != pw->mapAddressBook.end()) {
@@ -1245,6 +1292,7 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
     }
 
     if (pfrom->nVersion < MIN_SMSG_PROTO_VERSION) {
+        LogPrint(BCLog::SMSG, "Peer %d version %d too low for SMSG (minimum %d).\n", pfrom->GetId(), pfrom->nVersion, MIN_SMSG_PROTO_VERSION);
         return SMSG_NO_ERROR;
     }
 
@@ -1304,6 +1352,11 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
             p += 16;
 
             // Check time valid:
+            if (time % SMSG_BUCKET_LEN) {
+                LogPrint(BCLog::SMSG, "Not a valid bucket time %d.\n", time);
+                Misbehaving(pfrom->GetId(), 1);
+                continue;
+            }
             if (time < now - SMSG_RETENTION) {
                 LogPrint(BCLog::SMSG, "Not interested in peer bucket %d, has expired.\n", time);
 
@@ -1323,23 +1376,31 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 continue;
             }
 
-            if (LogAcceptCategory(BCLog::SMSG)) {
-                LogPrintf("Peer bucket %d %u %u.\n", time, ncontent, hash);
-                LogPrintf("This bucket %d %u %u.\n", time, buckets[time].setTokens.size(), buckets[time].hash);
-            }
             {
                 LOCK(cs_smsg);
-                if (buckets[time].nLockCount > 0) {
-                    LogPrint(BCLog::SMSG, "Bucket is locked %u, waiting for peer %u to send data.\n", buckets[time].nLockCount, buckets[time].nLockPeerId);
+                const auto it_lb = buckets.find(time);
+
+                if (LogAcceptCategory(BCLog::SMSG)) {
+                    LogPrintf("Peer bucket %d %u %u.\n", time, ncontent, hash);
+                    if (it_lb != buckets.end()) {
+                        LogPrintf("This bucket %d %u %u.\n", time, it_lb->second.setTokens.size(), it_lb->second.hash);
+                    }
+                }
+
+                if (it_lb != buckets.end() && it_lb->second.nLockCount > 0) {
+                    LogPrint(BCLog::SMSG, "Bucket is locked %u, waiting for peer %u to send data.\n", it_lb->second.nLockCount, it_lb->second.nLockPeerId);
                     nLocked++;
                     continue;
                 }
 
                 // If this node has more than the peer node, peer node will pull from this
-                //  if then peer node has more this node will pull fom peer
-                if (buckets[time].setTokens.size() < ncontent
-                    || (buckets[time].setTokens.size() == ncontent
-                        && buckets[time].hash != hash)) { // if same amount in buckets check hash
+                //  if then peer node has more this node will pull from peer
+                uint32_t nLocalActive = (it_lb != buckets.end()) ? it_lb->second.nActive : 0;
+                uint32_t nLocalHash = (it_lb != buckets.end()) ? it_lb->second.hash : 0;
+                if (it_lb == buckets.end()
+                    || nLocalActive < ncontent
+                    || (nLocalActive == ncontent
+                        && nLocalHash != hash)) { // if same amount in buckets check hash
                     LogPrint(BCLog::SMSG, "Requesting contents of bucket %d.\n", time);
 
                     uint32_t sz = vchDataOut.size();
@@ -1512,8 +1573,9 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
         } // cs_smsg
 
         if (vchDataOut.size() > 8) {
+            uint32_t n_messages = (vchDataOut.size() - 8) / 16;
             if (LogAcceptCategory(BCLog::SMSG)) {
-                LogPrintf("Asking peer for %u messages.\n", (vchDataOut.size() - 8) / 16);
+                LogPrintf("Asking peer for %u messages.\n", n_messages);
                 LogPrintf("Locking bucket %u for peer %d.\n", time, pfrom->GetId());
             }
             {
@@ -1521,6 +1583,8 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 buckets[time].nLockCount   = 3; // lock this bucket for at most 3 * SMSG_THREAD_DELAY seconds, unset when peer sends smsgMsg
                 buckets[time].nLockPeerId  = pfrom->GetId();
             }
+            LOCK(pfrom->smsgData.cs_smsg_net);
+            pfrom->smsgData.m_num_want_sent += n_messages;
             g_connman->PushMessage(pfrom,
                 CNetMsgMaker(INIT_PROTO_VERSION).Make("smsgWant", vchDataOut));
         }
@@ -1756,7 +1820,7 @@ bool CSMSG::SendData(CNode *pto, bool fSendTrickle)
             for (it = buckets.begin(); it != buckets.end(); ++it) {
                 SecMsgBucket &bkt = it->second;
 
-                uint32_t nMessages = bkt.setTokens.size();
+                uint32_t nMessages = bkt.nActive;
 
                 if (bkt.timeChanged < pto->smsgData.lastMatched     // peer was last sent all buckets at time of lastMatched. It should have this bucket
                     || nMessages < 1) {                             // this bucket is empty
@@ -2180,6 +2244,9 @@ int CSMSG::ManageLocalKey(CKeyID &keyId, ChangeType mode)
         };
     } // cs_smsg
 
+    // Persist immediately so keys survive disable/enable cycles and crashes.
+    WriteIni();
+
     return SMSG_NO_ERROR;
 };
 
@@ -2448,13 +2515,14 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
     }
 
     if (fOwnMessage) {
-        // Save to inbox
+        // Save to inbox (or trollbox if addressed to the trollbox channel)
         SecureMessage *psmsg = (SecureMessage*) pHeader;
 
         uint160 hash;
         HashMsg(*psmsg, pPayload, nPayload - psmsg->GetPaidTailSize(), hash);
 
-        std::string sPrefix("im");
+        bool fTrollbox = (addressTo == trollboxAddress);
+        std::string sPrefix(fTrollbox ? "tb" : "im");
         uint8_t chKey[30];
         int64_t timestamp_be = bswap_64(psmsg->timestamp);
         memcpy(&chKey[0], sPrefix.data(), 2);
@@ -2480,18 +2548,23 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
             if (dbInbox.Open("cw")) {
                 if (dbInbox.ExistsSmesg(chKey)) {
                     fExisted = true;
-                    LogPrint(BCLog::SMSG, "Message already exists in inbox db.\n");
+                    LogPrint(BCLog::SMSG, "Message already exists in %s db.\n", fTrollbox ? "trollbox" : "inbox");
                 } else {
                     dbInbox.WriteSmesg(chKey, smsgInbox);
                     if (reportToGui) {
-                        NotifySecMsgInboxChanged(smsgInbox);
+                        if (fTrollbox) {
+                            NotifySecMsgTrollboxChanged(smsgInbox);
+                        } else {
+                            NotifySecMsgInboxChanged(smsgInbox);
+                        }
                     }
-                    LogPrintf("SecureMsg saved to inbox, received with %s.\n", EncodeDestination(PKHash(addressTo)));
+                    LogPrintf("SecureMsg saved to %s, received with %s.\n",
+                        fTrollbox ? "trollbox" : "inbox", EncodeDestination(PKHash(addressTo)));
                 }
             }
         } // cs_smsgDB
 
-        if (!fExisted) {
+        if (!fExisted && !fTrollbox) {
             // notify an external script when a message comes in
             std::string strCmd = gArgs.GetArg("-smsgnotify", "");
 
@@ -2619,6 +2692,68 @@ int CSMSG::AddAddress(std::string &address, std::string &publicKey)
     }
 
     return InsertAddress(idk, pubKey);
+};
+
+int CSMSG::AddContact(std::string &address, std::string &publicKey, const std::string &label)
+{
+    /*
+    Add address and public key as a named contact.
+    Stores pubkey in addrpkdb (for encryption) and a SecMsgKey contact record
+    (SMK_CONTACT_ONLY, no private key) so the contact appears in the keys list.
+    */
+
+    CTxDestination dest = DecodeDestination(address);
+    const PKHash *pkHash = std::get_if<PKHash>(&dest);
+    if (!pkHash) {
+        return errorN(SMSG_INVALID_ADDRESS, "%s - Address is not valid: %s.", __func__, address);
+    }
+    CKeyID idk(*pkHash);
+
+    std::vector<uint8_t> vchTest;
+    if (IsHex(publicKey)) {
+        vchTest = ParseHex(publicKey);
+    } else {
+        if (!DecodeBase58(publicKey, vchTest, 65)) {
+            return errorN(SMSG_INVALID_PUBKEY, "%s - DecodeBase58 failed.", __func__);
+        }
+    }
+
+    CPubKey pubKey(vchTest);
+    if (!pubKey.IsValid()) {
+        return errorN(SMSG_INVALID_PUBKEY, "%s - Invalid PubKey.", __func__);
+    }
+
+    CKeyID keyIDT = pubKey.GetID();
+    if (idk != keyIDT) {
+        return errorN(SMSG_PUBKEY_MISMATCH, "%s - Public key does not hash to address %s.", __func__, address);
+    }
+
+    // Store pubkey in address-pubkey DB (for message encryption)
+    int rv = InsertAddress(idk, pubKey);
+    if (rv != SMSG_NO_ERROR && rv != SMSG_PUBKEY_EXISTS) {
+        return rv;
+    }
+
+    // Store a contact record in the key DB so it appears in the keys list
+    SecMsgKey key;
+    key.sLabel = label;
+    key.nFlags = SMK_CONTACT_ONLY;
+    key.pubkey = pubKey; // store pubkey in memory (not serialized, but useful for in-session use)
+    // key.key is intentionally left as invalid CKey (no private key for contacts)
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        if (!db.WriteKey(idk, key)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s - WriteKey failed.", __func__);
+        }
+    }
+
+    keyStore.AddKey(idk, key);
+    return SMSG_NO_ERROR;
 };
 
 int CSMSG::AddLocalAddress(const std::string &sAddress)
@@ -2757,6 +2892,91 @@ int CSMSG::ReadSmsgKey(const CKeyID &idk, CKey &key)
     }
 
     key = smk.key;
+
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::DumpPrivkey(const CKeyID &idk, CKey &key_out)
+{
+    LOCK(cs_smsgDB);
+
+    SecMsgDB db;
+    if (!db.Open("cr+")) {
+        return SMSG_GENERAL_ERROR;
+    }
+
+    SecMsgKey smk;
+    if (!db.ReadKey(idk, smk)) {
+        return SMSG_KEY_NOT_EXISTS;
+    }
+
+    key_out = smk.key;
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::RemoveAddress(const std::string &addr)
+{
+    CTxDestination dest = DecodeDestination(addr);
+    if (!IsValidDestination(dest)) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+    if (!pkhash) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    CKeyID idk = ToKeyID(*pkhash);
+
+    {
+        LOCK(cs_smsg);
+        auto it = addresses.begin();
+        for (; it != addresses.end(); ++it) {
+            if (it->address == idk) {
+                break;
+            }
+        }
+        if (it != addresses.end()) {
+            addresses.erase(it);
+        }
+    }
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        db.ErasePK(idk);
+    }
+
+    return SMSG_NO_ERROR;
+};
+
+int CSMSG::RemovePrivkey(const std::string &addr)
+{
+    CTxDestination dest = DecodeDestination(addr);
+    if (!IsValidDestination(dest)) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    const PKHash *pkhash = std::get_if<PKHash>(&dest);
+    if (!pkhash) {
+        return SMSG_INVALID_ADDRESS;
+    }
+
+    CKeyID idk = ToKeyID(*pkhash);
+
+    keyStore.EraseKey(idk);
+
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        db.EraseKey(idk);
+    }
 
     return SMSG_NO_ERROR;
 };
@@ -2956,6 +3176,15 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
         itb->second.nLockPeerId = 0;
         itb->second.hashBucket();
     } // cs_smsg
+
+    {
+        LOCK(pfrom->smsgData.cs_smsg_net);
+        if (nBunch <= pfrom->smsgData.m_num_want_sent) {
+            pfrom->smsgData.m_num_want_sent -= nBunch;
+        } else {
+            pfrom->smsgData.m_num_want_sent = 0;
+        }
+    }
 
     return SMSG_NO_ERROR;
 };
@@ -3594,7 +3823,12 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
         memcpy(&vchPayload[SMSG_PL_HDR_LEN], pMsgData, lenMsgData);
         // Compact signature proves ownership of from address and allows the public key to be recovered, recipient can always reply.
-        if (!pwallet->GetLegacyScriptPubKeyMan()->GetKey(ckidFrom, keyFrom)) {
+        bool fGotKey = pwallet && pwallet->GetLegacyScriptPubKeyMan()->GetKey(ckidFrom, keyFrom);
+        if (!fGotKey) {
+            // Fallback: key may be a standalone SMSG keystore key (e.g. generated without wallet)
+            fGotKey = (ReadSmsgKey(ckidFrom, keyFrom) == SMSG_NO_ERROR);
+        }
+        if (!fGotKey) {
             return errorN(SMSG_UNKNOWN_KEY_FROM, "%s: Could not get private key for addressFrom.", __func__);
         }
 
@@ -3656,10 +3890,10 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
             fSendAnonymous ? "anon" : EncodeDestination(PKHash(addressFrom)), EncodeDestination(PKHash(addressTo)));
     }
 
-    if (!pwallet) {
-        return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is not enabled");
+    if (!pwallet && fPaid) {
+        return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is not enabled (required for paid messages)");
     }
-    if (pwallet->IsLocked()) {
+    if (pwallet && pwallet->IsLocked()) {
         return errorN(SMSG_WALLET_LOCKED, sError, __func__, "Wallet is locked, wallet must be unlocked to send messages");
     }
 
@@ -3773,18 +4007,25 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     CKeyID addressOutbox;
 
-    for (const auto &entry : pwallet->mapAddressBook) { // PAIRTYPE(CTxDestination, CAddressBookData)
-        // Get first owned address
-        if (!pwallet->IsMine(entry.first)) {
-            continue;
-        }
+    if (pwallet) {
+        for (const auto &entry : pwallet->mapAddressBook) { // PAIRTYPE(CTxDestination, CAddressBookData)
+            // Get first owned address
+            if (!pwallet->IsMine(entry.first)) {
+                continue;
+            }
 
-        const PKHash *pkHash = std::get_if<PKHash>(&entry.first);
-        if (!pkHash) {
-            continue;
+            const PKHash *pkHash = std::get_if<PKHash>(&entry.first);
+            if (!pkHash) {
+                continue;
+            }
+            addressOutbox = CKeyID(*pkHash);
+            break;
         }
-        addressOutbox = CKeyID(*pkHash);
-        break;
+    }
+
+    // Fallback: use the sender's own address for outbox encryption
+    if (addressOutbox.IsNull()) {
+        addressOutbox = addressFrom;
     }
 
     if (addressOutbox.IsNull()) {

@@ -376,7 +376,7 @@
          <item>
           <widget class="QPushButton" name="addAddressButton">
            <property name="text">
-            <string>Add Address</string>
+            <string>Add Contact</string>
            </property>
           </widget>
          </item>
@@ -404,6 +404,80 @@
           <bool>true</bool>
          </property>
         </widget>
+       </item>
+      </layout>
+     </widget>
+     <!-- Tab 4: Trollbox -->
+     <widget class="QWidget" name="tabTrollbox">
+      <attribute name="title">
+       <string>Trollbox</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="trollboxLayout">
+       <item>
+        <widget class="QTextBrowser" name="trollboxChat">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="openExternalLinks">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="trollboxFromLayout">
+         <item>
+          <widget class="QLabel" name="trollboxFromLabel">
+           <property name="text">
+            <string>From:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="trollboxFromCombo">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="trollboxPaidCheckBox">
+           <property name="text">
+            <string>Paid (red highlight)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="trollboxSendLayout">
+         <item>
+          <widget class="QLineEdit" name="trollboxInput">
+           <property name="placeholderText">
+            <string>Type a message (max 256 chars)</string>
+           </property>
+           <property name="maxLength">
+            <number>256</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="trollboxSendButton">
+           <property name="text">
+            <string>Send</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="trollboxCooldownLabel">
+           <property name="text">
+            <string notr="true"></string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>

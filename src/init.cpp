@@ -2550,6 +2550,13 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     StartMapPort(args.GetBoolArg("-upnp", DEFAULT_UPNP), args.GetBoolArg("-natpmp", DEFAULT_NATPMP));
 
     CConnman::Options connOptions;
+    // Include NODE_SMSG in advertised services if SMSG is enabled.
+    // smsgModule.Start() calls SetLocalServices() but connman->Start() below
+    // overwrites it from this local nLocalServices variable, so we must
+    // add NODE_SMSG here before building connOptions.
+    if (args.GetBoolArg("-smsg", true)) {
+        nLocalServices = ServiceFlags(nLocalServices | NODE_SMSG);
+    }
     connOptions.nLocalServices = nLocalServices;
     connOptions.nMaxConnections = nMaxConnections;
     connOptions.m_max_outbound_full_relay = std::min(MAX_OUTBOUND_FULL_RELAY_CONNECTIONS, connOptions.nMaxConnections);

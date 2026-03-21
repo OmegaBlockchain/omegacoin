@@ -44,6 +44,8 @@
 #endif // ENABLE_WALLET
 #include <coinjoin/server.h>
 
+#include <smsg/smessage.h>
+
 #include <evo/deterministicmns.h>
 #include <evo/mnauth.h>
 #include <evo/simplifiedmns.h>
@@ -4128,6 +4130,12 @@ void PeerLogicValidation::ProcessMessage(
         return;
     }
 
+    // Route smsg* commands to the secure messaging module
+    if (msg_type.size() > 4 && msg_type.substr(0, 4) == "smsg") {
+        smsgModule.ReceiveData(&pfrom, msg_type, vRecv);
+        return;
+    }
+
     // Ignore unknown commands for extensibility
     LogPrint(BCLog::NET, "Unknown command \"%s\" from peer=%d\n", SanitizeString(msg_type), pfrom.GetId());
 
@@ -5025,6 +5033,11 @@ bool PeerLogicValidation::SendMessages(CNode* pto)
             LogPrint(BCLog::NET, "SendMessages -- GETDATA -- pushed size = %lu peer=%d\n", vGetData.size(), pto->GetId());
         }
     } // release cs_main
+
+    if (smsg::fSecMsgEnabled && !pto->fFeeler) {
+        smsgModule.SendData(pto, true);
+    }
+
     return true;
 }
 

@@ -82,13 +82,20 @@ const unsigned int SMSG_MAX_MSG_BYTES_PAID = 512 * 1024;    // the user input pa
 const unsigned int SMSG_MAX_MSG_WORST = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES+SMSG_PL_HDR_LEN);
 const unsigned int SMSG_MAX_MSG_WORST_PAID = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN);
 
-static const int MIN_SMSG_PROTO_VERSION = 90007;
+static const int MIN_SMSG_PROTO_VERSION = 70200;
 
 
 const CAmount nFundingTxnFeePerK = 200000;
 const CAmount nMsgFeePerKPerDay =   50000;
 
 const unsigned int SMSG_BLIND_KEY_LEN = 32;   // blinding key length for confidential funding
+
+// Trollbox — public chat channel (all nodes share this keypair, no secrecy by design)
+const char* const TROLLBOX_PRIVKEY_HEX = "1e76e258b28dee7edec4f1d7443f80fcc84dba50473fbbb03e2b99082302b6bd";
+const unsigned int TROLLBOX_MAX_MSG_BYTES = 256;                  // max message length (chars)
+const unsigned int TROLLBOX_RETENTION     = 24 * 60 * 60;        // 24 hours
+const int TROLLBOX_RATE_LIMIT_SECS        = 30;                  // min seconds between sends
+const int TROLLBOX_MAX_DISPLAY            = 200;                  // max messages in GUI buffer
 
 #define SMSG_MASK_UNREAD (1 << 0)
 
@@ -102,6 +109,9 @@ extern boost::signals2::signal<void (SecMsgStored &outboxHdr)> NotifySecMsgOutbo
 
 // Wallet unlocked, called after all messages received while locked have been processed.
 extern boost::signals2::signal<void ()> NotifySecMsgWalletUnlocked;
+
+// Trollbox message received, called with lock cs_smsgDB held.
+extern boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxChanged;
 
 
 uint32_t SMSGGetSecondsInDay();
@@ -355,7 +365,7 @@ public:
         // Default options
         fNewAddressRecv = true;
         fNewAddressAnon = true;
-        fScanIncoming   = false;
+        fScanIncoming   = true;
     };
 
     bool fNewAddressRecv;
@@ -450,6 +460,7 @@ public:
     int GetLocalPublicKey(const std::string &strAddress, std::string &strPublicKey);
 
     int AddAddress(std::string &address, std::string &publicKey);
+    int AddContact(std::string &address, std::string &publicKey, const std::string &label);
     int AddLocalAddress(const std::string &sAddress);
     int ImportPrivkey(const CKey &vchSecret, const std::string &sLabel);
 
@@ -457,6 +468,10 @@ public:
     bool SetSmsgAddressOption(const CKeyID &idk, std::string sOption, bool fValue);
 
     int ReadSmsgKey(const CKeyID &idk, CKey &key);
+
+    int DumpPrivkey(const CKeyID &idk, CKey &key_out);
+    int RemoveAddress(const std::string &addr);
+    int RemovePrivkey(const std::string &addr);
 
     int Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData);
     int Remove(const SecMsgToken &token);
@@ -505,9 +520,12 @@ public:
     std::shared_ptr<CWallet> pactive_wallet;
     std::vector<std::shared_ptr<CWallet>> m_vpwallets;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
+    std::unique_ptr<interfaces::Handler> m_handler_status;
     std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
 
     int64_t nLastProcessedPurged = 0;
+    int64_t nLastTrollboxSend = 0;
+    CKeyID trollboxAddress;
 
     NodeContext *m_node = nullptr;
 };

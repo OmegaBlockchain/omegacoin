@@ -164,10 +164,10 @@ public:
         consensus.DIP0003EnforcementHash = uint256();
         consensus.DIP0008Height = 2350000;
         consensus.BRRHeight = std::numeric_limits<int>::max();
-        consensus.nSchnorrHeight = 3205000;
-        consensus.nLargeElementsHeight = 3205000;
-        consensus.nSmsgRoomHeight = 3205000;
-        consensus.nConfidentialSmsgHeight = 3205000;
+        consensus.nSchnorrHeight = 3200000;
+        consensus.nLargeElementsHeight = 3200000;
+        consensus.nSmsgRoomHeight = 3200000;
+        consensus.nConfidentialSmsgHeight = 3144000;
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 600; // Omega: each 10 minutes
@@ -176,7 +176,7 @@ public:
         consensus.fPowNoRetargeting = false;
         consensus.nPowKGWHeight = 0;
         consensus.nPowDGWHeight = 0;
-        consensus.nPowLWMAHeight = 3220000;
+        consensus.nPowLWMAHeight = 3200000;
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing

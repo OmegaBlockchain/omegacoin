@@ -36,7 +36,6 @@ class UnitDisplayStatusBarControl;
 class WalletController;
 class WalletFrame;
 class WalletModel;
-class HelpMessageDialog;
 class ModalOverlay;
 
 namespace interfaces {
@@ -164,7 +163,6 @@ private:
     QAction* openConfEditorAction = nullptr;
     QAction* showBackupsAction = nullptr;
     QAction* openAction = nullptr;
-    QAction* showHelpMessageAction = nullptr;
     QAction* m_create_wallet_action{nullptr};
     QAction* m_open_wallet_action{nullptr};
     QMenu* m_open_wallet_menu{nullptr};
@@ -179,7 +177,6 @@ private:
     QMenu* dockIconMenu = nullptr;
     Notificator* notificator = nullptr;
     RPCConsole* rpcConsole = nullptr;
-    HelpMessageDialog* helpMessageDialog = nullptr;
     ModalOverlay* modalOverlay = nullptr;
     QButtonGroup* tabGroup = nullptr;
 
@@ -356,8 +353,6 @@ public Q_SLOTS:
     /** Show folder with wallet backups in default file browser */
     void showBackups();
 
-    /** Show help message dialog */
-    void showHelpMessageClicked();
     /** Show CoinJoin help message dialog */
     void showCoinJoinHelpClicked();
 #ifndef Q_OS_MAC

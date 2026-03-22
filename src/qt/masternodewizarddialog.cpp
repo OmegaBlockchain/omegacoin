@@ -14,6 +14,10 @@
 
 #include <univalue.h>
 
+#include <cmath>
+#include <map>
+#include <set>
+
 #include <QIntValidator>
 #include <QMessageBox>
 #include <QRegularExpression>
@@ -49,7 +53,23 @@ MasternodeWizardDialog::~MasternodeWizardDialog()
 
 bool MasternodeWizardDialog::executeRpc(const std::string& command, std::string& result)
 {
-    return RPCConsole::RPCExecuteCommandLine(m_node, result, command, nullptr, walletModel);
+    if (!walletModel) {
+        result = "Wallet model no longer available.";
+        return false;
+    }
+    try {
+        return RPCConsole::RPCExecuteCommandLine(m_node, result, command, nullptr, walletModel.data());
+    } catch (UniValue& objError) {
+        try {
+            result = find_value(objError, "message").get_str();
+        } catch (const std::runtime_error&) {
+            result = objError.write();
+        }
+        return false;
+    } catch (const std::exception& e) {
+        result = e.what();
+        return false;
+    }
 }
 
 void MasternodeWizardDialog::updateStepDisplay()
@@ -63,7 +83,7 @@ void MasternodeWizardDialog::updateStepDisplay()
         ui->btnNext->setText(tr("Register"));
 
         QString summary;
-        summary += tr("Server: %1:%2").arg(ui->lineEditIpAddress->text(), ui->lineEditPort->text()) + "\n\n";
+        summary += tr("Server: %1:%2").arg(cachedIpAddress, cachedPort) + "\n\n";
         summary += tr("Owner Address: %1").arg(ownerAddress) + "\n\n";
         summary += tr("Payout Address: %1").arg(payoutAddress) + "\n\n";
         summary += tr("Voting Address: %1").arg(votingAddress) + "\n\n";
@@ -106,6 +126,8 @@ void MasternodeWizardDialog::onNextClicked()
                 return;
             }
         }
+        cachedIpAddress = ip;
+        cachedPort = ui->lineEditPort->text().trimmed();
         currentStep++;
         break;
     }
@@ -212,38 +234,253 @@ void MasternodeWizardDialog::onGenerateKeysClicked()
     }
 }
 
+bool MasternodeWizardDialog::findExistingCollateral(QString& txid, int& vout)
+{
+    std::string result;
+
+    // Get all confirmed UTXOs (no JSON query_options — the RPC command
+    // parser treats commas inside {} as argument separators).
+    if (!executeRpc("listunspent 1 9999999", result))
+        return false;
+
+    UniValue utxos(UniValue::VARR);
+    if (!utxos.read(result) || utxos.empty())
+        return false;
+
+    // Filter to UTXOs that are exactly the collateral amount
+    CAmount collatAmount = dmn_types::Regular.collat_amount;
+    double collatCoins = (double)collatAmount / COIN;
+
+    // Collect all registered masternode collateral outpoints
+    std::set<std::pair<std::string, int>> usedCollaterals;
+    if (executeRpc("protx list registered true", result)) {
+        UniValue mnList(UniValue::VARR);
+        if (mnList.read(result)) {
+            for (size_t i = 0; i < mnList.size(); i++) {
+                const UniValue& mn = mnList[i];
+                if (mn.exists("collateralHash") && mn.exists("collateralIndex")) {
+                    usedCollaterals.insert({
+                        mn["collateralHash"].get_str(),
+                        mn["collateralIndex"].get_int()
+                    });
+                }
+            }
+        }
+    }
+
+    // Return the first UTXO of exactly the collateral amount
+    // that is not already used as masternode collateral
+    for (size_t i = 0; i < utxos.size(); i++) {
+        const UniValue& utxo = utxos[i];
+        if (!utxo.exists("amount") || !utxo.exists("txid") || !utxo.exists("vout"))
+            continue;
+
+        double amount = utxo["amount"].get_real();
+        if (std::abs(amount - collatCoins) > 0.00001)
+            continue;
+
+        std::string hash = utxo["txid"].get_str();
+        int n = utxo["vout"].get_int();
+
+        if (usedCollaterals.count({hash, n}) == 0) {
+            txid = QString::fromStdString(hash);
+            vout = n;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool MasternodeWizardDialog::findCollateralForIP(const QString& ipPort, QString& txid, int& vout)
+{
+    // Check if the target IP:port is already registered to a MN whose
+    // collateral UTXO is in our wallet.  Returning that outpoint lets
+    // protx register replace the old MN instead of failing with dup-addr.
+    std::string result;
+
+    if (!executeRpc("protx list registered true", result))
+        return false;
+
+    UniValue mnList(UniValue::VARR);
+    if (!mnList.read(result))
+        return false;
+
+    std::string targetAddr = ipPort.toStdString();
+
+    for (size_t i = 0; i < mnList.size(); i++) {
+        const UniValue& mn = mnList[i];
+        if (!mn.exists("state"))
+            continue;
+        const UniValue& state = mn["state"];
+        if (!state.exists("service"))
+            continue;
+        if (state["service"].get_str() != targetAddr)
+            continue;
+
+        // This MN uses our IP — check if the collateral is in our wallet
+        if (!mn.exists("collateralHash") || !mn.exists("collateralIndex"))
+            continue;
+
+        std::string hash = mn["collateralHash"].get_str();
+        int idx = mn["collateralIndex"].get_int();
+
+        // Verify we own this UTXO via gettxout (it must still be unspent)
+        std::string txoutResult;
+        std::string txoutCmd = "gettxout \"" + hash + "\" " + std::to_string(idx);
+        if (!executeRpc(txoutCmd, txoutResult))
+            continue;
+
+        UniValue txout(UniValue::VOBJ);
+        if (!txout.read(txoutResult) || txout.isNull())
+            continue;
+
+        // Check the address is in our wallet
+        std::string addrCheckResult;
+        if (txout.exists("scriptPubKey")) {
+            const UniValue& spk = txout["scriptPubKey"];
+            if (spk.exists("address")) {
+                std::string addr = spk["address"].get_str();
+                std::string dumpResult;
+                if (executeRpc("dumpprivkey \"" + addr + "\"", dumpResult)) {
+                    txid = QString::fromStdString(hash);
+                    vout = idx;
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool MasternodeWizardDialog::findFundingAddress(QString& address, double minCoins,
+                                                 const QString& excludeTxid, int excludeVout)
+{
+    std::string result;
+
+    if (!executeRpc("listunspent 1 9999999", result))
+        return false;
+
+    UniValue utxos(UniValue::VARR);
+    if (!utxos.read(result) || utxos.empty())
+        return false;
+
+    std::string excludeHash = excludeTxid.toStdString();
+
+    // Sum available balance per address, skipping the excluded UTXO
+    std::map<std::string, double> addressBalances;
+    for (size_t i = 0; i < utxos.size(); i++) {
+        const UniValue& utxo = utxos[i];
+        if (!utxo.exists("address") || !utxo.exists("amount"))
+            continue;
+
+        // Skip the collateral UTXO so it is not counted as fee funds
+        if (!excludeHash.empty() && excludeVout >= 0 &&
+            utxo.exists("txid") && utxo.exists("vout") &&
+            utxo["txid"].get_str() == excludeHash &&
+            utxo["vout"].get_int() == excludeVout) {
+            continue;
+        }
+
+        addressBalances[utxo["address"].get_str()] += utxo["amount"].get_real();
+    }
+
+    // Pick the address with the highest balance that meets the minimum
+    std::string bestAddr;
+    double bestBalance = 0;
+    for (const auto& entry : addressBalances) {
+        if (entry.second >= minCoins && entry.second > bestBalance) {
+            bestAddr = entry.first;
+            bestBalance = entry.second;
+        }
+    }
+
+    if (bestAddr.empty())
+        return false;
+
+    address = QString::fromStdString(bestAddr);
+    return true;
+}
+
 bool MasternodeWizardDialog::registerMasternode()
 {
-    // Build the protx register_fund command
-    QString ip = ui->lineEditIpAddress->text().trimmed();
-    QString port = ui->lineEditPort->text().trimmed();
-    QString ipPort = ip + ":" + port;
-
-    // Generate a collateral address
+    QString ipPort = cachedIpAddress + ":" + cachedPort;
     std::string result;
-    if (!executeRpc("getnewaddress \"mn-collateral\"", result)) {
-        ui->labelStatus->setText(tr("Failed to generate collateral address: %1").arg(QString::fromStdString(result)));
-        return false;
-    }
-    QString collateralAddress = QString::fromStdString(result).trimmed();
-    if (collateralAddress.startsWith('"') && collateralAddress.endsWith('"')) {
-        collateralAddress = collateralAddress.mid(1, collateralAddress.length() - 2);
+    bool registered = false;
+
+    // Strategy 0: The IP:port is already registered to a MN whose collateral
+    // is in our wallet.  Reuse that outpoint so protx register replaces the
+    // old MN instead of failing with bad-protx-dup-addr.
+    QString collateralHash;
+    int collateralIndex = -1;
+    findCollateralForIP(ipPort, collateralHash, collateralIndex);
+
+    // Strategy 1: Use an existing (unused) 1000 OMEGA UTXO as collateral.
+    if (collateralIndex < 0) {
+        findExistingCollateral(collateralHash, collateralIndex);
     }
 
-    // protx register_fund "collateralAddress" "ipAndPort" "ownerAddress" "operatorPubKey" "votingAddress" operatorReward "payoutAddress"
-    QString cmd = QString("protx register_fund \"%1\" \"%2\" \"%3\" \"%4\" \"%5\" 0 \"%6\"")
-        .arg(collateralAddress, ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+    if (collateralIndex >= 0) {
+        QString feeSourceAddress;
+        QString cmd;
+        if (findFundingAddress(feeSourceAddress, 0.001, collateralHash, collateralIndex)) {
+            // protx register "hash" index "ip" "owner" "blsPub" "voting" reward "payout" "feeSource"
+            cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\" \"%8\"")
+                .arg(collateralHash)
+                .arg(collateralIndex)
+                .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress, feeSourceAddress);
+        } else {
+            // No separate fee source — let the wallet pick one automatically
+            cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\"")
+                .arg(collateralHash)
+                .arg(collateralIndex)
+                .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+        }
 
-    if (!executeRpc(cmd.toStdString(), result)) {
-        ui->labelStatus->setStyleSheet("color: #c0392b;");
-        ui->labelStatus->setText(tr("Registration failed: %1").arg(QString::fromStdString(result)));
-        return false;
+        registered = executeRpc(cmd.toStdString(), result);
+        if (!registered) {
+            ui->labelStatus->setStyleSheet("color: #c0392b;");
+            if (feeSourceAddress.isEmpty()) {
+                ui->labelStatus->setText(tr("Found %1 OMEGA collateral but no additional funds to pay the transaction fee. "
+                                            "Please send a small amount (at least 0.001 OMEGA) to any address in this wallet.")
+                    .arg(QString::number(dmn_types::Regular.collat_amount / COIN)));
+            } else {
+                ui->labelStatus->setText(tr("Registration failed: %1").arg(QString::fromStdString(result)));
+            }
+            return false;
+        }
+    }
+
+    // Strategy 2: No existing collateral found — fund a new one.
+    // The wallet's coin selection gathers inputs from all addresses, so
+    // funds do NOT need to sit in a single address.
+    if (!registered) {
+        // Generate a fresh collateral address
+        if (!executeRpc("getnewaddress \"mn-collateral\"", result)) {
+            ui->labelStatus->setText(tr("Failed to generate collateral address: %1").arg(QString::fromStdString(result)));
+            return false;
+        }
+        QString collateralAddress = QString::fromStdString(result).trimmed();
+        if (collateralAddress.startsWith('"') && collateralAddress.endsWith('"'))
+            collateralAddress = collateralAddress.mid(1, collateralAddress.length() - 2);
+
+        // protx register_fund "collateral" "ip" "owner" "blsPub" "voting" reward "payout"
+        // Omit feeSourceAddress — the RPC defaults to using the payout address
+        // for change, and coin selection picks inputs from the whole wallet.
+        QString cmd = QString("protx register_fund \"%1\" \"%2\" \"%3\" \"%4\" \"%5\" 0 \"%6\"")
+            .arg(collateralAddress, ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+
+        if (!executeRpc(cmd.toStdString(), result)) {
+            ui->labelStatus->setStyleSheet("color: #c0392b;");
+            ui->labelStatus->setText(tr("Registration failed: %1").arg(QString::fromStdString(result)));
+            return false;
+        }
     }
 
     QString txid = QString::fromStdString(result).trimmed();
-    if (txid.startsWith('"') && txid.endsWith('"')) {
+    if (txid.startsWith('"') && txid.endsWith('"'))
         txid = txid.mid(1, txid.length() - 2);
-    }
 
     QMessageBox::information(this, tr("Masternode Registered"),
         tr("Masternode registration transaction submitted successfully!\n\n"

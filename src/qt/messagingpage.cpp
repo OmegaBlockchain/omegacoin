@@ -290,12 +290,21 @@ void MessagingPage::onEnableSmsgClicked()
     if (smsg::fSecMsgEnabled)
         return;
 
-    if (!smsgModule.pwallet) {
+    // Find a wallet the same way the smsgenable RPC does — smsgModule.pwallet
+    // is only set after Start(), so it is always null here.
+    std::shared_ptr<CWallet> pwallet;
+#ifdef ENABLE_WALLET
+    auto vpwallets = GetWallets();
+    if (!vpwallets.empty())
+        pwallet = vpwallets[0];
+#endif
+
+    if (!pwallet) {
         QMessageBox::warning(this, tr("Messaging"), tr("No wallet loaded. Cannot enable secure messaging."));
         return;
     }
 
-    if (!smsgModule.Enable(smsgModule.pwallet)) {
+    if (!smsgModule.Enable(pwallet)) {
         QMessageBox::warning(this, tr("Messaging"), tr("Failed to enable secure messaging."));
         return;
     }

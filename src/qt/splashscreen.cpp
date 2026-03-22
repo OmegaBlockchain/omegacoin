@@ -144,6 +144,8 @@ bool SplashScreen::eventFilter(QObject * obj, QEvent * ev) {
 
 void SplashScreen::finish()
 {
+    /* Guard against being called twice (e.g. balance signal + safety timer). */
+    if (!isVisible()) return;
     /* If the window is minimized, hide() will be ignored. */
     /* Make sure we de-minimize the splashscreen window before hiding */
     if (isMinimized())

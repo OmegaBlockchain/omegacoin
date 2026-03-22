@@ -2514,7 +2514,15 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     if (args.GetBoolArg("-smsg", true)) {
 #ifdef ENABLE_WALLET
         auto vpwallets = GetWallets();
-        smsgModule.Start(vpwallets.size() > 0 ? vpwallets[0] : nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false));
+        auto smsg_wallet = vpwallets.size() > 0 ? vpwallets[0] : nullptr;
+        bool fScanChain = gArgs.GetBoolArg("-smsgscanchain", false);
+        if (smsg_wallet && smsg_wallet->IsCrypted() && smsg_wallet->IsLocked()) {
+            // Encrypted wallet: start SMSG 5s after the wallet is unlocked
+            smsgModule.StartOnUnlock(smsg_wallet, fScanChain, 5);
+        } else {
+            // Unencrypted wallet (or already unlocked): start immediately
+            smsgModule.Start(smsg_wallet, false, fScanChain);
+        }
 #else
         smsgModule.Start(nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false));
 #endif

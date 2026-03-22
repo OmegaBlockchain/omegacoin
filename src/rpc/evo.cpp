@@ -648,10 +648,19 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
         ptx.collateralOutpoint = COutPoint(collateralHash, (uint32_t)collateralIndex);
         paramIdx += 2;
 
-        // TODO unlock on failure
         LOCK(wallet->cs_wallet);
         wallet->LockCoin(ptx.collateralOutpoint);
     }
+
+    // Guard: unlock collateral if anything below throws
+    auto unlockCollateralOnFailure = [&]() {
+        if (!isFundRegister && !ptx.collateralOutpoint.IsNull()) {
+            LOCK(wallet->cs_wallet);
+            wallet->UnlockCoin(ptx.collateralOutpoint);
+        }
+    };
+
+    try {
 
     if (request.params[paramIdx].get_str() != "") {
         if (!Lookup(request.params[paramIdx].get_str().c_str(), ptx.addr, Params().GetDefaultPort(), false)) {
@@ -781,6 +790,11 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
             SetTxPayload(tx, ptx);
             return SignAndSendSpecialTx(request, tx, fSubmit);
         }
+    }
+
+    } catch (...) {
+        unlockCollateralOnFailure();
+        throw;
     }
 }
 

@@ -362,7 +362,24 @@ void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHead
         } else {
             window->showMinimized();
         }
-        Q_EMIT splashFinished();
+        // Keep splash visible until masternode sync finishes.
+        // After init, background threads flood the event loop with
+        // block/masternode/governance signals that freeze the GUI.
+        // The splash covers this period.
+        {
+            auto* syncTimer = new QTimer(this);
+            syncTimer->setInterval(2000);
+            connect(syncTimer, &QTimer::timeout, this, [this, syncTimer]() {
+                if (m_node.masternodeSync().isSynced()) {
+                    syncTimer->stop();
+                    syncTimer->deleteLater();
+                    Q_EMIT splashFinished();
+                }
+            });
+            syncTimer->start();
+        }
+        // Safety timeout: dismiss splash after 120 seconds regardless
+        QTimer::singleShot(120000, this, [this]() { Q_EMIT splashFinished(); });
         Q_EMIT windowShown(window);
 
         // Let the users setup their preferred appearance if there are no settings for it defined yet.

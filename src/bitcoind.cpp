@@ -109,6 +109,14 @@ static bool AppInit(int argc, char* argv[])
 
         // -server defaults to true for omegad but not for the GUI so do this here
         args.SoftSetBoolArg("-server", true);
+        // Enable ZMQ by default for omegad (masternodes serve the Android app).
+        // omega-qt does not set these, so ZMQ stays off for regular desktop users.
+        // SoftSetArg is a no-op if the user already set the value in omega.conf.
+        args.SoftSetArg("-zmqpubhashblock", "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawtx", "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubhashtx", "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubhashchainlock", "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawtxlock", "tcp://127.0.0.1:7780");
         // Set this early so that parameter interactions go to console
         InitLogging(args);
         InitParameterInteraction(args);

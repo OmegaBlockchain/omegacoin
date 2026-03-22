@@ -6,6 +6,7 @@
 #define BITCOIN_QT_MASTERNODEWIZARDDIALOG_H
 
 #include <QDialog>
+#include <QPointer>
 
 namespace interfaces {
 class Node;
@@ -33,7 +34,7 @@ private Q_SLOTS:
 private:
     Ui::MasternodeWizardDialog* ui;
     interfaces::Node& m_node;
-    WalletModel* walletModel;
+    QPointer<WalletModel> walletModel;
     int currentStep{0};
 
     QString ownerAddress;
@@ -41,11 +42,17 @@ private:
     QString votingAddress;
     QString blsPublicKey;
     QString blsSecretKey;
+    QString cachedIpAddress;
+    QString cachedPort;
 
     void updateStepDisplay();
     bool generateAddresses();
     bool generateBLSKeys();
     bool registerMasternode();
+    bool findExistingCollateral(QString& txid, int& vout);
+    bool findCollateralForIP(const QString& ipPort, QString& txid, int& vout);
+    bool findFundingAddress(QString& address, double minCoins,
+                            const QString& excludeTxid = QString(), int excludeVout = -1);
     bool executeRpc(const std::string& command, std::string& result);
 };
 

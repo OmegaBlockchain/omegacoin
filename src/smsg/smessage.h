@@ -426,6 +426,8 @@ public:
     int WriteIni();
 
     bool Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fScanChain);
+    bool StartDelayed(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fScanChain, int nDelaySeconds = 30);
+    bool StartOnUnlock(std::shared_ptr<CWallet> pwalletIn, bool fScanChain, int nDelaySeconds = 5);
     bool Shutdown();
 
     bool Enable(std::shared_ptr<CWallet> pwallet);
@@ -521,6 +523,7 @@ public:
     std::vector<std::shared_ptr<CWallet>> m_vpwallets;
     std::unique_ptr<interfaces::Handler> m_handler_unload;
     std::unique_ptr<interfaces::Handler> m_handler_status;
+    std::unique_ptr<interfaces::Handler> m_handler_unlock_start; // for StartOnUnlock
     std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
 
     int64_t nLastProcessedPurged = 0;

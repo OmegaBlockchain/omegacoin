@@ -33,6 +33,7 @@ Notes:
 #include <compat/byteswap.h>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/chrono.hpp>
 #include <boost/thread/thread.hpp>
 
 
@@ -850,14 +851,19 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
         return false;
     }
 
-    LogPrintf("Secure messaging starting.\n");
+    LogPrintf("SMSG debug: Start() called, wallet=%s\n", pwalletIn ? pwalletIn->GetName() : "null");
+
+    try {
 
     if (pwallet) {
         return error("%s: pwallet is already set.", __func__);
     }
     pwallet = pwalletIn;
+    LogPrintf("SMSG debug: pwallet assigned.\n");
+
 #ifdef ENABLE_WALLET
     if (pwallet) {
+        LogPrintf("SMSG debug: attaching wallet notification handlers.\n");
         m_handler_unload = interfaces::MakeHandler(pwallet->NotifyUnload.connect(boost::bind(&NotifyUnload, this)));
         // When the wallet is unlocked, scan any messages that arrived while locked.
         m_handler_status = interfaces::MakeHandler(pwallet->NotifyStatusChanged.connect(
@@ -866,32 +872,47 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
                     WalletUnlocked();
                 }
             }));
+        LogPrintf("SMSG debug: wallet handlers attached.\n");
     }
 #endif
 
     fSecMsgEnabled = true;
-    g_connman->SetLocalServices(ServiceFlags(g_connman->GetLocalServices() | NODE_SMSG));
+    LogPrintf("SMSG debug: fSecMsgEnabled set, checking g_connman.\n");
 
+    if (!g_connman) {
+        LogPrintf("SMSG debug: ERROR - g_connman is null, cannot set NODE_SMSG service flag.\n");
+    } else {
+        g_connman->SetLocalServices(ServiceFlags(g_connman->GetLocalServices() | NODE_SMSG));
+        LogPrintf("SMSG debug: NODE_SMSG service flag set.\n");
+    }
+
+    LogPrintf("SMSG debug: calling ReadIni().\n");
     if (ReadIni() != 0) {
         LogPrintf("Failed to read smsg.ini\n");
     }
+    LogPrintf("SMSG debug: ReadIni() done, addresses.size()=%zu.\n", addresses.size());
 
     if (addresses.size() < 1) {
         LogPrintf("No address keys loaded.\n");
+        LogPrintf("SMSG debug: calling AddWalletAddresses().\n");
         if (AddWalletAddresses() != 0) {
             LogPrintf("Failed to load addresses from wallet.\n");
         } else {
             LogPrintf("Loaded addresses from wallet.\n");
         }
+        LogPrintf("SMSG debug: AddWalletAddresses() done, addresses.size()=%zu.\n", addresses.size());
     } else {
         LogPrintf("Loaded addresses from SMSG.ini\n");
     }
 
+    LogPrintf("SMSG debug: calling LoadKeyStore().\n");
     if (LoadKeyStore() != 0) {
         return error("%s: LoadKeyStore failed.", __func__);
     }
+    LogPrintf("SMSG debug: LoadKeyStore() done.\n");
 
     // Import Trollbox keypair — public chat, all nodes share this key
+    LogPrintf("SMSG debug: importing Trollbox keypair.\n");
     {
         std::vector<uint8_t> vchPrivKey = ParseHex(TROLLBOX_PRIVKEY_HEX);
         CKey trollboxKey;
@@ -904,18 +925,22 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
                 smsgKey.sLabel = "Trollbox";
                 smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
                 keyStore.AddKey(trollboxAddress, smsgKey);
+                LogPrintf("SMSG debug: writing Trollbox key to DB.\n");
                 LOCK(cs_smsgDB);
                 SecMsgDB db;
                 if (db.Open("cr+")) {
                     db.WriteKey(trollboxAddress, smsgKey);
                 }
+                LogPrintf("SMSG debug: Trollbox key written to DB.\n");
             }
             LogPrintf("Trollbox address: %s\n", EncodeDestination(PKHash(trollboxAddress)));
         } else {
             LogPrintf("Warning: Trollbox private key is invalid.\n");
         }
     }
+    LogPrintf("SMSG debug: Trollbox import done.\n");
 
+    LogPrintf("SMSG debug: creating secp256k1 context.\n");
     if (secp256k1_context_smsg) {
         return error("%s: secp256k1_context_smsg already exists.", __func__);
     }
@@ -931,31 +956,100 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
         bool ret = secp256k1_context_randomize(secp256k1_context_smsg, vseed.data());
         assert(ret);
     }
+    LogPrintf("SMSG debug: secp256k1 context created.\n");
 
     if (fScanChain) {
+        LogPrintf("SMSG debug: calling ScanBlockChain().\n");
         ScanBlockChain();
+        LogPrintf("SMSG debug: ScanBlockChain() done.\n");
     }
 
+    LogPrintf("SMSG debug: calling BuildBucketSet().\n");
     if (BuildBucketSet() != 0) {
         fSecMsgEnabled = false;
         return error("%s: Could not load bucket sets, secure messaging disabled.", __func__);
     }
+    LogPrintf("SMSG debug: BuildBucketSet() done.\n");
 
+    LogPrintf("SMSG debug: calling BuildPurgedSets().\n");
     if (BuildPurgedSets() != 0) {
         fSecMsgEnabled = false;
         return error("%s: Could not load purged sets, secure messaging disabled.", __func__);
     }
+    LogPrintf("SMSG debug: BuildPurgedSets() done.\n");
 
     const CBlockIndex* pindex = ::ChainActive().Tip();
+    LogPrintf("SMSG debug: launching smsg threads, chain tip=%s.\n", pindex ? pindex->GetBlockHash().ToString() : "null");
 
     threadGroupSmsg.create_thread([pindex]() { TraceThread("smsg", [pindex]() { ThreadSecureMsg(pindex); }); });
     threadGroupSmsg.create_thread([pindex]() { TraceThread("smsg-pow", [pindex]() { ThreadSecureMsgPow(pindex); }); });
+
+    LogPrintf("SMSG debug: Start() completed successfully.\n");
+    return true;
+
+    } catch (const std::exception &e) {
+        LogPrintf("SMSG debug: EXCEPTION in Start(): %s\n", e.what());
+        fSecMsgEnabled = false;
+        return false;
+    } catch (...) {
+        LogPrintf("SMSG debug: UNKNOWN EXCEPTION in Start()\n");
+        fSecMsgEnabled = false;
+        return false;
+    }
+};
+
+bool CSMSG::StartDelayed(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fScanChain, int nDelaySeconds)
+{
+    if (fDontStart) {
+        LogPrintf("Secure messaging not started.\n");
+        return false;
+    }
+    if (nDelaySeconds <= 0) {
+        return Start(pwalletIn, false, fScanChain);
+    }
+    LogPrintf("Secure messaging will start in %d seconds.\n", nDelaySeconds);
+    threadGroupSmsg.create_thread([this, pwalletIn, fScanChain, nDelaySeconds]() {
+        try {
+            boost::this_thread::sleep_for(boost::chrono::seconds(nDelaySeconds));
+        } catch (const boost::thread_interrupted &) {
+            LogPrintf("Secure messaging startup cancelled.\n");
+            return;
+        }
+        Start(pwalletIn, false, fScanChain);
+    });
+    return true;
+};
+
+bool CSMSG::StartOnUnlock(std::shared_ptr<CWallet> pwalletIn, bool fScanChain, int nDelaySeconds)
+{
+    if (!pwalletIn) {
+        LogPrintf("SMSG StartOnUnlock: no wallet, cannot wait for unlock.\n");
+        return false;
+    }
+
+    LogPrintf("Secure messaging will start %d seconds after wallet is unlocked.\n", nDelaySeconds);
+
+    m_handler_unlock_start = interfaces::MakeHandler(pwalletIn->NotifyStatusChanged.connect(
+        [this, pwalletIn, fScanChain, nDelaySeconds](CWallet *w) {
+            if (fSecMsgEnabled || !w || w->IsLocked())
+                return;
+            LogPrintf("Wallet unlocked — scheduling secure messaging start in %d seconds.\n", nDelaySeconds);
+            // Disconnect this listener so it only fires once
+            m_handler_unlock_start.reset();
+            StartDelayed(pwalletIn, false, fScanChain, nDelaySeconds);
+        }));
 
     return true;
 };
 
 bool CSMSG::Shutdown()
 {
+    // Clean up unlock listener even if SMSG never fully started
+    if (m_handler_unlock_start) {
+        m_handler_unlock_start->disconnect();
+        m_handler_unlock_start.reset();
+    }
+
     if (!fSecMsgEnabled) {
         return false;
     }
@@ -991,6 +1085,9 @@ bool CSMSG::Shutdown()
     }
     if (m_handler_status) {
         m_handler_status->disconnect();
+    }
+    if (m_handler_unlock_start) {
+        m_handler_unlock_start->disconnect();
     }
 #endif
     pwallet.reset();

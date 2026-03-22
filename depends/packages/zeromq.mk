@@ -1,12 +1,15 @@
 package=zeromq
-$(package)_version=4.3.1
+$(package)_version=4.3.5
 $(package)_download_path=https://github.com/zeromq/libzmq/releases/download/v$($(package)_version)/
 $(package)_file_name=$(package)-$($(package)_version).tar.gz
-$(package)_sha256_hash=bcbabe1e2c7d0eec4ed612e10b94b112dd5f06fcefa994a0c79a45d835cd21eb
+$(package)_sha256_hash=6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43
+$(package)_dependencies=sodium
 
 define $(package)_set_vars
-  $(package)_config_opts=--without-docs --disable-shared --disable-curve --disable-curve-keygen --disable-perf
-  $(package)_config_opts += --without-libsodium --without-libgssapi_krb5 --without-pgm --without-norm --without-vmci
+  $(package)_config_opts=--without-docs --enable-static --disable-shared --disable-valgrind
+  $(package)_config_opts += --disable-perf --disable-libbsd
+  $(package)_config_opts += --enable-curve --enable-curve-keygen
+  $(package)_config_opts += --with-libsodium --without-libgssapi_krb5 --without-pgm --without-norm --without-vmci
   $(package)_config_opts += --disable-libunwind --disable-radix-tree --without-gcov --disable-dependency-tracking
   $(package)_config_opts += --disable-Werror --disable-drafts --enable-option-checking
   $(package)_config_opts_linux=--with-pic

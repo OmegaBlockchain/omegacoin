@@ -17,6 +17,7 @@ QT_FORMS_UI = \
   qt/forms/createwalletdialog.ui \
   qt/forms/editaddressdialog.ui \
   qt/forms/governancelist.ui \
+  qt/forms/proposaldialog.ui \
   qt/forms/helpmessagedialog.ui \
   qt/forms/intro.ui \
   qt/forms/modaloverlay.ui \
@@ -53,6 +54,7 @@ QT_MOC_CPP = \
   qt/moc_csvmodelwriter.cpp \
   qt/moc_editaddressdialog.cpp \
   qt/moc_governancelist.cpp \
+  qt/moc_proposaldialog.cpp \
   qt/moc_guiutil.cpp \
   qt/moc_intro.cpp \
   qt/moc_macdockiconhandler.cpp \
@@ -126,6 +128,7 @@ BITCOIN_QT_H = \
   qt/csvmodelwriter.h \
   qt/editaddressdialog.h \
   qt/governancelist.h \
+  qt/proposaldialog.h \
   qt/guiconstants.h \
   qt/guiutil.h \
   qt/intro.h \
@@ -241,6 +244,7 @@ BITCOIN_QT_WALLET_CPP = \
   qt/createwalletdialog.cpp \
   qt/editaddressdialog.cpp \
   qt/governancelist.cpp \
+  qt/proposaldialog.cpp \
   qt/masternodelist.cpp \
   qt/masternodewizarddialog.cpp \
   qt/messagingpage.cpp \

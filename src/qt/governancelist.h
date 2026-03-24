@@ -1,4 +1,5 @@
 // Copyright (c) 2021-2022 The Dash Core developers
+// Copyright (c) 2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,6 +20,10 @@
 
 inline constexpr int GOVERNANCELIST_UPDATE_SECONDS = 10;
 
+namespace interfaces {
+class Node;
+}
+
 namespace Ui {
 class GovernanceList;
 }
@@ -26,6 +31,7 @@ class GovernanceList;
 class CDeterministicMNList;
 class ClientModel;
 class ProposalModel;
+class WalletModel;
 
 /** Governance Manager page widget */
 class GovernanceList : public QWidget
@@ -36,9 +42,11 @@ public:
     explicit GovernanceList(QWidget* parent = nullptr);
     ~GovernanceList() override;
     void setClientModel(ClientModel* clientModel);
+    void setWalletModel(WalletModel* walletModel);
 
 private:
     ClientModel* clientModel{nullptr};
+    WalletModel* walletModel{nullptr};
 
     std::unique_ptr<Ui::GovernanceList> ui;
     ProposalModel* proposalModel;
@@ -47,11 +55,18 @@ private:
     QMenu* proposalContextMenu;
     QTimer* timer;
 
+    bool executeRpc(const std::string& command, std::string& result);
+    void voteOnProposal(const QString& outcome);
+
 private Q_SLOTS:
     void updateProposalList();
     void updateProposalCount() const;
     void showProposalContextMenu(const QPoint& pos);
     void showAdditionalInfo(const QModelIndex& index);
+    void onVoteYesClicked();
+    void onVoteNoClicked();
+    void onVoteAbstainClicked();
+    void onCreateProposalClicked();
 };
 
 class Proposal : public QObject
@@ -77,6 +92,9 @@ public:
     bool isActive() const;
     QString votingStatus(int nAbsVoteReq) const;
     int GetAbsoluteYesCount() const;
+    int GetYesCount() const;
+    int GetNoCount() const;
+    int GetAbstainCount() const;
 
     void openUrl() const;
 
@@ -101,6 +119,9 @@ public:
         START_DATE,
         END_DATE,
         PAYMENT_AMOUNT,
+        YES_VOTES,
+        NO_VOTES,
+        ABSTAIN_VOTES,
         IS_ACTIVE,
         VOTING_STATUS,
         _COUNT // for internal use only

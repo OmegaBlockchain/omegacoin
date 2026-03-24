@@ -73,6 +73,8 @@ Notes:
 
 #include <smsg/crypter.h>
 #include <smsg/db.h>
+#include <util/system.h>
+#include <thread>
 
 extern CConnman* g_connman;
 
@@ -2096,6 +2098,34 @@ bool CSMSG::ScanBlock(const CBlock &block)
     return true;
 };
 
+/** Extract pubkeys from a single block's scriptSig inputs (no DB access). */
+static void ExtractPubkeysFromBlock(const CBlock &block,
+    std::vector<std::pair<CKeyID, CPubKey>> &vResults)
+{
+    for (const auto &tx : block.vtx) {
+        if (tx->IsCoinBase())
+            continue;
+        for (const auto &txin : tx->vin) {
+            CScript::const_iterator pc = txin.scriptSig.begin();
+            std::vector<uint8_t> vchSig, vchPubKey;
+            opcodetype opcode;
+
+            if (!txin.scriptSig.GetOp(pc, opcode, vchSig))
+                continue;
+            if (!txin.scriptSig.GetOp(pc, opcode, vchPubKey))
+                continue;
+            if (vchPubKey.size() != 33 && vchPubKey.size() != 65)
+                continue;
+
+            CPubKey pubKey(vchPubKey);
+            if (!pubKey.IsValid() || !pubKey.IsCompressed())
+                continue;
+
+            vResults.emplace_back(pubKey.GetID(), pubKey);
+        }
+    }
+}
+
 bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
 {
     LogPrintf("Scanning block chain for public keys.\n");
@@ -2103,14 +2133,68 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
 
     LogPrint(BCLog::SMSG, "From height %u.\n", pindexStart->nHeight);
 
-    // Public keys are in txin.scriptSig
-    //  matching addresses are in scriptPubKey of txin's referenced output
+    // Collect block positions under cs_main so worker threads can read
+    // blocks without contending on the lock.
+    std::vector<FlatFilePos> vBlockPos;
+    {
+        AssertLockHeld(cs_main);
+        CBlockIndex *pindex = pindexStart;
+        while (pindex) {
+            vBlockPos.push_back(pindex->GetBlockPos());
+            pindex = ::ChainActive().Next(pindex);
+        }
+    }
 
-    uint32_t nBlocks        = 0;
-    uint32_t nTransactions  = 0;
-    uint32_t nInputs        = 0;
-    uint32_t nPubkeys       = 0;
-    uint32_t nDuplicates    = 0;
+    const uint32_t nBlocks = vBlockPos.size();
+    if (nBlocks == 0)
+        return true;
+
+    // Use at most half the available cores.
+    int nThreads = std::max(1, GetNumCores() / 2);
+    if ((uint32_t)nThreads > nBlocks)
+        nThreads = nBlocks;
+
+    LogPrintf("SMSG: Scanning %u blocks using %d threads.\n", nBlocks, nThreads);
+
+    // Per-thread results: vector of extracted (CKeyID, CPubKey) pairs.
+    std::vector<std::vector<std::pair<CKeyID, CPubKey>>> vThreadResults(nThreads);
+    const Consensus::Params &consensus = Params().GetConsensus();
+
+    // Worker: read assigned blocks and extract pubkeys.
+    auto worker = [&](int threadIdx) {
+        uint32_t nPerThread = nBlocks / nThreads;
+        uint32_t nFrom = threadIdx * nPerThread;
+        uint32_t nTo = (threadIdx == nThreads - 1) ? nBlocks : nFrom + nPerThread;
+
+        auto &results = vThreadResults[threadIdx];
+        results.reserve((nTo - nFrom) * 2); // rough estimate
+
+        for (uint32_t i = nFrom; i < nTo; i++) {
+            CBlock block;
+            if (!ReadBlockFromDisk(block, vBlockPos[i], consensus)) {
+                LogPrintf("SMSG: ReadBlockFromDisk failed at pos %s.\n",
+                          vBlockPos[i].ToString());
+                continue;
+            }
+            ExtractPubkeysFromBlock(block, results);
+        }
+    };
+
+    // Launch workers.
+    std::vector<std::thread> vThreads;
+    vThreads.reserve(nThreads - 1);
+    for (int i = 1; i < nThreads; i++)
+        vThreads.emplace_back(worker, i);
+
+    // Use the current thread for chunk 0.
+    worker(0);
+
+    for (auto &t : vThreads)
+        t.join();
+
+    // Write all extracted pubkeys to DB in a single batch.
+    uint32_t nPubkeys   = 0;
+    uint32_t nDuplicates = 0;
 
     {
         LOCK(cs_smsgDB);
@@ -2121,25 +2205,20 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
             return false;
         }
 
-        CBlockIndex *pindex = pindexStart;
-        while (pindex) {
-            nBlocks++;
-            CBlock block;
-            if (!ReadBlockFromDisk(block, pindex, Params().GetConsensus())) {
-                LogPrintf("%s: ReadBlockFromDisk failed.\n", __func__);
-            } else {
-                smsg::ScanBlock(*this, block, addrpkdb,
-                    nTransactions, nInputs, nPubkeys, nDuplicates);
+        for (auto &results : vThreadResults) {
+            for (auto &[hashKey, pubKey] : results) {
+                switch (InsertAddress(hashKey, pubKey, addrpkdb)) {
+                    case SMSG_NO_ERROR:      nPubkeys++;    break;
+                    case SMSG_PUBKEY_EXISTS:  nDuplicates++; break;
+                }
             }
-
-            pindex = ::ChainActive().Next(pindex);
         }
 
         addrpkdb.TxnCommit();
     } // cs_smsgDB
 
-    LogPrintf("Scanned %u blocks, %u transactions, %u inputs\n", nBlocks, nTransactions, nInputs);
-    LogPrintf("Found %u public keys, %u duplicates.\n", nPubkeys, nDuplicates);
+    LogPrintf("Scanned %u blocks, found %u public keys, %u duplicates.\n",
+              nBlocks, nPubkeys, nDuplicates);
     LogPrintf("Took %d ms\n", GetTimeMillis() - nStart);
 
     return true;
@@ -2149,17 +2228,51 @@ bool CSMSG::ScanBlockChain()
 {
     TRY_LOCK(cs_main, lockMain);
     if (lockMain) {
-        CBlockIndex *pindexScan = ::ChainActive().Genesis();
-        if (pindexScan == nullptr) {
-            return error("%s: pindexGenesisBlock not set.", __func__);
+        CBlockIndex *pindexScan = nullptr;
+
+        // Resume from last scanned height if available.
+        {
+            LOCK(cs_smsgDB);
+            SecMsgDB db;
+            if (db.Open("r")) {
+                int nLastHeight = -1;
+                if (db.ReadScanHeight(nLastHeight) && nLastHeight >= 0) {
+                    // Start from the block after the last fully scanned height.
+                    int nResumeHeight = nLastHeight + 1;
+                    if (nResumeHeight <= ::ChainActive().Height()) {
+                        pindexScan = ::ChainActive()[nResumeHeight];
+                        LogPrintf("SMSG: Resuming chain scan from height %d.\n", nResumeHeight);
+                    } else {
+                        LogPrintf("SMSG: Chain scan already up to date at height %d.\n", nLastHeight);
+                        return true;
+                    }
+                }
+            }
         }
 
-        try { // In try to catch errors opening db,
+        if (!pindexScan) {
+            pindexScan = ::ChainActive().Genesis();
+            if (pindexScan == nullptr) {
+                return error("%s: pindexGenesisBlock not set.", __func__);
+            }
+            LogPrintf("SMSG: Starting chain scan from genesis.\n");
+        }
+
+        try {
             if (!ScanChainForPublicKeys(pindexScan)) {
                 return false;
             }
         } catch (std::exception &e) {
             return error("%s: threw: %s.", __func__, e.what());
+        }
+
+        // Store the chain tip height as last scanned.
+        {
+            LOCK(cs_smsgDB);
+            SecMsgDB db;
+            if (db.Open("cw")) {
+                db.WriteScanHeight(::ChainActive().Height());
+            }
         }
     } else {
         return error("%s: Could not lock main.", __func__);
@@ -3920,7 +4033,8 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
         memcpy(&vchPayload[SMSG_PL_HDR_LEN], pMsgData, lenMsgData);
         // Compact signature proves ownership of from address and allows the public key to be recovered, recipient can always reply.
-        bool fGotKey = pwallet && pwallet->GetLegacyScriptPubKeyMan()->GetKey(ckidFrom, keyFrom);
+        auto* spk_man = pwallet ? pwallet->GetLegacyScriptPubKeyMan() : nullptr;
+        bool fGotKey = spk_man && spk_man->GetKey(ckidFrom, keyFrom);
         if (!fGotKey) {
             // Fallback: key may be a standalone SMSG keystore key (e.g. generated without wallet)
             fGotKey = (ReadSmsgKey(ckidFrom, keyFrom) == SMSG_NO_ERROR);

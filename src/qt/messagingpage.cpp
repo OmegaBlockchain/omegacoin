@@ -678,9 +678,13 @@ void MessagingPage::updateFromAddresses()
 
 #ifdef ENABLE_WALLET
         if (smsgModule.pwallet) {
+            auto* spk_man = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
             for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it)
             {
                 if (!it->fReceiveEnabled)
+                    continue;
+                // Only show addresses whose private key is in the wallet
+                if (!spk_man || !spk_man->HaveKey(it->address))
                     continue;
                 std::string sAddr = EncodeDestination(PKHash(it->address));
                 ui->fromAddressCombo->addItem(QString::fromStdString(sAddr));
@@ -699,6 +703,8 @@ void MessagingPage::updateFromAddresses()
             if (key.nFlags & smsg::SMK_CONTACT_ONLY)
                 continue;
             if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
+                continue;
+            if (!key.key.IsValid())
                 continue;
             std::string sAddr = EncodeDestination(PKHash(p.first));
             QString qAddr = QString::fromStdString(sAddr);
@@ -1457,12 +1463,16 @@ void MessagingPage::updateTrollboxFromAddresses()
 
 #ifdef ENABLE_WALLET
         if (smsgModule.pwallet) {
+            auto* spk_man = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
             for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it)
             {
                 if (!it->fReceiveEnabled)
                     continue;
                 // Skip the Trollbox address itself
                 if (it->address == smsgModule.trollboxAddress)
+                    continue;
+                // Only show addresses whose private key is in the wallet
+                if (!spk_man || !spk_man->HaveKey(it->address))
                     continue;
                 std::string sAddr = EncodeDestination(PKHash(it->address));
                 ui->trollboxFromCombo->addItem(QString::fromStdString(sAddr));
@@ -1477,6 +1487,8 @@ void MessagingPage::updateTrollboxFromAddresses()
             if (key.nFlags & smsg::SMK_CONTACT_ONLY)
                 continue;
             if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
+                continue;
+            if (!key.key.IsValid())
                 continue;
             std::string sAddr = EncodeDestination(PKHash(p.first));
             QString qAddr = QString::fromStdString(sAddr);

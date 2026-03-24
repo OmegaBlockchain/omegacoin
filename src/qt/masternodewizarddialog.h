@@ -54,6 +54,7 @@ private:
     bool findFundingAddress(QString& address, double minCoins,
                             const QString& excludeTxid = QString(), int excludeVout = -1);
     bool executeRpc(const std::string& command, std::string& result);
+    QString translateRpcError(const QString& raw) const;
 };
 
 #endif // BITCOIN_QT_MASTERNODEWIZARDDIALOG_H

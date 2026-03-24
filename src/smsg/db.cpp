@@ -146,6 +146,55 @@ bool SecMsgDB::TxnAbort()
     return true;
 };
 
+bool SecMsgDB::ReadScanHeight(int &nHeight)
+{
+    if (!pdb)
+        return false;
+
+    std::string sKey("sh");
+    std::string strValue;
+
+    leveldb::Status s = pdb->Get(leveldb::ReadOptions(), sKey, &strValue);
+    if (!s.ok()) {
+        if (s.IsNotFound())
+            return false;
+        return error("LevelDB read failure: %s\n", s.ToString());
+    }
+
+    try {
+        CDataStream ssValue(strValue.data(), strValue.data() + strValue.size(), SER_DISK, CLIENT_VERSION);
+        ssValue >> nHeight;
+    } catch (std::exception &e) {
+        LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
+        return false;
+    }
+
+    return true;
+}
+
+bool SecMsgDB::WriteScanHeight(int nHeight)
+{
+    if (!pdb)
+        return false;
+
+    std::string sKey("sh");
+    CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+    ssValue << nHeight;
+
+    if (activeBatch) {
+        activeBatch->Put(sKey, ssValue.str());
+        return true;
+    }
+
+    leveldb::WriteOptions writeOptions;
+    writeOptions.sync = true;
+    leveldb::Status s = pdb->Put(writeOptions, sKey, ssValue.str());
+    if (!s.ok())
+        return error("SecMsgDB write scan height failed: %s\n", s.ToString());
+
+    return true;
+}
+
 bool SecMsgDB::ReadPK(const CKeyID &addr, CPubKey &pubkey)
 {
     if (!pdb)

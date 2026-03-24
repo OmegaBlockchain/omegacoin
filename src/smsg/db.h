@@ -46,6 +46,9 @@ public:
     bool TxnCommit();
     bool TxnAbort();
 
+    bool ReadScanHeight(int &nHeight);
+    bool WriteScanHeight(int nHeight);
+
     bool ReadPK(const CKeyID &addr, CPubKey &pubkey);
     bool WritePK(const CKeyID &addr, CPubKey &pubkey);
     bool ExistsPK(const CKeyID &addr);

@@ -51,6 +51,137 @@ MasternodeWizardDialog::~MasternodeWizardDialog()
     delete ui;
 }
 
+QString MasternodeWizardDialog::translateRpcError(const QString& raw) const
+{
+    // Map raw RPC / consensus error strings to user-friendly messages.
+    // Each entry: substring to match, error code, explanation, suggested fix.
+    struct ErrorMapping {
+        const char* pattern;
+        const char* code;
+        const char* message;
+        const char* solution;
+    };
+
+    static const ErrorMapping mappings[] = {
+        // -- Duplicate resource errors --
+        {"bad-protx-dup-addr",    "MNW-401",
+         "This IP address is already registered to another masternode.",
+         "Use a different IP address, or if you own the existing masternode, "
+         "update it instead of registering a new one."},
+
+        {"bad-protx-dup-key",     "MNW-402",
+         "The owner key or operator key is already in use by another masternode.",
+         "Go back and generate a new set of keys."},
+
+        {"bad-protx-dup-platformnodeid", "MNW-403",
+         "The Platform Node ID is already registered to another masternode.",
+         "Assign a unique Platform Node ID."},
+
+        // -- Collateral errors --
+        {"bad-protx-collateral-reuse", "MNW-301",
+         "The collateral address must not be the same as the owner or voting address.",
+         "Go back and generate fresh addresses."},
+
+        {"bad-protx-collateral-pkh", "MNW-302",
+         "The collateral must be held in a standard (P2PKH) address.",
+         "Send the collateral to a regular wallet address, not a multisig or script address."},
+
+        {"bad-protx-collateral",  "MNW-303",
+         "The collateral transaction is missing, already spent, or the wrong amount.",
+         "Ensure your wallet has an unspent output of exactly the required collateral amount."},
+
+        // -- Address / key errors --
+        {"bad-protx-payee-reuse", "MNW-304",
+         "The payout address must not be the same as the owner or voting address.",
+         "Go back and generate fresh addresses."},
+
+        {"bad-protx-payee",       "MNW-305",
+         "The payout address is not a valid standard address.",
+         "Ensure the payout address is a regular (P2PKH or P2SH) address."},
+
+        {"bad-protx-key-null",    "MNW-306",
+         "One or more required keys are missing.",
+         "Go back and regenerate keys and addresses."},
+
+        {"bad-protx-operator-pubkey", "MNW-307",
+         "The BLS operator key uses an incompatible scheme.",
+         "Regenerate the BLS key pair."},
+
+        // -- Network address errors --
+        {"bad-protx-ipaddr-port", "MNW-404",
+         "The port number is not allowed for this network.",
+         "Use the default port shown in the wizard."},
+
+        {"bad-protx-ipaddr",      "MNW-405",
+         "The IP address is not a valid, publicly routable IPv4 address.",
+         "Enter the public IP of your server (not a LAN or localhost address)."},
+
+        // -- Signature / authorisation errors --
+        {"bad-protx-sig",         "MNW-501",
+         "The registration transaction could not be signed.",
+         "Ensure the wallet is unlocked and contains the private key for the owner address."},
+
+        {"failed to sign special tx", "MNW-502",
+         "The wallet could not sign the registration transaction.",
+         "Unlock the wallet (Settings > Unlock Wallet), then try again."},
+
+        // -- Funding errors --
+        {"Insufficient funds",    "MNW-310",
+         "Not enough funds to complete the registration.",
+         "Your wallet needs the collateral amount plus a small fee. "
+         "Check your balance and wait for any pending transactions to confirm."},
+
+        {"No funds at specified address", "MNW-311",
+         "The selected funding address has no confirmed balance.",
+         "Wait for pending transactions to confirm, or send funds to this wallet."},
+
+        {"Fee estimation failed",  "MNW-312",
+         "The network fee could not be estimated.",
+         "Wait for the blockchain to sync fully, then try again."},
+
+        // -- Wallet state errors --
+        {"wallet is locked",       "MNW-510",
+         "The wallet is locked.",
+         "Unlock the wallet (Settings > Unlock Wallet), then try again."},
+
+        {"Wallet model no longer available", "MNW-511",
+         "The wallet was closed while the wizard was open.",
+         "Close the wizard and reopen it."},
+
+        {"Private key for owner address", "MNW-512",
+         "The wallet does not hold the private key for the owner address.",
+         "The owner address must belong to this wallet."},
+
+        // -- Payload / protocol errors --
+        {"bad-protx-payload",      "MNW-601",
+         "The registration data could not be processed by the network.",
+         "This may indicate a version mismatch. Ensure your wallet is up to date."},
+
+        {"bad-protx-version",      "MNW-602",
+         "Unsupported masternode registration version.",
+         "Update your wallet to the latest release."},
+
+        {"bad-protx-type",         "MNW-603",
+         "The masternode type is not supported on this network.",
+         "Ensure you are on the correct network and your wallet is up to date."},
+    };
+
+    for (const auto& m : mappings) {
+        if (raw.contains(QLatin1String(m.pattern), Qt::CaseInsensitive)) {
+            return tr("[%1] %2\n\nSuggestion: %3")
+                .arg(QLatin1String(m.code),
+                     tr(m.message),
+                     tr(m.solution));
+        }
+    }
+
+    // No known pattern — return the raw text with a generic code
+    return tr("[MNW-900] Unexpected error: %1\n\n"
+              "Suggestion: Check that the blockchain is fully synced and the wallet is unlocked. "
+              "If the problem persists, copy this error and ask for help.")
+        .arg(raw);
+}
+
 bool MasternodeWizardDialog::executeRpc(const std::string& command, std::string& result)
 {
     if (!walletModel) {
@@ -164,7 +295,7 @@ bool MasternodeWizardDialog::generateAddresses()
 
     // Generate owner address
     if (!executeRpc("getnewaddress \"mn-owner\"", result)) {
-        ui->labelStatus->setText(tr("Failed to generate owner address: %1").arg(QString::fromStdString(result)));
+        ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
         return false;
     }
     ownerAddress = QString::fromStdString(result).trimmed();
@@ -175,7 +306,7 @@ bool MasternodeWizardDialog::generateAddresses()
 
     // Generate payout address
     if (!executeRpc("getnewaddress \"mn-payout\"", result)) {
-        ui->labelStatus->setText(tr("Failed to generate payout address: %1").arg(QString::fromStdString(result)));
+        ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
         return false;
     }
     payoutAddress = QString::fromStdString(result).trimmed();
@@ -193,19 +324,21 @@ bool MasternodeWizardDialog::generateBLSKeys()
 {
     std::string result;
     if (!executeRpc("bls generate", result)) {
-        ui->labelStatus->setText(tr("Failed to generate BLS keys: %1").arg(QString::fromStdString(result)));
+        ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
         return false;
     }
 
     // Parse JSON result
     UniValue json(UniValue::VOBJ);
     if (!json.read(result)) {
-        ui->labelStatus->setText(tr("Failed to parse BLS key result."));
+        ui->labelStatus->setText(tr("[MNW-210] Could not read BLS key data.\n\n"
+                                    "Suggestion: Try generating keys again. If this persists, restart the wallet."));
         return false;
     }
 
     if (!json.exists("secret") || !json.exists("public")) {
-        ui->labelStatus->setText(tr("BLS key result missing fields."));
+        ui->labelStatus->setText(tr("[MNW-211] BLS key generation returned incomplete data.\n\n"
+                                    "Suggestion: Try generating keys again. If this persists, restart the wallet."));
         return false;
     }
 
@@ -442,11 +575,13 @@ bool MasternodeWizardDialog::registerMasternode()
         if (!registered) {
             ui->labelStatus->setStyleSheet("color: #c0392b;");
             if (feeSourceAddress.isEmpty()) {
-                ui->labelStatus->setText(tr("Found %1 OMEGA collateral but no additional funds to pay the transaction fee. "
-                                            "Please send a small amount (at least 0.001 OMEGA) to any address in this wallet.")
+                ui->labelStatus->setText(tr("[MNW-311] Found %1 OMEGA collateral but no additional funds to pay "
+                                            "the transaction fee.\n\n"
+                                            "Suggestion: Send a small amount (at least 0.001 OMEGA) to any "
+                                            "address in this wallet and wait for it to confirm.")
                     .arg(QString::number(dmn_types::Regular.collat_amount / COIN)));
             } else {
-                ui->labelStatus->setText(tr("Registration failed: %1").arg(QString::fromStdString(result)));
+                ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
             }
             return false;
         }
@@ -458,7 +593,7 @@ bool MasternodeWizardDialog::registerMasternode()
     if (!registered) {
         // Generate a fresh collateral address
         if (!executeRpc("getnewaddress \"mn-collateral\"", result)) {
-            ui->labelStatus->setText(tr("Failed to generate collateral address: %1").arg(QString::fromStdString(result)));
+            ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
             return false;
         }
         QString collateralAddress = QString::fromStdString(result).trimmed();
@@ -473,7 +608,7 @@ bool MasternodeWizardDialog::registerMasternode()
 
         if (!executeRpc(cmd.toStdString(), result)) {
             ui->labelStatus->setStyleSheet("color: #c0392b;");
-            ui->labelStatus->setText(tr("Registration failed: %1").arg(QString::fromStdString(result)));
+            ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
             return false;
         }
     }

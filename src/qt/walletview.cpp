@@ -166,6 +166,9 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
     if (settings.value("fShowMasternodesTab").toBool()) {
         masternodeListPage->setWalletModel(_walletModel);
     }
+    if (settings.value("fShowGovernanceTab").toBool() && governanceListPage != nullptr) {
+        governanceListPage->setWalletModel(_walletModel);
+    }
     receiveCoinsPage->setModel(_walletModel);
     sendCoinsPage->setModel(_walletModel);
     coinJoinCoinsPage->setModel(_walletModel);

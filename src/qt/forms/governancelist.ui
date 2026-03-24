@@ -52,6 +52,29 @@
           <number>0</number>
          </property>
          <item>
+          <widget class="QPushButton" name="createProposalButton">
+           <property name="text">
+            <string>Create Proposal</string>
+           </property>
+           <property name="toolTip">
+            <string>Create a new budget proposal (requires collateral)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
           <widget class="QLabel" name="label_filter_2">
            <property name="text">
             <string>Filter List:</string>
@@ -100,6 +123,53 @@
        <item row="1" column="0">
         <widget class="QTableView" name="govTableView">
         </widget>
+       </item>
+       <item row="2" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_vote">
+         <item>
+          <widget class="QPushButton" name="voteYesButton">
+           <property name="text">
+            <string>Vote Yes</string>
+           </property>
+           <property name="toolTip">
+            <string>Vote yes on the selected proposal with all your masternodes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="voteAbstainButton">
+           <property name="text">
+            <string>Vote Abstain</string>
+           </property>
+           <property name="toolTip">
+            <string>Vote abstain on the selected proposal with all your masternodes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="voteNoButton">
+           <property name="text">
+            <string>Vote No</string>
+           </property>
+           <property name="toolTip">
+            <string>Vote no on the selected proposal with all your masternodes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_vote">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>

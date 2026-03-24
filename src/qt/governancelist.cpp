@@ -1,4 +1,5 @@
 // Copyright (c) 2021-2022 The Dash Core developers
+// Copyright (c) 2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,13 +10,18 @@
 #include <clientversion.h>
 #include <coins.h>
 #include <evo/deterministicmns.h>
+#include <governance/vote.h>
 #include <netbase.h>
 #include <qt/clientmodel.h>
 #include <qt/guiutil.h>
+#include <qt/proposaldialog.h>
+#include <qt/rpcconsole.h>
+#include <qt/walletmodel.h>
 
 #include <univalue.h>
 
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QDesktopServices>
 #include <QMessageBox>
 #include <QTableWidgetItem>
@@ -75,13 +81,8 @@ bool Proposal::isActive() const
 
 QString Proposal::votingStatus(const int nAbsVoteReq) const
 {
-    // Voting status...
-    // TODO: determine if voting is in progress vs. funded or not funded for past proposals.
-    // see CSuperblock::GetNearestSuperblocksHeights(nBlockHeight, nLastSuperblock, nNextSuperblock);
     const int absYesCount = govObj.GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
-    QString qStatusString;
     if (absYesCount >= nAbsVoteReq) {
-        // Could use govObj.IsSetCachedFunding here, but need nAbsVoteReq to display numbers anyway.
         return tr("Passing +%1").arg(absYesCount - nAbsVoteReq);
     } else {
         return tr("Needs additional %1 votes").arg(nAbsVoteReq - absYesCount);
@@ -91,6 +92,21 @@ QString Proposal::votingStatus(const int nAbsVoteReq) const
 int Proposal::GetAbsoluteYesCount() const
 {
     return govObj.GetAbsoluteYesCount(VOTE_SIGNAL_FUNDING);
+}
+
+int Proposal::GetYesCount() const
+{
+    return govObj.GetYesCount(VOTE_SIGNAL_FUNDING);
+}
+
+int Proposal::GetNoCount() const
+{
+    return govObj.GetNoCount(VOTE_SIGNAL_FUNDING);
+}
+
+int Proposal::GetAbstainCount() const
+{
+    return govObj.GetAbstainCount(VOTE_SIGNAL_FUNDING);
 }
 
 void Proposal::openUrl() const
@@ -137,6 +153,12 @@ QVariant ProposalModel::data(const QModelIndex& index, int role) const
             return proposal->endDate().date();
         case Column::PAYMENT_AMOUNT:
             return proposal->paymentAmount();
+        case Column::YES_VOTES:
+            return proposal->GetYesCount();
+        case Column::NO_VOTES:
+            return proposal->GetNoCount();
+        case Column::ABSTAIN_VOTES:
+            return proposal->GetAbstainCount();
         case Column::IS_ACTIVE:
             return proposal->isActive() ? tr("Yes") : tr("No");
         case Column::VOTING_STATUS:
@@ -160,6 +182,12 @@ QVariant ProposalModel::data(const QModelIndex& index, int role) const
             return proposal->endDate();
         case Column::PAYMENT_AMOUNT:
             return proposal->paymentAmount();
+        case Column::YES_VOTES:
+            return proposal->GetYesCount();
+        case Column::NO_VOTES:
+            return proposal->GetNoCount();
+        case Column::ABSTAIN_VOTES:
+            return proposal->GetAbstainCount();
         case Column::IS_ACTIVE:
             return proposal->isActive();
         case Column::VOTING_STATUS:
@@ -187,6 +215,12 @@ QVariant ProposalModel::headerData(int section, Qt::Orientation orientation, int
         return tr("End");
     case Column::PAYMENT_AMOUNT:
         return tr("Amount");
+    case Column::YES_VOTES:
+        return tr("Yes");
+    case Column::NO_VOTES:
+        return tr("No");
+    case Column::ABSTAIN_VOTES:
+        return tr("Abstain");
     case Column::IS_ACTIVE:
         return tr("Active");
     case Column::VOTING_STATUS:
@@ -202,15 +236,20 @@ int ProposalModel::columnWidth(int section)
     case Column::HASH:
         return 80;
     case Column::TITLE:
-        return 220;
+        return 180;
     case Column::START_DATE:
     case Column::END_DATE:
+        return 90;
     case Column::PAYMENT_AMOUNT:
-        return 110;
+        return 90;
+    case Column::YES_VOTES:
+    case Column::NO_VOTES:
+    case Column::ABSTAIN_VOTES:
+        return 55;
     case Column::IS_ACTIVE:
-        return 80;
+        return 60;
     case Column::VOTING_STATUS:
-        return 220;
+        return 180;
     default:
         return 80;
     }
@@ -233,10 +272,6 @@ void ProposalModel::remove(int row)
 
 void ProposalModel::reconcile(const std::vector<const Proposal*>& proposals)
 {
-    // Vector of m_data.count() false values. Going through new proposals,
-    // set keep_index true for each old proposal found in the new proposals.
-    // After going through new proposals, remove any existing proposals that
-    // weren't found (and are still false).
     std::vector<bool> keep_index(m_data.count(), false);
     for (const auto proposal : proposals) {
         bool found = false;
@@ -244,11 +279,14 @@ void ProposalModel::reconcile(const std::vector<const Proposal*>& proposals)
             if (m_data.at(i)->hash() == proposal->hash()) {
                 found = true;
                 keep_index.at(i) = true;
-                if (m_data.at(i)->GetAbsoluteYesCount() != proposal->GetAbsoluteYesCount()) {
-                    // replace proposal to update vote count
+                if (m_data.at(i)->GetAbsoluteYesCount() != proposal->GetAbsoluteYesCount() ||
+                    m_data.at(i)->GetYesCount() != proposal->GetYesCount() ||
+                    m_data.at(i)->GetNoCount() != proposal->GetNoCount() ||
+                    m_data.at(i)->GetAbstainCount() != proposal->GetAbstainCount()) {
+                    // replace proposal to update vote counts
                     delete m_data.at(i);
                     m_data.replace(i, proposal);
-                    Q_EMIT dataChanged(createIndex(i, Column::VOTING_STATUS), createIndex(i, Column::VOTING_STATUS));
+                    Q_EMIT dataChanged(createIndex(i, Column::YES_VOTES), createIndex(i, Column::VOTING_STATUS));
                 } else {
                     // no changes
                     delete proposal;
@@ -272,8 +310,6 @@ void ProposalModel::setVotingParams(int newAbsVoteReq)
 {
     if (this->nAbsVoteReq != newAbsVoteReq) {
         this->nAbsVoteReq = newAbsVoteReq;
-        // Changing either of the voting params may change the voting status
-        // column. Emit signal to force recalculation.
         Q_EMIT dataChanged(createIndex(0, Column::VOTING_STATUS), createIndex(rowCount(), Column::VOTING_STATUS));
     }
 }
@@ -315,7 +351,7 @@ GovernanceList::GovernanceList(QWidget* parent) :
     ui->govTableView->sortByColumn(ProposalModel::Column::START_DATE, Qt::DescendingOrder);
 
     // Set up filtering.
-    proposalModelProxy->setFilterKeyColumn(ProposalModel::Column::TITLE); // filter by title column...
+    proposalModelProxy->setFilterKeyColumn(ProposalModel::Column::TITLE);
     connect(ui->filterLineEdit, &QLineEdit::textChanged, proposalModelProxy, &QSortFilterProxyModel::setFilterFixedString);
 
     // Changes to number of rows should update proposal count display.
@@ -323,10 +359,18 @@ GovernanceList::GovernanceList(QWidget* parent) :
     connect(proposalModelProxy, &QSortFilterProxyModel::rowsRemoved, this, &GovernanceList::updateProposalCount);
     connect(proposalModelProxy, &QSortFilterProxyModel::layoutChanged, this, &GovernanceList::updateProposalCount);
 
-    // Enable CustomContextMenu on the table to make the view emit customContextMenuRequested signal.
+    // Enable CustomContextMenu on the table.
     ui->govTableView->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->govTableView, &QTableView::customContextMenuRequested, this, &GovernanceList::showProposalContextMenu);
     connect(ui->govTableView, &QTableView::doubleClicked, this, &GovernanceList::showAdditionalInfo);
+
+    // Vote buttons.
+    connect(ui->voteYesButton, &QPushButton::clicked, this, &GovernanceList::onVoteYesClicked);
+    connect(ui->voteNoButton, &QPushButton::clicked, this, &GovernanceList::onVoteNoClicked);
+    connect(ui->voteAbstainButton, &QPushButton::clicked, this, &GovernanceList::onVoteAbstainClicked);
+
+    // Create proposal button.
+    connect(ui->createProposalButton, &QPushButton::clicked, this, &GovernanceList::onCreateProposalClicked);
 
     connect(timer, &QTimer::timeout, this, &GovernanceList::updateProposalList);
 
@@ -341,12 +385,117 @@ void GovernanceList::setClientModel(ClientModel* model)
     updateProposalList();
 }
 
+void GovernanceList::setWalletModel(WalletModel* model)
+{
+    this->walletModel = model;
+}
+
+bool GovernanceList::executeRpc(const std::string& command, std::string& result)
+{
+    if (!walletModel) {
+        result = "Wallet model not available.";
+        return false;
+    }
+    try {
+        return RPCConsole::RPCExecuteCommandLine(walletModel->node(), result, command, nullptr, walletModel);
+    } catch (UniValue& objError) {
+        try {
+            result = find_value(objError, "message").get_str();
+        } catch (const std::runtime_error&) {
+            result = objError.write();
+        }
+        return false;
+    } catch (const std::exception& e) {
+        result = e.what();
+        return false;
+    }
+}
+
+void GovernanceList::voteOnProposal(const QString& outcome)
+{
+    if (!walletModel) {
+        QMessageBox::warning(this, tr("Voting"), tr("Wallet not available."));
+        return;
+    }
+
+    // Get selected proposal.
+    QModelIndexList selection = ui->govTableView->selectionModel()->selectedRows();
+    if (selection.empty()) {
+        QMessageBox::warning(this, tr("Voting"), tr("Please select a proposal to vote on."));
+        return;
+    }
+
+    const auto sourceIndex = proposalModelProxy->mapToSource(selection.first());
+    const auto proposal = proposalModel->getProposalAt(sourceIndex);
+    if (!proposal) return;
+
+    // Confirm.
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        this, tr("Confirm Vote"),
+        tr("Vote <b>%1</b> on proposal <b>%2</b> with all your masternodes?")
+            .arg(outcome, proposal->title()),
+        QMessageBox::Yes | QMessageBox::Cancel);
+
+    if (reply != QMessageBox::Yes) return;
+
+    // Execute: gobject vote-many <hash> funding <yes|no|abstain>
+    std::string result;
+    std::string cmd = "gobject vote-many " + proposal->hash().toStdString() + " funding " + outcome.toStdString();
+    bool ok = executeRpc(cmd, result);
+
+    if (ok) {
+        // Parse result to show success/failure count.
+        UniValue resultObj(UniValue::VOBJ);
+        if (resultObj.read(result)) {
+            UniValue overall = find_value(resultObj, "overall");
+            if (overall.isStr()) {
+                QMessageBox::information(this, tr("Voting"), QString::fromStdString(overall.get_str()));
+            } else {
+                QMessageBox::information(this, tr("Voting"), QString::fromStdString(result));
+            }
+        } else {
+            QMessageBox::information(this, tr("Voting"), QString::fromStdString(result));
+        }
+    } else {
+        QMessageBox::critical(this, tr("Voting Failed"), QString::fromStdString(result));
+    }
+
+    // Refresh after voting.
+    updateProposalList();
+}
+
+void GovernanceList::onVoteYesClicked()
+{
+    voteOnProposal("yes");
+}
+
+void GovernanceList::onVoteNoClicked()
+{
+    voteOnProposal("no");
+}
+
+void GovernanceList::onVoteAbstainClicked()
+{
+    voteOnProposal("abstain");
+}
+
+void GovernanceList::onCreateProposalClicked()
+{
+    if (!walletModel) {
+        QMessageBox::warning(this, tr("Create Proposal"), tr("Wallet not available."));
+        return;
+    }
+
+    ProposalDialog dlg(walletModel, this);
+    dlg.exec();
+
+    // Refresh list in case proposal was submitted.
+    updateProposalList();
+}
+
 void GovernanceList::updateProposalList()
 {
     if (this->clientModel) {
-        // A proposal is considered passing if (YES votes - NO votes) >= (Total Weight of Masternodes / 10),
-        // count total valid (ENABLED) masternodes to determine passing threshold.
-        // Need to query number of masternodes here with access to clientModel.
         const int nWeightedMnCount = clientModel->getMasternodeList().GetValidWeightedMNsCount();
         const int nAbsVoteReq = std::max(Params().GetConsensus().nGovernanceMinQuorum, nWeightedMnCount / 10);
         proposalModel->setVotingParams(nAbsVoteReq);
@@ -356,7 +505,7 @@ void GovernanceList::updateProposalList()
         std::vector<const Proposal*> newProposals;
         for (const auto& govObj : govObjList) {
             if (govObj.GetObjectType() != GOVERNANCE_OBJECT_PROPOSAL) {
-                continue; // Skip triggers.
+                continue;
             }
 
             newProposals.emplace_back(new Proposal(govObj, proposalModel));
@@ -386,11 +535,35 @@ void GovernanceList::showProposalContextMenu(const QPoint& pos)
         return;
     }
 
-    // right click menu with option to open proposal url
-    QAction* openProposalUrl = new QAction(proposal->url(), this);
     proposalContextMenu->clear();
-    proposalContextMenu->addAction(openProposalUrl);
-    connect(openProposalUrl, &QAction::triggered, proposal, &Proposal::openUrl);
+
+    // Open URL action.
+    if (!proposal->url().isEmpty()) {
+        QAction* openProposalUrl = new QAction(tr("Open proposal URL"), this);
+        proposalContextMenu->addAction(openProposalUrl);
+        connect(openProposalUrl, &QAction::triggered, proposal, &Proposal::openUrl);
+    }
+
+    // Copy hash action.
+    QAction* copyHash = new QAction(tr("Copy proposal hash"), this);
+    proposalContextMenu->addAction(copyHash);
+    connect(copyHash, &QAction::triggered, this, [proposal]() {
+        QApplication::clipboard()->setText(proposal->hash());
+    });
+
+    proposalContextMenu->addSeparator();
+
+    // Vote actions.
+    QAction* voteYes = new QAction(tr("Vote Yes"), this);
+    QAction* voteNo = new QAction(tr("Vote No"), this);
+    QAction* voteAbstain = new QAction(tr("Vote Abstain"), this);
+    proposalContextMenu->addAction(voteYes);
+    proposalContextMenu->addAction(voteAbstain);
+    proposalContextMenu->addAction(voteNo);
+    connect(voteYes, &QAction::triggered, this, &GovernanceList::onVoteYesClicked);
+    connect(voteNo, &QAction::triggered, this, &GovernanceList::onVoteNoClicked);
+    connect(voteAbstain, &QAction::triggered, this, &GovernanceList::onVoteAbstainClicked);
+
     proposalContextMenu->exec(QCursor::pos());
 }
 

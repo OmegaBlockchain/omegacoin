@@ -102,7 +102,7 @@ the valid set. InstantSend locks require **6 confirmations** and are kept for
 
 | Parameter                      | Mainnet value                                   |
 |--------------------------------|-------------------------------------------------|
-| Superblock cycle               | 16,616 blocks (~30 days)                        |
+| Superblock cycle               | 35,000 blocks (~30 days at 74.1s avg)           |
 | Superblock maturity window     | 1,662 blocks (~3 days before superblock)        |
 | Budget start block             | 115,000                                         |
 | Proposal fee (current)         | 1 OMEGA (non-refundable)                        |
@@ -111,6 +111,19 @@ the valid set. InstantSend locks require **6 confirmations** and are kept for
 | Minimum quorum                 | 10 masternodes                                  |
 | Passing threshold              | (Yes − No) ≥ total\_masternodes / 10            |
 | Governance filter elements     | 20,000                                          |
+
+#### Superblock Budget Projection (as of block 3,149,180)
+
+| | Current | After next reduction |
+|---|---|---|
+| Block reward | 2.16643258 OMEGA | ~1.5097 OMEGA |
+| Budget per block (10%) | 0.21664 OMEGA | ~0.15097 OMEGA |
+| **Pool per superblock cycle** | **~7,582 OMEGA** | **~5,284 OMEGA** |
+| Reduction | — | −30.3% |
+
+**Next reward reduction:** block **3,491,985** (~342,805 blocks away, estimated **~13 January 2027**)
+
+Reduction interval: 498,855 blocks (~30.3% decrease per interval, applied as `reward -= reward / 3.3`).
 
 ### Transaction Fees
 
@@ -247,7 +260,7 @@ superblock payments.
 
 | Parameter             | Mainnet Value |
 |-----------------------|---------------|
-| Superblock cycle      | ~16,616 blocks (~30 days) |
+| Superblock cycle      | 35,000 blocks (~30 days at 74.1s avg) |
 | Proposal collateral   | 1 OMEGA (non-refundable) |
 | Collateral confirmations | 6 |
 | Passing threshold     | (Yes − No) ≥ (Total masternodes / 10) |

@@ -145,11 +145,11 @@ public:
         consensus.nInstantSendConfirmationsRequired = 6;
         consensus.nInstantSendKeepLock = 24;
         consensus.nBudgetPaymentsStartBlock = 115000; // set to actual historical value on the hardfork moment(differs from 33001-66000 block height advertised on the http://omega.network/index-2.html)
-        consensus.nBudgetPaymentsCycleBlocks = 16616; // ~(60*24*30)/2.6, actual number of blocks per month is 200700 / 12 = 16725
+        consensus.nBudgetPaymentsCycleBlocks = 35000; // ~30 days at 74.1s avg block time (measured block 2,000,000–3,149,180)
         consensus.nBudgetPaymentsWindowBlocks = 100;
         consensus.nSuperblockStartBlock = 614820; // The block at which 12.1 goes live (end of final 12.0 budget cycle)
         consensus.nSuperblockStartHash = uint256S("000000000037e935c414053148efaf0382a289881f8d31cdeccbbab70dfb5a0e");
-        consensus.nSuperblockCycle = 16616; // ~(60*24*30)/2.6, actual number of blocks per month is 200700 / 12 = 16725
+        consensus.nSuperblockCycle = 35000; // ~30 days at 74.1s avg block time (measured block 2,000,000–3,149,180)
         consensus.nSuperblockMaturityWindow = 1662; // ~(60*24*3)/2.6, ~3 days before actual Superblock is emitted
         consensus.nGovernanceMinQuorum = 10;
         consensus.nGovernanceFilterElements = 20000;

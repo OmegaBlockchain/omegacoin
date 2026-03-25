@@ -661,7 +661,7 @@ void MessagingPage::updateKeysList()
             } else {
                 table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(fRecv ? tr("On") : tr("Off")));
                 table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(fAnon ? tr("On") : tr("Off")));
-                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Imported Key")));
+                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("My Key")));
             }
         }
     } // cs_smsg

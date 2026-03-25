@@ -1323,18 +1323,33 @@ void MessagingPage::onAddAddressClicked()
     if (!ok || address.isEmpty())
         return;
 
-    QString pubkey = QInputDialog::getText(this, tr("Add Contact"),
-        tr("Enter public key (hex):"), QLineEdit::Normal, QString(), &ok);
-    if (!ok || pubkey.isEmpty())
-        return;
+    // Try to retrieve the public key from the scanned blockchain data.
+    std::string sAddr = address.toStdString();
+    std::string sPubKey;
+
+    CTxDestination dest = DecodeDestination(sAddr);
+    const PKHash *pkHash = std::get_if<PKHash>(&dest);
+    if (pkHash) {
+        CKeyID keyID(*pkHash);
+        CPubKey cpk;
+        if (smsgModule.GetStoredKey(keyID, cpk) == smsg::SMSG_NO_ERROR) {
+            sPubKey = HexStr(cpk);
+        }
+    }
+
+    if (sPubKey.empty()) {
+        QString pubkey = QInputDialog::getText(this, tr("Add Contact"),
+            tr("Enter public key (hex):"), QLineEdit::Normal, QString(), &ok);
+        if (!ok || pubkey.isEmpty())
+            return;
+        sPubKey = pubkey.toStdString();
+    }
 
     QString label = QInputDialog::getText(this, tr("Add Contact"),
         tr("Label:"), QLineEdit::Normal, QString(), &ok);
     if (!ok || label.isEmpty())
         return;
 
-    std::string sAddr = address.toStdString();
-    std::string sPubKey = pubkey.toStdString();
     std::string sLabel = label.toStdString();
 
     int rv = smsgModule.AddContact(sAddr, sPubKey, sLabel);

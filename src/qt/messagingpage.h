@@ -79,6 +79,7 @@ private Q_SLOTS:
     void copyKeyAddress();
     void copyKeyPublicKey();
     void sendMessageToSelected();
+    void deleteContact();
 
     // Trollbox actions
     void onTrollboxSendClicked();
@@ -99,6 +100,7 @@ private:
     QMenu* keysContextMenu;
     QMenu* trollboxContextMenu;
     QAction* sendMessageAction;
+    QAction* deleteContactAction;
 
     QTimer* updateTimer;
     QTimer* trollboxCooldownTimer;

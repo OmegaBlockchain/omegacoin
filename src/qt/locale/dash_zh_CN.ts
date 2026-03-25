@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>正在清除钱包中的所有交易...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>已读</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>已接收</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>已发送</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>发件人</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>收件人</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>付费</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>保留时长</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>内容</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>地址</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>标签</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>接收</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>类型</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>显示消息</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>复制发件人地址</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>复制收件人地址</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>复制消息ID</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>标为已读</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>标为未读</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>回复</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>从网络中清除</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>切换接收</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>切换 Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>复制地址</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>复制公钥</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>发送消息</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>复制消息</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>复制发件人地址</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>屏蔽发件人</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[解密失败：%1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>否</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> 条消息</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG 已禁用</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>输入地址以估算费用</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>无效地址</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>预计费用：%1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>费用估算失败</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>费用估算失败：%1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>安全消息功能未启用。</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>请选择发件人地址。</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>请输入收件人地址。</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>请输入消息内容。</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>消息过长。</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>消息过长（最多 %1 个字符）。</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>无效的发件人地址。</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>无效的收件人地址。</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>发送失败：%1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>消息发送成功。</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>我的密钥</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>联系人</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>已导入密钥</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>开</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG 未启用。</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>等待 %1 秒...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>正在停止...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>停止扫描</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>扫描区块链</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>消息</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>来自 %1 的消息</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>发往 %1 的消息</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>清除消息</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>清除失败</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>错误</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>无公钥</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>扫描已停止</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>扫描完成</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>扫描失败</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>添加联系人</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>成功</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>生成密钥</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>钱包已锁定</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>密钥已生成</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>密钥已生成（无钱包）</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>确认付费消息</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>未加载钱包，无法启用安全消息功能。</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>启用安全消息功能失败。</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>从网络中清除此消息？此操作无法撤销。</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>更新接收选项失败。</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>更新 Anon 选项失败。</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>此条目的公钥不可用。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>区块链扫描已停止，进度已保存。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>区块链扫描成功完成。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>区块链扫描失败。</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>输入地址：</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>输入公钥（hex）：</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>标签：</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>添加联系人失败：%1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>联系人添加成功。</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>生成消息地址前请先解锁钱包。\n\n设置 → 解锁钱包</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>生成钱包地址失败：%1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>向 SMSG 注册地址失败：%1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>新消息地址已创建并注册。\n\n地址：\n%1\n\n私钥存储在您的钱包中，并受钱包备份保护。</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>存储密钥失败：%1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>新 SMSG 密钥已生成（独立模式 — 未关联钱包）。\n\n地址：\n%1\n\n私钥（WIF）— 这是唯一的副本，请立即备份：\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>发送付费消息？\n费用：%1 OMEGA\n保留时长：%2 天</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>发送付费消息（红色高亮）？\n费用：%1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>屏蔽来自 %1 的消息？</translation>
+    </message>
+</context>
 </TS>

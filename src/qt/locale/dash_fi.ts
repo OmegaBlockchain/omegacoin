@@ -5181,4 +5181,424 @@ Vähennä uakommenttien määrää tai kokoa.</translation>
         <translation>Tyhjennetään kaikki siirtotapahtumat lompakosta....</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Luettu</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Vastaanotettu</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Lähetetty</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Lähettäjä</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Vastaanottaja</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Maksullinen</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Säilytysaika</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Teksti</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Osoite</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Nimi</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Vastaanota</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Tyyppi</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Näytä viesti</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Kopioi lähettäjän osoite</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Kopioi vastaanottajan osoite</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Kopioi viestin tunnus</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Merkitse luetuksi</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Merkitse lukemattomaksi</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Vastaa</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Poista verkosta</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Vaihda vastaanottotila</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Vaihda Anon-tila</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Kopioi osoite</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Kopioi julkinen avain</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Lähetä viesti</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Kopioi viesti</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Kopioi lähettäjän osoite</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Mykistä lähettäjä</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Salauksen purku epäonnistui: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Kyllä</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Ei</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> viestiä</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG poistettu käytöstä</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Syötä osoitteet maksun arvioimiseksi</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Virheellinen osoite</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Arvioitu maksu: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Maksun arviointi epäonnistui</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Maksun arviointi epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Suojattu viestintä ei ole käytössä.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Valitse lähettäjän osoite.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Syötä vastaanottajan osoite.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Syötä viesti.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Viesti on liian pitkä.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Viesti on liian pitkä (enintään %1 merkkiä).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Virheellinen lähettäjän osoite.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Virheellinen vastaanottajan osoite.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Lähetys epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Viesti lähetettiin onnistuneesti.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Oma avain</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Yhteystieto</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Tuotu avain</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Päällä</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Pois</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG ei ole käytössä.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Odota %1s...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Pysäytetään...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Pysäytä skannaus</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Skannaa lohkoketju</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Viestit</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Viesti lähettäjältä %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Viesti vastaanottajalle %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Poista viesti</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Poisto epäonnistui</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Virhe</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Ei julkista avainta</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Skannaus pysäytetty</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Skannaus valmis</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Skannaus epäonnistui</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Lisää yhteystieto</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Onnistui</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Luo avain</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Lompakko lukittu</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Avain luotu</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Avain luotu (ei lompakkoa)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Vahvista maksullinen viesti</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Lompakkoa ei ole ladattu. Suojattua viestintää ei voi ottaa käyttöön.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Suojatun viestinnän käyttöönotto epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Poistetaanko tämä viesti verkosta? Toimintoa ei voi peruuttaa.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Vastaanotto-asetuksen päivitys epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Anon-asetuksen päivitys epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Julkista avainta ei ole saatavilla tälle merkinnälle.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Lohkoketjun skannaus pysäytettiin. Edistyminen on tallennettu.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Lohkoketjun skannaus valmistui onnistuneesti.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Lohkoketjun skannaus epäonnistui.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Syötä osoite:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Syötä julkinen avain (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Nimi:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Yhteystiedon lisäys epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Yhteystieto lisätty onnistuneesti.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Avaa lompakko ennen viestiosoitteen luomista.\n\nAsetukset → Avaa lompakko</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Lompakko-osoitteen luonti epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Osoitteen rekisteröinti SMSG:lle epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Uusi viestiosoite luotu ja rekisteröity.\n\nOsoite:\n%1\n\nYksityinen avain on tallennettu lompakkoosi ja suojattu lompakkosi varmuuskopiolla.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Avaimen tallennus epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Uusi SMSG-avain luotu (itsenäinen — ei lompakkoa liitetty).\n\nOsoite:\n%1\n\nYksityinen avain (WIF) — tämä on AINOA kopio, varmuuskopioi se nyt:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Lähetetäänkö maksullinen viesti?\nMaksu: %1 OMEGA\nSäilytysaika: %2 päivää</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Lähetetäänkö maksullinen viesti (punainen korostus)?\nMaksu: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Mykistetäänkö viestit lähettäjältä %1?</translation>
+    </message>
+</context>
 </TS>

@@ -6541,4 +6541,528 @@ Go to File &gt; Open Wallet to load a wallet.
         <translation>Your entries added successfully.</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <location filename="../messagingpage.cpp" line="+117"/>
+        <source>Read</source>
+        <translation>Read</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Received</source>
+        <translation>Received</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Sent</source>
+        <translation>Sent</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>From</source>
+        <translation>From</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>To</source>
+        <translation>To</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Paid</source>
+        <translation>Paid</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Retention</source>
+        <translation>Retention</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Text</source>
+        <translation>Text</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Address</source>
+        <translation>Address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Label</source>
+        <translation>Label</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Receive</source>
+        <translation>Receive</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Type</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Show Message</source>
+        <translation>Show Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy From Address</source>
+        <translation>Copy From Address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy To Address</source>
+        <translation>Copy To Address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy Message ID</source>
+        <translation>Copy Message ID</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mark as Read</source>
+        <translation>Mark as Read</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mark as Unread</source>
+        <translation>Mark as Unread</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Reply</source>
+        <translation>Reply</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Delete</source>
+        <translation>Delete</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Purge from Network</source>
+        <translation>Purge from Network</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Toggle Receive</source>
+        <translation>Toggle Receive</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Toggle Anon</source>
+        <translation>Toggle Anon</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy Address</source>
+        <translation>Copy Address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy Public Key</source>
+        <translation>Copy Public Key</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Send Message</source>
+        <translation>Send Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy Message</source>
+        <translation>Copy Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy Sender Address</source>
+        <translation>Copy Sender Address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mute Sender</source>
+        <translation>Mute Sender</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Decrypt failed: %1]</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Yes</source>
+        <translation>Yes</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No</source>
+        <translation>No</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source> messages</source>
+        <translation> messages</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>SMSG disabled</source>
+        <translation>SMSG disabled</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Enter addresses to estimate fee</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Invalid address</source>
+        <translation>Invalid address</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Estimated fee: %1 OMEGA</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Fee estimate failed</source>
+        <translation>Fee estimate failed</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Fee estimate failed: %1</source>
+        <translation>Fee estimate failed: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Secure messaging is not enabled.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Select a From address.</source>
+        <translation>Select a From address.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enter a To address.</source>
+        <translation>Enter a To address.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enter a message.</source>
+        <translation>Enter a message.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message too long.</source>
+        <translation>Message too long.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Message too long (max %1 chars).</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Invalid From address.</source>
+        <translation>Invalid From address.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Invalid To address.</source>
+        <translation>Invalid To address.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Send failed: %1</source>
+        <translation>Send failed: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message sent successfully.</source>
+        <translation>Message sent successfully.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>My Key</source>
+        <translation>My Key</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Contact</source>
+        <translation>Contact</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Imported Key</source>
+        <translation>Imported Key</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>On</source>
+        <translation>On</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Off</source>
+        <translation>Off</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG not enabled.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Wait %1s...</source>
+        <translation>Wait %1s...</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Stopping...</source>
+        <translation>Stopping...</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Stop Scan</source>
+        <translation>Stop Scan</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Scan Blockchain</source>
+        <translation>Scan Blockchain</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Messaging</source>
+        <translation>Messaging</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message from %1</source>
+        <translation>Message from %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Message to %1</source>
+        <translation>Message to %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Purge Message</source>
+        <translation>Purge Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Purge Failed</source>
+        <translation>Purge Failed</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Error</source>
+        <translation>Error</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No Public Key</source>
+        <translation>No Public Key</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Scan Stopped</source>
+        <translation>Scan Stopped</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Scan Complete</source>
+        <translation>Scan Complete</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Scan Failed</source>
+        <translation>Scan Failed</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Add Contact</source>
+        <translation>Add Contact</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Success</source>
+        <translation>Success</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Generate Key</source>
+        <translation>Generate Key</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Wallet Locked</source>
+        <translation>Wallet Locked</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Key Generated</source>
+        <translation>Key Generated</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Key Generated (no wallet)</source>
+        <translation>Key Generated (no wallet)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Confirm Paid Message</source>
+        <translation>Confirm Paid Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>No wallet loaded. Cannot enable secure messaging.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Failed to enable secure messaging.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Purge this message from the network? This cannot be undone.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to update receive option.</source>
+        <translation>Failed to update receive option.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to update anon option.</source>
+        <translation>Failed to update anon option.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Public key is not available for this entry.</source>
+        <translation>Public key is not available for this entry.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Blockchain scan was stopped. Progress has been saved.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Blockchain scan completed successfully.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Blockchain scan failed.</source>
+        <translation>Blockchain scan failed.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enter address:</source>
+        <translation>Enter address:</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Enter public key (hex):</source>
+        <translation>Enter public key (hex):</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Label:</source>
+        <translation>Label:</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to add contact: %1</source>
+        <translation>Failed to add contact: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Contact added successfully.</source>
+        <translation>Contact added successfully.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Failed to generate wallet address: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Failed to register address with SMSG: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Failed to store key: %1</source>
+        <translation>Failed to store key: %1</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Send paid message (red highlight)?\nFee: %1 OMEGA</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Mute messages from %1?</source>
+        <translation>Mute messages from %1?</translation>
+    </message>
+</context>
 </TS>

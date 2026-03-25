@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Vymazať všetky transakcie z peňaženky...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Prečítané</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Prijaté</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Odoslané</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Od</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Pre</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Platené</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Uchovávanie</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Text</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresa</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Označenie</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Prijímať</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Typ</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Zobraziť správu</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Kopírovať adresu odosielateľa</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Kopírovať adresu príjemcu</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Kopírovať ID správy</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Označiť ako prečítané</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Označiť ako neprečítané</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Odpovedať</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Odstrániť</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Odstrániť zo siete</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Prepnúť prijímanie</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Prepnúť Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Kopírovať adresu</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Kopírovať verejný kľúč</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Odoslať správu</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Kopírovať správu</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Kopírovať adresu odosielateľa</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Stlmiť odosielateľa</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Dešifrovanie zlyhalo: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Áno</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Nie</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> správ</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG deaktivovaný</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Zadajte adresy na odhad poplatku</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Neplatná adresa</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Odhadovaný poplatok: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Odhad poplatku zlyhal</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Odhad poplatku zlyhal: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Zabezpečené správy nie sú aktivované.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Vyberte adresu odosielateľa.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Zadajte adresu príjemcu.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Zadajte správu.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Správa je príliš dlhá.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Správa je príliš dlhá (max. %1 znakov).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Neplatná adresa odosielateľa.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Neplatná adresa príjemcu.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Odoslanie zlyhalo: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Správa bola úspešne odoslaná.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Môj kľúč</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Kontakt</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Importovaný kľúč</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Zap.</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Vyp.</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG nie je aktivovaný.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Čakajte %1s...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Zastavuje sa...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Zastaviť skenovanie</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Skenovať blockchain</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Správy</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Správa od %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Správa pre %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Odstrániť správu</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Odstránenie zlyhalo</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Chyba</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Žiadny verejný kľúč</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Skenovanie zastavené</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Skenovanie dokončené</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Skenovanie zlyhalo</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Pridať kontakt</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Úspech</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Generovať kľúč</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Peňaženka zamknutá</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Kľúč vygenerovaný</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Kľúč vygenerovaný (bez peňaženky)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Potvrdiť platenú správu</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Žiadna peňaženka nie je načítaná. Nie je možné aktivovať zabezpečené správy.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Aktivácia zabezpečených správ zlyhala.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Odstrániť túto správu zo siete? Túto akciu nemožno vrátiť späť.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Aktualizácia možnosti prijímania zlyhala.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Aktualizácia možnosti Anon zlyhala.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Verejný kľúč nie je dostupný pre túto položku.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Skenovanie blockchainu bolo zastavené. Pokrok bol uložený.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Skenovanie blockchainu sa úspešne dokončilo.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Skenovanie blockchainu zlyhalo.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Zadajte adresu:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Zadajte verejný kľúč (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Označenie:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Pridanie kontaktu zlyhalo: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Kontakt bol úspešne pridaný.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Pred vygenerovaním adresy na správy odomknite peňaženku.\n\nNastavenia → Odomknúť peňaženku</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Generovanie adresy peňaženky zlyhalo: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Registrácia adresy v SMSG zlyhala: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Nová adresa na správy bola vytvorená a zaregistrovaná.\n\nAdresa:\n%1\n\nSúkromný kľúč je uložený vo vašej peňaženke a chránený zálohou peňaženky.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Uloženie kľúča zlyhalo: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Nový kľúč SMSG vygenerovaný (samostatný — bez peňaženky).\n\nAdresa:\n%1\n\nSúkromný kľúč (WIF) — toto je JEDINÁ kópia, zálohujte ho teraz:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Odoslať platenú správu?\nPoplatok: %1 OMEGA\nUchovávanie: %2 dní</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Odoslať platenú správu (červené zvýraznenie)?\nPoplatok: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Stlmiť správy od %1?</translation>
+    </message>
+</context>
 </TS>

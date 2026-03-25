@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>إزالة جميع المعاملات من المحفظة...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>مقروءة</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>مستلمة</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>مُرسلة</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>من</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>إلى</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>مدفوعة</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>مدة الاحتفاظ</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>نص</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>العنوان</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>التسمية</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>استقبال</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>النوع</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>عرض الرسالة</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>نسخ عنوان المُرسِل</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>نسخ عنوان المستلم</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>نسخ معرّف الرسالة</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>تحديد كمقروءة</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>تحديد كغير مقروءة</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>رد</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>حذف</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>مسح من الشبكة</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>تبديل الاستقبال</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>تبديل Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>نسخ العنوان</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>نسخ المفتاح العام</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>إرسال رسالة</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>نسخ الرسالة</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>نسخ عنوان المُرسِل</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>كتم المُرسِل</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[فشل فك التشفير: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>نعم</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>لا</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> رسائل</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG معطّل</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>أدخل العناوين لتقدير الرسوم</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>عنوان غير صالح</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>الرسوم التقديرية: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>فشل تقدير الرسوم</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>فشل تقدير الرسوم: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>المراسلة الآمنة غير مفعّلة.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>حدد عنوان المُرسِل.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>أدخل عنوان المستلم.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>أدخل رسالة.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>الرسالة طويلة جداً.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>الرسالة طويلة جداً (الحد الأقصى %1 حرف).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>عنوان المُرسِل غير صالح.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>عنوان المستلم غير صالح.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>فشل الإرسال: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>تم إرسال الرسالة بنجاح.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>مفتاحي</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>جهة اتصال</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>مفتاح مستورد</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>مفعّل</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>معطّل</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG غير مفعّل.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>انتظر %1 ثانية...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>جارٍ الإيقاف...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>إيقاف الفحص</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>فحص البلوكتشين</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>المراسلة</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>رسالة من %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>رسالة إلى %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>مسح الرسالة</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>فشل المسح</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>خطأ</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>لا يوجد مفتاح عام</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>تم إيقاف الفحص</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>اكتمل الفحص</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>فشل الفحص</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>إضافة جهة اتصال</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>نجاح</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>إنشاء مفتاح</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>المحفظة مقفلة</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>تم إنشاء المفتاح</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>تم إنشاء المفتاح (بدون محفظة)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>تأكيد الرسالة المدفوعة</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>لم يتم تحميل أي محفظة. لا يمكن تفعيل المراسلة الآمنة.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>فشل تفعيل المراسلة الآمنة.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>مسح هذه الرسالة من الشبكة؟ لا يمكن التراجع عن هذا الإجراء.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>فشل تحديث خيار الاستقبال.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>فشل تحديث خيار Anon.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>المفتاح العام غير متاح لهذا الإدخال.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>تم إيقاف فحص البلوكتشين. تم حفظ التقدم.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>اكتمل فحص البلوكتشين بنجاح.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>فشل فحص البلوكتشين.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>أدخل العنوان:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>أدخل المفتاح العام (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>التسمية:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>فشل إضافة جهة الاتصال: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>تمت إضافة جهة الاتصال بنجاح.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>يرجى فتح قفل المحفظة قبل إنشاء عنوان مراسلة.\n\nالإعدادات → فتح قفل المحفظة</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>فشل إنشاء عنوان المحفظة: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>فشل تسجيل العنوان مع SMSG: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>تم إنشاء عنوان مراسلة جديد وتسجيله.\n\nالعنوان:\n%1\n\nالمفتاح الخاص مخزّن في محفظتك ومحمي بنسخة احتياطية من محفظتك.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>فشل تخزين المفتاح: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>تم إنشاء مفتاح SMSG جديد (مستقل — بدون محفظة مرفقة).\n\nالعنوان:\n%1\n\nالمفتاح الخاص (WIF) — هذه النسخة الوحيدة، احتفظ بنسخة احتياطية الآن:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>إرسال رسالة مدفوعة؟\nالرسوم: %1 OMEGA\nمدة الاحتفاظ: %2 أيام</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>إرسال رسالة مدفوعة (تمييز أحمر)؟\nالرسوم: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>كتم الرسائل من %1؟</translation>
+    </message>
+</context>
 </TS>

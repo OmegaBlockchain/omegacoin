@@ -5179,4 +5179,424 @@ Nota: Het bericht zal niet verzonden worden met de betaling over het Dash netwer
         <translation>Bezig met het zappen van alle transacties van de portemonnee...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Gelezen</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Ontvangen</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Verzonden</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Van</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Aan</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Betaald</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Bewaarperiode</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Tekst</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adres</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Label</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Ontvangen</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Bericht tonen</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Van-adres kopiëren</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Aan-adres kopiëren</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Bericht-ID kopiëren</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Markeren als gelezen</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Markeren als ongelezen</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Beantwoorden</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Verwijderen</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Verwijderen uit netwerk</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Ontvangen in/uitschakelen</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Anon in/uitschakelen</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Adres kopiëren</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Publieke sleutel kopiëren</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Bericht verzenden</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Bericht kopiëren</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Afzenderadres kopiëren</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Afzender dempen</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Ontsleuteling mislukt: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Ja</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Nee</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> berichten</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG uitgeschakeld</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Adressen invoeren om kosten te schatten</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Ongeldig adres</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Geschatte kosten: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Kostenschatting mislukt</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Kostenschatting mislukt: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Beveiligd berichtenverkeer is niet ingeschakeld.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Selecteer een van-adres.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Voer een aan-adres in.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Voer een bericht in.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Bericht te lang.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Bericht te lang (max. %1 tekens).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Ongeldig van-adres.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Ongeldig aan-adres.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Verzenden mislukt: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Bericht succesvol verzonden.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Mijn sleutel</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Contact</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Geïmporteerde sleutel</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Aan</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Uit</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG niet ingeschakeld.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Wacht %1s...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Wordt gestopt...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Scan stoppen</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Blockchain scannen</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Berichten</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Bericht van %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Bericht aan %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Bericht wissen</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Wissen mislukt</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Fout</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Geen publieke sleutel</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Scan gestopt</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Scan voltooid</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Scan mislukt</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Contact toevoegen</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Geslaagd</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Sleutel genereren</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Portemonnee vergrendeld</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Sleutel gegenereerd</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Sleutel gegenereerd (geen portemonnee)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Betaald bericht bevestigen</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Geen portemonnee geladen. Beveiligd berichtenverkeer kan niet worden ingeschakeld.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Inschakelen van beveiligd berichtenverkeer mislukt.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Dit bericht uit het netwerk verwijderen? Dit kan niet ongedaan worden gemaakt.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Bijwerken van ontvangstoptie mislukt.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Bijwerken van Anon-optie mislukt.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Publieke sleutel is niet beschikbaar voor dit item.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Blockchain-scan is gestopt. Voortgang is opgeslagen.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Blockchain-scan succesvol voltooid.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Blockchain-scan mislukt.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Adres invoeren:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Publieke sleutel invoeren (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Label:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Contact toevoegen mislukt: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Contact succesvol toegevoegd.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Ontgrendel de portemonnee voordat u een berichtadres genereert.\n\nInstellingen → Portemonnee ontgrendelen</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Genereren van portemonnee-adres mislukt: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Adres registreren bij SMSG mislukt: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Nieuw berichtadres aangemaakt en geregistreerd.\n\nAdres:\n%1\n\nDe privésleutel wordt opgeslagen in uw portemonnee en beschermd door uw back-up.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Sleutel opslaan mislukt: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Nieuwe SMSG-sleutel gegenereerd (zelfstandig — geen portemonnee gekoppeld).\n\nAdres:\n%1\n\nPrivésleutel (WIF) — dit is de ENIGE kopie, maak nu een back-up:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Betaald bericht verzenden?\nKosten: %1 OMEGA\nBewaarperiode: %2 dagen</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Betaald bericht verzenden (rode markering)?\nKosten: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Berichten van %1 dempen?</translation>
+    </message>
+</context>
 </TS>

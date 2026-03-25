@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Cüzdandaki tüm muameleler kaldırılıyor...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Okundu</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Alındı</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Gönderildi</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Kimden</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Kime</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Ücretli</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Saklama süresi</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Metin</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adres</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Etiket</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Al</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Tür</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Mesajı göster</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Gönderen adresini kopyala</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Alıcı adresini kopyala</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Mesaj kimliğini kopyala</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Okundu olarak işaretle</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Okunmadı olarak işaretle</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Yanıtla</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Ağdan kaldır</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Almayı aç/kapat</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Anon&apos;u aç/kapat</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Adresi kopyala</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Ortak anahtarı kopyala</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Mesaj gönder</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Mesajı kopyala</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Gönderen adresini kopyala</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Göndereni sustur</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Şifre çözme başarısız: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Evet</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Hayır</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> mesaj</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG devre dışı</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Ücret tahmini için adresleri girin</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Geçersiz adres</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Tahmini ücret: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Ücret tahmini başarısız</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Ücret tahmini başarısız: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Güvenli mesajlaşma etkin değil.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Bir gönderen adresi seçin.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Bir alıcı adresi girin.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Bir mesaj girin.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Mesaj çok uzun.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Mesaj çok uzun (maks. %1 karakter).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Geçersiz gönderen adresi.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Geçersiz alıcı adresi.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Gönderme başarısız: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Mesaj başarıyla gönderildi.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Anahtarım</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Kişi</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>İçe aktarılan anahtar</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Açık</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG etkin değil.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>%1 saniye bekleyin...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Durduruluyor...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Taramayı durdur</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Blok zincirini tara</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Mesajlaşma</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>%1 adresinden mesaj</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>%1 adresine mesaj</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Mesajı kaldır</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Kaldırma başarısız</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Hata</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Ortak anahtar yok</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Tarama durduruldu</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Tarama tamamlandı</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Tarama başarısız</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Kişi ekle</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Başarılı</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Anahtar oluştur</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Cüzdan kilitli</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Anahtar oluşturuldu</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Anahtar oluşturuldu (cüzdan yok)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Ücretli mesajı onayla</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Cüzdan yüklü değil. Güvenli mesajlaşma etkinleştirilemiyor.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Güvenli mesajlaşma etkinleştirilemedi.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Bu mesaj ağdan kaldırılsın mı? Bu işlem geri alınamaz.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Alma seçeneği güncellenemedi.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Anon seçeneği güncellenemedi.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Bu girdi için ortak anahtar mevcut değil.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Blok zinciri taraması durduruldu. İlerleme kaydedildi.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Blok zinciri taraması başarıyla tamamlandı.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Blok zinciri taraması başarısız.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Adres girin:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Ortak anahtar girin (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Etiket:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Kişi eklenemedi: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Kişi başarıyla eklendi.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Mesajlaşma adresi oluşturmadan önce cüzdanın kilidini açın.\n\nAyarlar → Cüzdanın kilidini aç</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Cüzdan adresi oluşturulamadı: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Adres SMSG ile kaydedilemedi: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Yeni mesajlaşma adresi oluşturuldu ve kaydedildi.\n\nAdres:\n%1\n\nÖzel anahtar cüzdanınızda saklanmakta ve cüzdan yedeklemenizle korunmaktadır.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Anahtar kaydedilemedi: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Yeni SMSG anahtarı oluşturuldu (bağımsız — cüzdan bağlı değil).\n\nAdres:\n%1\n\nÖzel anahtar (WIF) — bu tek kopyasıdır, şimdi yedekleyin:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Ücretli mesaj gönderilsin mi?\nÜcret: %1 OMEGA\nSaklama süresi: %2 gün</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Ücretli mesaj gönderilsin mi (kırmızı vurgu)?\nÜcret: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>%1 adresinden gelen mesajlar susturulsun mu?</translation>
+    </message>
+</context>
 </TS>

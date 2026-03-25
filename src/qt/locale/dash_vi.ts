@@ -4519,4 +4519,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Dọn sạch tất cả các giao dịch khỏi ví...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Đã đọc</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Đã nhận</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Đã gửi</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Từ</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Đến</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Có phí</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Thời gian lưu trữ</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Nội dung</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Địa chỉ</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Nhãn</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Nhận</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Loại</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Xem tin nhắn</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Sao chép địa chỉ người gửi</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Sao chép địa chỉ người nhận</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Sao chép ID tin nhắn</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Đánh dấu đã đọc</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Đánh dấu chưa đọc</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Trả lời</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Xóa</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Xóa khỏi mạng</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Bật/tắt nhận tin</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Bật/tắt Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Sao chép địa chỉ</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Sao chép khóa công khai</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Gửi tin nhắn</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Sao chép tin nhắn</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Sao chép địa chỉ người gửi</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Tắt tiếng người gửi</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Giải mã thất bại: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Có</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Không</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> tin nhắn</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG đã tắt</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Nhập địa chỉ để ước tính phí</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Địa chỉ không hợp lệ</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Phí ước tính: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Ước tính phí thất bại</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Ước tính phí thất bại: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Nhắn tin bảo mật chưa được bật.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Chọn địa chỉ người gửi.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Nhập địa chỉ người nhận.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Nhập tin nhắn.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Tin nhắn quá dài.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Tin nhắn quá dài (tối đa %1 ký tự).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Địa chỉ người gửi không hợp lệ.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Địa chỉ người nhận không hợp lệ.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Gửi thất bại: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Tin nhắn đã được gửi thành công.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Khóa của tôi</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Liên hệ</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Khóa đã nhập</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Bật</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Tắt</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG chưa được bật.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Chờ %1 giây...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Đang dừng...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Dừng quét</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Quét blockchain</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Tin nhắn</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Tin nhắn từ %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Tin nhắn đến %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Xóa tin nhắn</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Xóa thất bại</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Lỗi</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Không có khóa công khai</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Đã dừng quét</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Quét hoàn tất</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Quét thất bại</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Thêm liên hệ</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Thành công</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Tạo khóa</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Ví đã khóa</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Đã tạo khóa</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Đã tạo khóa (không có ví)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Xác nhận tin nhắn có phí</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Không có ví nào được tải. Không thể bật nhắn tin bảo mật.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Không thể bật nhắn tin bảo mật.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Xóa tin nhắn này khỏi mạng? Hành động này không thể hoàn tác.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Không thể cập nhật tùy chọn nhận.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Không thể cập nhật tùy chọn Anon.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Khóa công khai không có sẵn cho mục này.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Quét blockchain đã bị dừng. Tiến trình đã được lưu.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Quét blockchain hoàn tất thành công.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Quét blockchain thất bại.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Nhập địa chỉ:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Nhập khóa công khai (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Nhãn:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Không thể thêm liên hệ: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Đã thêm liên hệ thành công.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Vui lòng mở khóa ví trước khi tạo địa chỉ nhắn tin.\n\nCài đặt → Mở khóa ví</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Không thể tạo địa chỉ ví: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Không thể đăng ký địa chỉ với SMSG: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Địa chỉ nhắn tin mới đã được tạo và đăng ký.\n\nĐịa chỉ:\n%1\n\nKhóa riêng tư được lưu trong ví của bạn và được bảo vệ bởi bản sao lưu ví.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Không thể lưu khóa: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Khóa SMSG mới được tạo (độc lập — không có ví đính kèm).\n\nĐịa chỉ:\n%1\n\nKhóa riêng tư (WIF) — đây là bản sao DUY NHẤT, hãy sao lưu ngay:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Gửi tin nhắn có phí?\nPhí: %1 OMEGA\nThời gian lưu trữ: %2 ngày</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Gửi tin nhắn có phí (nổi bật đỏ)?\nPhí: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Tắt tiếng tin nhắn từ %1?</translation>
+    </message>
+</context>
 </TS>

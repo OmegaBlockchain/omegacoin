@@ -4869,4 +4869,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Премахване на всички транзакции от портфейла ...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Прочетено</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Получено</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Изпратено</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>От</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>До</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Платено</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Съхранение</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Адрес</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Етикет</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Получаване</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Покажи съобщение</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Копирай адреса на подателя</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Копирай адреса на получателя</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Копирай ID на съобщението</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Маркирай като прочетено</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Маркирай като непрочетено</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Отговори</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Изтрий</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Премахни от мрежата</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Превключи получаване</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Превключи Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Копирай адрес</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Копирай публичен ключ</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Изпрати съобщение</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Копирай съобщение</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Копирай адреса на подателя</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Заглуши подателя</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Дешифрирането неуспешно: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Да</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Не</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> съобщения</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG деактивиран</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Въведете адреси за оценка на таксата</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Невалиден адрес</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Прогнозна такса: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Оценката на таксата неуспешна</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Оценката на таксата неуспешна: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Защитените съобщения не са активирани.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Изберете адрес на подателя.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Въведете адрес на получателя.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Въведете съобщение.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Съобщението е твърде дълго.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Съобщението е твърде дълго (макс. %1 символа).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Невалиден адрес на подателя.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Невалиден адрес на получателя.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Изпращането неуспешно: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Съобщението е изпратено успешно.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Моят ключ</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Контакт</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Импортиран ключ</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Вкл</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Изкл</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG не е активиран.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Изчакайте %1с...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Спиране...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Спри сканирането</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Сканирай блокчейна</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Съобщения</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Съобщение от %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Съобщение до %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Премахни съобщение</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Премахването неуспешно</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Грешка</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Няма публичен ключ</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Сканирането спряно</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Сканирането завършено</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Сканирането неуспешно</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Добави контакт</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Успех</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Генерирай ключ</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Портфейлът е заключен</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Ключът е генериран</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Ключът е генериран (без портфейл)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Потвърди платеното съобщение</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Няма зареден портфейл. Не може да се активират защитени съобщения.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Неуспешно активиране на защитени съобщения.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Да се премахне ли това съобщение от мрежата? Това не може да бъде отменено.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Неуспешно обновяване на опцията за получаване.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Неуспешно обновяване на опцията Anon.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Публичният ключ не е наличен за този запис.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Сканирането на блокчейна е спряно. Напредъкът е запазен.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Сканирането на блокчейна завърши успешно.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Сканирането на блокчейна неуспешно.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Въведете адрес:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Въведете публичен ключ (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Етикет:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Неуспешно добавяне на контакт: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Контактът е добавен успешно.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Моля, отключете портфейла преди генериране на адрес за съобщения.\n\nНастройки → Отключи портфейла</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Неуспешно генериране на адрес на портфейла: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Неуспешна регистрация на адрес в SMSG: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Нов адрес за съобщения е създаден и регистриран.\n\nАдрес:\n%1\n\nЧастният ключ се съхранява в портфейла ви и е защитен от резервното копие на портфейла.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Неуспешно съхраняване на ключ: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Нов ключ SMSG е генериран (самостоятелен — без прикачен портфейл).\n\nАдрес:\n%1\n\nЧастен ключ (WIF) — това е ЕДИНСТВЕНОТО копие, архивирайте го сега:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Да се изпрати ли платено съобщение?\nТакса: %1 OMEGA\nСъхранение: %2 дни</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Да се изпрати ли платено съобщение (червено маркиране)?\nТакса: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Да се заглушат ли съобщенията от %1?</translation>
+    </message>
+</context>
 </TS>

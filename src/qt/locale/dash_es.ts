@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Eliminando todas las transacciones de la billetera...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Leído</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Recibido</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Enviado</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>De</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Para</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Pagado</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Retención</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Texto</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Dirección</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Etiqueta</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Recibir</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Tipo</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Mostrar mensaje</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Copiar dirección de origen</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Copiar dirección de destino</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Copiar ID de mensaje</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Marcar como leído</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Marcar como no leído</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Responder</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Eliminar</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Purgar de la red</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Activar/desactivar recepción</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Activar/desactivar Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Copiar dirección</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Copiar clave pública</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Enviar mensaje</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Copiar mensaje</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Copiar dirección del remitente</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Silenciar remitente</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Error de descifrado: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Sí</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>No</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> mensajes</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG desactivado</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Introducir direcciones para estimar la comisión</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Dirección inválida</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Comisión estimada: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Fallo al estimar la comisión</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Fallo al estimar la comisión: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>La mensajería segura no está activada.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Seleccione una dirección de origen.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Introduzca una dirección de destino.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Introduzca un mensaje.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Mensaje demasiado largo.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Mensaje demasiado largo (máx. %1 caracteres).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Dirección de origen inválida.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Dirección de destino inválida.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Error al enviar: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Mensaje enviado correctamente.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Mi clave</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Contacto</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Clave importada</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Activado</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desactivado</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG no activado.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Esperar %1s...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Deteniendo...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Detener escaneo</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Escanear blockchain</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Mensajería</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Mensaje de %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Mensaje para %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Purgar mensaje</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Error al purgar</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Error</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Sin clave pública</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Escaneo detenido</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Escaneo completado</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Escaneo fallido</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Añadir contacto</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Éxito</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Generar clave</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Cartera bloqueada</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Clave generada</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Clave generada (sin cartera)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Confirmar mensaje de pago</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>No hay cartera cargada. No se puede activar la mensajería segura.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Error al activar la mensajería segura.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>¿Purgar este mensaje de la red? Esta acción no se puede deshacer.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Error al actualizar la opción de recepción.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Error al actualizar la opción Anon.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>La clave pública no está disponible para esta entrada.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>El escaneo de la blockchain fue detenido. El progreso ha sido guardado.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>El escaneo de la blockchain se completó correctamente.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>El escaneo de la blockchain falló.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Introducir dirección:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Introducir clave pública (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Etiqueta:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Error al añadir contacto: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Contacto añadido correctamente.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Por favor, desbloquee la cartera antes de generar una dirección de mensajería.\n\nAjustes → Desbloquear cartera</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Error al generar la dirección de la cartera: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Error al registrar la dirección con SMSG: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Nueva dirección de mensajería creada y registrada.\n\nDirección:\n%1\n\nLa clave privada está almacenada en su cartera y protegida por su copia de seguridad.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Error al almacenar la clave: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Nueva clave SMSG generada (independiente — sin cartera).\n\nDirección:\n%1\n\nClave privada (WIF) — esta es la ÚNICA copia, haga una copia de seguridad ahora:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>¿Enviar mensaje de pago?\nComisión: %1 OMEGA\nRetención: %2 días</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>¿Enviar mensaje de pago (resaltado en rojo)?\nComisión: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>¿Silenciar mensajes de %1?</translation>
+    </message>
+</context>
 </TS>

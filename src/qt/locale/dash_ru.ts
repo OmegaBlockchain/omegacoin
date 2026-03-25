@@ -5041,4 +5041,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Ваши записи успешно добавлены.</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Прочитано</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Получено</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Отправлено</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>От</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Кому</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Платное</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Хранение</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Адрес</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Метка</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Получать</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Показать сообщение</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Копировать адрес отправителя</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Копировать адрес получателя</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Копировать ID сообщения</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Отметить как прочитанное</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Отметить как непрочитанное</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Ответить</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Удалить из сети</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Переключить получение</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Переключить Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Копировать адрес</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Копировать публичный ключ</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Отправить сообщение</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Копировать сообщение</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Копировать адрес отправителя</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Заглушить отправителя</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Ошибка расшифровки: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Да</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> сообщений</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG отключён</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Введите адреса для оценки комиссии</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Неверный адрес</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Расчётная комиссия: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Не удалось оценить комиссию</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Не удалось оценить комиссию: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Безопасный обмен сообщениями не включён.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Выберите адрес отправителя.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Введите адрес получателя.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Введите сообщение.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Сообщение слишком длинное.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Сообщение слишком длинное (макс. %1 символов).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Неверный адрес отправителя.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Неверный адрес получателя.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Ошибка отправки: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Сообщение успешно отправлено.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Мой ключ</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Контакт</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Импортированный ключ</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Вкл</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Выкл</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG не включён.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Подождите %1с...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Остановка...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Остановить сканирование</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Сканировать блокчейн</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Сообщения</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Сообщение от %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Сообщение для %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Удалить сообщение</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Ошибка удаления</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Ошибка</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Нет публичного ключа</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Сканирование остановлено</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Сканирование завершено</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Ошибка сканирования</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Добавить контакт</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Успех</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Создать ключ</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Кошелёк заблокирован</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Ключ создан</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Ключ создан (без кошелька)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Подтвердить платное сообщение</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>Кошелёк не загружен. Невозможно включить безопасный обмен сообщениями.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Не удалось включить безопасный обмен сообщениями.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Удалить это сообщение из сети? Это действие нельзя отменить.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Не удалось обновить параметр получения.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Не удалось обновить параметр Anon.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Публичный ключ недоступен для этой записи.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Сканирование блокчейна остановлено. Прогресс сохранён.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Сканирование блокчейна успешно завершено.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Сканирование блокчейна не удалось.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Введите адрес:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Введите публичный ключ (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Метка:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Не удалось добавить контакт: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Контакт успешно добавлен.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Пожалуйста, разблокируйте кошелёк перед созданием адреса для сообщений.\n\nНастройки → Разблокировать кошелёк</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Не удалось создать адрес кошелька: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Не удалось зарегистрировать адрес в SMSG: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Новый адрес для сообщений создан и зарегистрирован.\n\nАдрес:\n%1\n\nЗакрытый ключ хранится в вашем кошельке и защищён резервной копией кошелька.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Не удалось сохранить ключ: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Новый ключ SMSG создан (автономный — кошелёк не подключён).\n\nАдрес:\n%1\n\nЗакрытый ключ (WIF) — это ЕДИНСТВЕННАЯ копия, создайте резервную копию немедленно:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Отправить платное сообщение?\nКомиссия: %1 OMEGA\nХранение: %2 дней</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Отправить платное сообщение (красная подсветка)?\nКомиссия: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Заглушить сообщения от %1?</translation>
+    </message>
+</context>
 </TS>

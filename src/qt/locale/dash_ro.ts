@@ -4183,4 +4183,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>Şterge toate tranzacţiile din portofel...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>Citit</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>Primit</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>Trimis</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>De la</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>Către</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>Plătit</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>Retenție</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Text</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>Adresă</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Etichetă</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>Recepție</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Tip</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>Afișează mesajul</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>Copiază adresa expeditorului</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>Copiază adresa destinatarului</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>Copiază ID-ul mesajului</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>Marchează ca citit</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>Marchează ca necitit</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>Răspunde</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Șterge</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>Elimină din rețea</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>Comută recepția</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Comută Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>Copiază adresa</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>Copiază cheia publică</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>Trimite mesaj</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>Copiază mesajul</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>Copiază adresa expeditorului</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>Dezactivează expeditorul</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[Decriptare eșuată: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>Da</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>Nu</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> mesaje</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG dezactivat</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>Introduceți adresele pentru estimarea taxei</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>Adresă invalidă</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>Taxă estimată: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>Estimarea taxei a eșuat</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>Estimarea taxei a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>Mesageria securizată nu este activată.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>Selectați o adresă expeditor.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>Introduceți o adresă destinatar.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>Introduceți un mesaj.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>Mesajul este prea lung.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>Mesajul este prea lung (max. %1 caractere).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>Adresă expeditor invalidă.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>Adresă destinatar invalidă.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>Trimiterea a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>Mesajul a fost trimis cu succes.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>Cheia mea</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>Contact</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>Cheie importată</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Activat</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Dezactivat</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG nu este activat.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>Așteptați %1s...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>Se oprește...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>Oprește scanarea</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>Scanează blockchain-ul</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>Mesagerie</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>Mesaj de la %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>Mesaj către %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>Elimină mesajul</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>Eliminarea a eșuat</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>Eroare</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>Fără cheie publică</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>Scanare oprită</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>Scanare finalizată</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>Scanarea a eșuat</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>Adaugă contact</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>Succes</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>Generează cheie</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>Portofel blocat</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>Cheie generată</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>Cheie generată (fără portofel)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>Confirmă mesajul plătit</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+               <translation>Niciun portofel încărcat. Mesageria securizată nu poate fi activată.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>Activarea mesageriei securizate a eșuat.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>Eliminați acest mesaj din rețea? Această acțiune nu poate fi anulată.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>Actualizarea opțiunii de recepție a eșuat.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Actualizarea opțiunii Anon a eșuat.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>Cheia publică nu este disponibilă pentru această intrare.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>Scanarea blockchain-ului a fost oprită. Progresul a fost salvat.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>Scanarea blockchain-ului s-a finalizat cu succes.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>Scanarea blockchain-ului a eșuat.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>Introduceți adresa:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>Introduceți cheia publică (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>Etichetă:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>Adăugarea contactului a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>Contactul a fost adăugat cu succes.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>Deblocați portofelul înainte de a genera o adresă de mesagerie.\n\nSetări → Deblochează portofelul</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>Generarea adresei portofelului a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>Înregistrarea adresei cu SMSG a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>Adresă de mesagerie nouă creată și înregistrată.\n\nAdresă:\n%1\n\nCheia privată este stocată în portofelul dvs. și protejată de copia de rezervă a portofelului.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>Stocarea cheii a eșuat: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>Cheie SMSG nouă generată (independentă — fără portofel atașat).\n\nAdresă:\n%1\n\nCheie privată (WIF) — aceasta este SINGURA copie, faceți o copie de rezervă acum:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>Trimiteți mesajul plătit?\nTaxă: %1 OMEGA\nRetenție: %2 zile</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>Trimiteți mesajul plătit (evidențiat în roșu)?\nTaxă: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>Dezactivați mesajele de la %1?</translation>
+    </message>
+</context>
 </TS>

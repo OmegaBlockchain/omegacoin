@@ -5176,4 +5176,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>ウォレットからすべてのトランザクションを消去しています…</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>既読</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>受信済み</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>送信済み</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>送信元</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>宛先</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>有料</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>保持期間</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>テキスト</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>アドレス</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>ラベル</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>受信</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>種類</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>メッセージを表示</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>送信元アドレスをコピー</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>宛先アドレスをコピー</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>メッセージIDをコピー</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>既読にする</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>未読にする</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>返信</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>削除</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>ネットワークから削除</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>受信の切り替え</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Anonの切り替え</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>アドレスをコピー</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>公開鍵をコピー</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>メッセージを送信</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>メッセージをコピー</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>送信者アドレスをコピー</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>送信者をミュート</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[復号失敗: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>はい</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>いいえ</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> 件のメッセージ</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG 無効</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>手数料を見積もるためにアドレスを入力してください</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>無効なアドレス</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>推定手数料: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>手数料の見積もりに失敗しました</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>手数料の見積もりに失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>セキュアメッセージングが有効になっていません。</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>送信元アドレスを選択してください。</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>宛先アドレスを入力してください。</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>メッセージを入力してください。</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>メッセージが長すぎます。</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>メッセージが長すぎます（最大 %1 文字）。</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>無効な送信元アドレス。</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>無効な宛先アドレス。</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>送信失敗: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>メッセージが正常に送信されました。</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>マイキー</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>連絡先</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>インポート済み鍵</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>オン</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>オフ</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG が有効になっていません。</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>%1秒 お待ちください...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>停止中...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>スキャンを停止</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>ブロックチェーンをスキャン</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>メッセージング</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>%1 からのメッセージ</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>%1 へのメッセージ</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>メッセージを削除</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>削除に失敗しました</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>エラー</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>公開鍵なし</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>スキャン停止</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>スキャン完了</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>スキャン失敗</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>連絡先を追加</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>成功</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>鍵を生成</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>ウォレットがロックされています</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>鍵が生成されました</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>鍵が生成されました（ウォレットなし）</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>有料メッセージを確認</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>ウォレットが読み込まれていません。セキュアメッセージングを有効にできません。</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>セキュアメッセージングの有効化に失敗しました。</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>このメッセージをネットワークから削除しますか？この操作は元に戻せません。</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>受信オプションの更新に失敗しました。</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Anonオプションの更新に失敗しました。</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>このエントリには公開鍵がありません。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>ブロックチェーンのスキャンが停止されました。進捗は保存されています。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>ブロックチェーンのスキャンが正常に完了しました。</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>ブロックチェーンのスキャンに失敗しました。</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>アドレスを入力:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>公開鍵を入力 (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>ラベル:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>連絡先の追加に失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>連絡先が正常に追加されました。</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>メッセージングアドレスを生成する前にウォレットのロックを解除してください。\n\n設定 → ウォレットのロック解除</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>ウォレットアドレスの生成に失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>SMSGへのアドレス登録に失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>新しいメッセージングアドレスが作成・登録されました。\n\nアドレス:\n%1\n\n秘密鍵はウォレットに保存され、ウォレットのバックアップで保護されています。</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>鍵の保存に失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>新しいSMSG鍵が生成されました（スタンドアロン — ウォレット未接続）。\n\nアドレス:\n%1\n\n秘密鍵 (WIF) — これが唯一のコピーです。今すぐバックアップしてください:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>有料メッセージを送信しますか？\n手数料: %1 OMEGA\n保持期間: %2 日</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>有料メッセージを送信しますか（赤ハイライト）？\n手数料: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>%1 からのメッセージをミュートしますか？</translation>
+    </message>
+</context>
 </TS>

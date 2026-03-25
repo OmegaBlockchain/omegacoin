@@ -5177,4 +5177,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>지갑의 모든 거래 내역 건너뛰는 중...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>읽음</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>수신됨</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>전송됨</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>보낸 사람</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>받는 사람</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>유료</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>보관 기간</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>텍스트</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>주소</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>레이블</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>수신</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>유형</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>메시지 보기</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>보낸 주소 복사</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>받는 주소 복사</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>메시지 ID 복사</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>읽음으로 표시</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>읽지 않음으로 표시</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>답장</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>삭제</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>네트워크에서 삭제</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>수신 전환</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>Anon 전환</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>주소 복사</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>공개 키 복사</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>메시지 전송</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>메시지 복사</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>발신자 주소 복사</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>발신자 음소거</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[복호화 실패: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>예</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>아니오</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> 개의 메시지</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG 비활성화됨</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>수수료 추정을 위해 주소를 입력하세요</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>유효하지 않은 주소</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>예상 수수료: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>수수료 추정 실패</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>수수료 추정 실패: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>보안 메시징이 활성화되지 않았습니다.</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>보내는 주소를 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>받는 주소를 입력하세요.</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>메시지를 입력하세요.</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>메시지가 너무 깁니다.</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>메시지가 너무 깁니다 (최대 %1자).</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>유효하지 않은 보내는 주소.</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>유효하지 않은 받는 주소.</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>전송 실패: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>메시지가 성공적으로 전송되었습니다.</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>내 키</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>연락처</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>가져온 키</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>켜짐</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>꺼짐</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG가 활성화되지 않았습니다.</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>%1초 대기 중...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>중지 중...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>스캔 중지</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>블록체인 스캔</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>메시징</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>%1 으로부터의 메시지</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>%1 으로의 메시지</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>메시지 제거</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>제거 실패</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>오류</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>공개 키 없음</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>스캔 중지됨</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>스캔 완료</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>스캔 실패</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>연락처 추가</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>성공</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>키 생성</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>지갑이 잠겨 있습니다</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>키가 생성되었습니다</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>키가 생성되었습니다 (지갑 없음)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>유료 메시지 확인</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>지갑이 로드되지 않았습니다. 보안 메시징을 활성화할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>보안 메시징 활성화에 실패했습니다.</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>이 메시지를 네트워크에서 제거하시겠습니까? 이 작업은 취소할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>수신 옵션 업데이트에 실패했습니다.</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>Anon 옵션 업데이트에 실패했습니다.</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>이 항목에 대한 공개 키를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>블록체인 스캔이 중지되었습니다. 진행 상황이 저장되었습니다.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>블록체인 스캔이 성공적으로 완료되었습니다.</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>블록체인 스캔에 실패했습니다.</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>주소 입력:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>공개 키 입력 (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>레이블:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>연락처 추가 실패: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>연락처가 성공적으로 추가되었습니다.</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>메시징 주소를 생성하기 전에 지갑을 잠금 해제하세요.\n\n설정 → 지갑 잠금 해제</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>지갑 주소 생성 실패: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>SMSG에 주소 등록 실패: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>새 메시징 주소가 생성 및 등록되었습니다.\n\n주소:\n%1\n\n개인 키는 지갑에 저장되어 있으며 지갑 백업으로 보호됩니다.</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>키 저장 실패: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>새 SMSG 키가 생성되었습니다 (독립형 — 지갑 미연결).\n\n주소:\n%1\n\n개인 키 (WIF) — 이것이 유일한 사본이므로 지금 바로 백업하세요:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>유료 메시지를 전송하시겠습니까?\n수수료: %1 OMEGA\n보관 기간: %2일</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>유료 메시지를 전송하시겠습니까 (빨간색 강조)?\n수수료: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>%1 의 메시지를 음소거하시겠습니까?</translation>
+    </message>
+</context>
 </TS>

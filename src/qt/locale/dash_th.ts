@@ -5171,4 +5171,424 @@ https://www.transifex.com/projects/p/dash/</translation>
         <translation>กำลังลบการทำธุรกรรมทั้งหมดจากกระเป๋าสตางค์...</translation>
     </message>
 </context>
+
+<context>
+    <name>MessagingPage</name>
+    <message>
+        <source>Read</source>
+        <translation>อ่านแล้ว</translation>
+    </message>
+    <message>
+        <source>Received</source>
+        <translation>ได้รับแล้ว</translation>
+    </message>
+    <message>
+        <source>Sent</source>
+        <translation>ส่งแล้ว</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>จาก</translation>
+    </message>
+    <message>
+        <source>To</source>
+        <translation>ถึง</translation>
+    </message>
+    <message>
+        <source>Paid</source>
+        <translation>ชำระแล้ว</translation>
+    </message>
+    <message>
+        <source>Retention</source>
+        <translation>ระยะเก็บรักษา</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>ข้อความ</translation>
+    </message>
+    <message>
+        <source>MsgID</source>
+        <translation>MsgID</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>ที่อยู่</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>ป้ายกำกับ</translation>
+    </message>
+    <message>
+        <source>Receive</source>
+        <translation>รับ</translation>
+    </message>
+    <message>
+        <source>Anon</source>
+        <translation>Anon</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>ประเภท</translation>
+    </message>
+    <message>
+        <source>Show Message</source>
+        <translation>แสดงข้อความ</translation>
+    </message>
+    <message>
+        <source>Copy From Address</source>
+        <translation>คัดลอกที่อยู่ผู้ส่ง</translation>
+    </message>
+    <message>
+        <source>Copy To Address</source>
+        <translation>คัดลอกที่อยู่ผู้รับ</translation>
+    </message>
+    <message>
+        <source>Copy Message ID</source>
+        <translation>คัดลอก ID ข้อความ</translation>
+    </message>
+    <message>
+        <source>Mark as Read</source>
+        <translation>ทำเครื่องหมายว่าอ่านแล้ว</translation>
+    </message>
+    <message>
+        <source>Mark as Unread</source>
+        <translation>ทำเครื่องหมายว่ายังไม่ได้อ่าน</translation>
+    </message>
+    <message>
+        <source>Reply</source>
+        <translation>ตอบกลับ</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>ลบ</translation>
+    </message>
+    <message>
+        <source>Purge from Network</source>
+        <translation>ลบออกจากเครือข่าย</translation>
+    </message>
+    <message>
+        <source>Toggle Receive</source>
+        <translation>สลับการรับ</translation>
+    </message>
+    <message>
+        <source>Toggle Anon</source>
+        <translation>สลับ Anon</translation>
+    </message>
+    <message>
+        <source>Copy Address</source>
+        <translation>คัดลอกที่อยู่</translation>
+    </message>
+    <message>
+        <source>Copy Public Key</source>
+        <translation>คัดลอกคีย์สาธารณะ</translation>
+    </message>
+    <message>
+        <source>Send Message</source>
+        <translation>ส่งข้อความ</translation>
+    </message>
+    <message>
+        <source>Copy Message</source>
+        <translation>คัดลอกข้อความ</translation>
+    </message>
+    <message>
+        <source>Copy Sender Address</source>
+        <translation>คัดลอกที่อยู่ผู้ส่ง</translation>
+    </message>
+    <message>
+        <source>Mute Sender</source>
+        <translation>ปิดเสียงผู้ส่ง</translation>
+    </message>
+    <message>
+        <source>[Decrypt failed: %1]</source>
+        <translation>[ถอดรหัสล้มเหลว: %1]</translation>
+    </message>
+    <message>
+        <source>*</source>
+        <translation>*</translation>
+    </message>
+    <message>
+        <source>Yes</source>
+        <translation>ใช่</translation>
+    </message>
+    <message>
+        <source>No</source>
+        <translation>ไม่</translation>
+    </message>
+    <message>
+        <source> messages</source>
+        <translation> ข้อความ</translation>
+    </message>
+    <message>
+        <source>SMSG disabled</source>
+        <translation>SMSG ปิดใช้งาน</translation>
+    </message>
+    <message>
+        <source>Enter addresses to estimate fee</source>
+        <translation>กรอกที่อยู่เพื่อประมาณค่าธรรมเนียม</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>ที่อยู่ไม่ถูกต้อง</translation>
+    </message>
+    <message>
+        <source>Estimated fee: %1 OMEGA</source>
+        <translation>ค่าธรรมเนียมโดยประมาณ: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed</source>
+        <translation>การประมาณค่าธรรมเนียมล้มเหลว</translation>
+    </message>
+    <message>
+        <source>Fee estimate failed: %1</source>
+        <translation>การประมาณค่าธรรมเนียมล้มเหลว: %1</translation>
+    </message>
+    <message>
+        <source>Secure messaging is not enabled.</source>
+        <translation>การส่งข้อความแบบปลอดภัยยังไม่ได้เปิดใช้งาน</translation>
+    </message>
+    <message>
+        <source>Select a From address.</source>
+        <translation>เลือกที่อยู่ผู้ส่ง</translation>
+    </message>
+    <message>
+        <source>Enter a To address.</source>
+        <translation>กรอกที่อยู่ผู้รับ</translation>
+    </message>
+    <message>
+        <source>Enter a message.</source>
+        <translation>กรอกข้อความ</translation>
+    </message>
+    <message>
+        <source>Message too long.</source>
+        <translation>ข้อความยาวเกินไป</translation>
+    </message>
+    <message>
+        <source>Message too long (max %1 chars).</source>
+        <translation>ข้อความยาวเกินไป (สูงสุด %1 ตัวอักษร)</translation>
+    </message>
+    <message>
+        <source>Invalid From address.</source>
+        <translation>ที่อยู่ผู้ส่งไม่ถูกต้อง</translation>
+    </message>
+    <message>
+        <source>Invalid To address.</source>
+        <translation>ที่อยู่ผู้รับไม่ถูกต้อง</translation>
+    </message>
+    <message>
+        <source>Send failed: %1</source>
+        <translation>การส่งล้มเหลว: %1</translation>
+    </message>
+    <message>
+        <source>Message sent successfully.</source>
+        <translation>ส่งข้อความสำเร็จ</translation>
+    </message>
+    <message>
+        <source>My Key</source>
+        <translation>คีย์ของฉัน</translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation>N/A</translation>
+    </message>
+    <message>
+        <source>Contact</source>
+        <translation>ผู้ติดต่อ</translation>
+    </message>
+    <message>
+        <source>Imported Key</source>
+        <translation>คีย์ที่นำเข้า</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>เปิด</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>ปิด</translation>
+    </message>
+    <message>
+        <source>SMSG not enabled.</source>
+        <translation>SMSG ไม่ได้เปิดใช้งาน</translation>
+    </message>
+    <message>
+        <source>Wait %1s...</source>
+        <translation>รอ %1 วินาที...</translation>
+    </message>
+    <message>
+        <source>Stopping...</source>
+        <translation>กำลังหยุด...</translation>
+    </message>
+    <message>
+        <source>Stop Scan</source>
+        <translation>หยุดการสแกน</translation>
+    </message>
+    <message>
+        <source>Scan Blockchain</source>
+        <translation>สแกนบล็อกเชน</translation>
+    </message>
+    <message>
+        <source>Messaging</source>
+        <translation>ระบบข้อความ</translation>
+    </message>
+    <message>
+        <source>Message from %1</source>
+        <translation>ข้อความจาก %1</translation>
+    </message>
+    <message>
+        <source>Message to %1</source>
+        <translation>ข้อความถึง %1</translation>
+    </message>
+    <message>
+        <source>Purge Message</source>
+        <translation>ลบข้อความ</translation>
+    </message>
+    <message>
+        <source>Purge Failed</source>
+        <translation>การลบล้มเหลว</translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation>ข้อผิดพลาด</translation>
+    </message>
+    <message>
+        <source>No Public Key</source>
+        <translation>ไม่มีคีย์สาธารณะ</translation>
+    </message>
+    <message>
+        <source>Scan Stopped</source>
+        <translation>การสแกนหยุดแล้ว</translation>
+    </message>
+    <message>
+        <source>Scan Complete</source>
+        <translation>การสแกนเสร็จสิ้น</translation>
+    </message>
+    <message>
+        <source>Scan Failed</source>
+        <translation>การสแกนล้มเหลว</translation>
+    </message>
+    <message>
+        <source>Add Contact</source>
+        <translation>เพิ่มผู้ติดต่อ</translation>
+    </message>
+    <message>
+        <source>Success</source>
+        <translation>สำเร็จ</translation>
+    </message>
+    <message>
+        <source>Generate Key</source>
+        <translation>สร้างคีย์</translation>
+    </message>
+    <message>
+        <source>Wallet Locked</source>
+        <translation>กระเป๋าเงินถูกล็อก</translation>
+    </message>
+    <message>
+        <source>Key Generated</source>
+        <translation>สร้างคีย์แล้ว</translation>
+    </message>
+    <message>
+        <source>Key Generated (no wallet)</source>
+        <translation>สร้างคีย์แล้ว (ไม่มีกระเป๋าเงิน)</translation>
+    </message>
+    <message>
+        <source>Confirm Paid Message</source>
+        <translation>ยืนยันข้อความที่ชำระเงิน</translation>
+    </message>
+    <message>
+        <source>Paid Trollbox Message</source>
+        <translation>Paid Trollbox Message</translation>
+    </message>
+    <message>
+        <source>No wallet loaded. Cannot enable secure messaging.</source>
+        <translation>ไม่ได้โหลดกระเป๋าเงิน ไม่สามารถเปิดใช้การส่งข้อความแบบปลอดภัยได้</translation>
+    </message>
+    <message>
+        <source>Failed to enable secure messaging.</source>
+        <translation>ไม่สามารถเปิดใช้การส่งข้อความแบบปลอดภัยได้</translation>
+    </message>
+    <message>
+        <source>Purge this message from the network? This cannot be undone.</source>
+        <translation>ลบข้อความนี้ออกจากเครือข่ายหรือไม่? ไม่สามารถยกเลิกได้</translation>
+    </message>
+    <message>
+        <source>Failed to update receive option.</source>
+        <translation>ไม่สามารถอัปเดตตัวเลือกการรับได้</translation>
+    </message>
+    <message>
+        <source>Failed to update anon option.</source>
+        <translation>ไม่สามารถอัปเดตตัวเลือก Anon ได้</translation>
+    </message>
+    <message>
+        <source>Public key is not available for this entry.</source>
+        <translation>ไม่มีคีย์สาธารณะสำหรับรายการนี้</translation>
+    </message>
+    <message>
+        <source>Blockchain scan was stopped. Progress has been saved.</source>
+        <translation>การสแกนบล็อกเชนถูกหยุด ความคืบหน้าได้รับการบันทึกแล้ว</translation>
+    </message>
+    <message>
+        <source>Blockchain scan completed successfully.</source>
+        <translation>การสแกนบล็อกเชนเสร็จสมบูรณ์</translation>
+    </message>
+    <message>
+        <source>Blockchain scan failed.</source>
+        <translation>การสแกนบล็อกเชนล้มเหลว</translation>
+    </message>
+    <message>
+        <source>Enter address:</source>
+        <translation>กรอกที่อยู่:</translation>
+    </message>
+    <message>
+        <source>Enter public key (hex):</source>
+        <translation>กรอกคีย์สาธารณะ (hex):</translation>
+    </message>
+    <message>
+        <source>Label:</source>
+        <translation>ป้ายกำกับ:</translation>
+    </message>
+    <message>
+        <source>Failed to add contact: %1</source>
+        <translation>ไม่สามารถเพิ่มผู้ติดต่อได้: %1</translation>
+    </message>
+    <message>
+        <source>Contact added successfully.</source>
+        <translation>เพิ่มผู้ติดต่อสำเร็จ</translation>
+    </message>
+    <message>
+        <source>Please unlock the wallet before generating a messaging address.\n\nSettings → Unlock Wallet</source>
+        <translation>กรุณาปลดล็อกกระเป๋าเงินก่อนสร้างที่อยู่สำหรับข้อความ\n\nการตั้งค่า → ปลดล็อกกระเป๋าเงิน</translation>
+    </message>
+    <message>
+        <source>Failed to generate wallet address: %1</source>
+        <translation>ไม่สามารถสร้างที่อยู่กระเป๋าเงินได้: %1</translation>
+    </message>
+    <message>
+        <source>Failed to register address with SMSG: %1</source>
+        <translation>ไม่สามารถลงทะเบียนที่อยู่กับ SMSG ได้: %1</translation>
+    </message>
+    <message>
+        <source>New messaging address created and registered.\n\nAddress:\n%1\n\nThe private key is stored in your wallet and protected by your wallet backup.</source>
+        <translation>สร้างและลงทะเบียนที่อยู่ข้อความใหม่แล้ว\n\nที่อยู่:\n%1\n\nคีย์ส่วนตัวถูกจัดเก็บในกระเป๋าเงินและได้รับการปกป้องโดยข้อมูลสำรอง</translation>
+    </message>
+    <message>
+        <source>Failed to store key: %1</source>
+        <translation>ไม่สามารถจัดเก็บคีย์ได้: %1</translation>
+    </message>
+    <message>
+        <source>New SMSG key generated (standalone — no wallet attached).\n\nAddress:\n%1\n\nPrivate key (WIF) — this is the ONLY copy, back it up now:\n%2</source>
+        <translation>สร้างคีย์ SMSG ใหม่แล้ว (แบบอิสระ — ไม่มีกระเป๋าเงิน)\n\nที่อยู่:\n%1\n\nคีย์ส่วนตัว (WIF) — นี่คือสำเนาเดียว สำรองข้อมูลทันที:\n%2</translation>
+    </message>
+    <message>
+        <source>Send paid message?\nFee: %1 OMEGA\nRetention: %2 days</source>
+        <translation>ส่งข้อความที่ชำระเงินหรือไม่?\nค่าธรรมเนียม: %1 OMEGA\nระยะเก็บรักษา: %2 วัน</translation>
+    </message>
+    <message>
+        <source>Send paid message (red highlight)?\nFee: %1 OMEGA</source>
+        <translation>ส่งข้อความที่ชำระเงิน (ไฮไลต์สีแดง) หรือไม่?\nค่าธรรมเนียม: %1 OMEGA</translation>
+    </message>
+    <message>
+        <source>Mute messages from %1?</source>
+        <translation>ปิดเสียงข้อความจาก %1 หรือไม่?</translation>
+    </message>
+</context>
 </TS>

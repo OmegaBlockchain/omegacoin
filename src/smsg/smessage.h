@@ -18,6 +18,7 @@
 #include <boost/signals2/signal.hpp>
 
 class CWallet;
+struct FlatFilePos;
 
 namespace smsg {
 
@@ -447,7 +448,7 @@ public:
     bool SendData(CNode *pto, bool fSendTrickle);
 
     bool ScanBlock(const CBlock &block);
-    bool ScanChainForPublicKeys(CBlockIndex *pindexStart);
+    bool ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, uint32_t &nScannedOut);
     bool ScanBlockChain();
     bool ScanBuckets();
 
@@ -525,6 +526,8 @@ public:
     std::unique_ptr<interfaces::Handler> m_handler_status;
     std::unique_ptr<interfaces::Handler> m_handler_unlock_start; // for StartOnUnlock
     std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
+
+    std::atomic<bool> m_fScanAbort{false};
 
     int64_t nLastProcessedPurged = 0;
     int64_t nLastTrollboxSend = 0;

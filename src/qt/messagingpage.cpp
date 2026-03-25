@@ -105,6 +105,8 @@ MessagingPage::MessagingPage(QWidget* parent) :
 MessagingPage::~MessagingPage()
 {
     disconnectSignals();
+    if (m_scanThread.joinable())
+        m_scanThread.join();
 }
 
 void MessagingPage::setupInboxTab()
@@ -1271,23 +1273,41 @@ void MessagingPage::onScanChainClicked()
         return;
     }
 
-    ui->scanChainButton->setEnabled(false);
-    ui->scanChainButton->setText(tr("Scanning..."));
-
-    QApplication::processEvents();
-
-    bool fResult = smsgModule.ScanBlockChain();
-
-    ui->scanChainButton->setEnabled(true);
-    ui->scanChainButton->setText(tr("Scan Blockchain"));
-
-    if (fResult) {
-        QMessageBox::information(this, tr("Scan Complete"), tr("Blockchain scan completed successfully."));
-    } else {
-        QMessageBox::warning(this, tr("Scan Failed"), tr("Blockchain scan failed."));
+    if (m_fScanning) {
+        // Abort a running scan.
+        smsgModule.m_fScanAbort.store(true, std::memory_order_release);
+        ui->scanChainButton->setEnabled(false);
+        ui->scanChainButton->setText(tr("Stopping..."));
+        return;
     }
 
-    updateKeysList();
+    // Join any previous scan thread before starting a new one.
+    if (m_scanThread.joinable())
+        m_scanThread.join();
+
+    m_fScanning = true;
+    ui->scanChainButton->setText(tr("Stop Scan"));
+
+    m_scanThread = std::thread([this]() {
+        bool fResult = smsgModule.ScanBlockChain();
+        m_fScanning = false;
+
+        QMetaObject::invokeMethod(this, [this, fResult]() {
+            ui->scanChainButton->setEnabled(true);
+            ui->scanChainButton->setText(tr("Scan Blockchain"));
+
+            if (smsgModule.m_fScanAbort.load(std::memory_order_acquire)) {
+                smsgModule.m_fScanAbort.store(false, std::memory_order_release);
+                QMessageBox::information(this, tr("Scan Stopped"), tr("Blockchain scan was stopped. Progress has been saved."));
+            } else if (fResult) {
+                QMessageBox::information(this, tr("Scan Complete"), tr("Blockchain scan completed successfully."));
+            } else {
+                QMessageBox::warning(this, tr("Scan Failed"), tr("Blockchain scan failed."));
+            }
+
+            updateKeysList();
+        }, Qt::QueuedConnection);
+    });
 }
 
 void MessagingPage::onAddAddressClicked()

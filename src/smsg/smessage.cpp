@@ -2126,25 +2126,12 @@ static void ExtractPubkeysFromBlock(const CBlock &block,
     }
 }
 
-bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
+bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, uint32_t &nScannedOut)
 {
     LogPrintf("Scanning block chain for public keys.\n");
     int64_t nStart = GetTimeMillis();
 
-    LogPrint(BCLog::SMSG, "From height %u.\n", pindexStart->nHeight);
-
-    // Collect block positions under cs_main so worker threads can read
-    // blocks without contending on the lock.
-    std::vector<FlatFilePos> vBlockPos;
-    {
-        AssertLockHeld(cs_main);
-        CBlockIndex *pindex = pindexStart;
-        while (pindex) {
-            vBlockPos.push_back(pindex->GetBlockPos());
-            pindex = ::ChainActive().Next(pindex);
-        }
-    }
-
+    nScannedOut = 0;
     const uint32_t nBlocks = vBlockPos.size();
     if (nBlocks == 0)
         return true;
@@ -2160,6 +2147,13 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
     std::vector<std::vector<std::pair<CKeyID, CPubKey>>> vThreadResults(nThreads);
     const Consensus::Params &consensus = Params().GetConsensus();
 
+    // Per-thread last-processed block index (exclusive upper bound within chunk).
+    std::vector<uint32_t> vThreadProcessed(nThreads, 0);
+
+    // Shared progress counter for all threads.
+    std::atomic<uint32_t> nBlocksProcessed{0};
+    m_fScanAbort.store(false, std::memory_order_release);
+
     // Worker: read assigned blocks and extract pubkeys.
     auto worker = [&](int threadIdx) {
         uint32_t nPerThread = nBlocks / nThreads;
@@ -2169,7 +2163,11 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
         auto &results = vThreadResults[threadIdx];
         results.reserve((nTo - nFrom) * 2); // rough estimate
 
+        uint32_t nLocal = 0;
         for (uint32_t i = nFrom; i < nTo; i++) {
+            if (m_fScanAbort.load(std::memory_order_relaxed))
+                break;
+
             CBlock block;
             if (!ReadBlockFromDisk(block, vBlockPos[i], consensus)) {
                 LogPrintf("SMSG: ReadBlockFromDisk failed at pos %s.\n",
@@ -2177,7 +2175,15 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
                 continue;
             }
             ExtractPubkeysFromBlock(block, results);
+            nLocal++;
+
+            uint32_t nDone = nBlocksProcessed.fetch_add(1, std::memory_order_relaxed) + 1;
+            if (nDone % 500000 == 0) {
+                LogPrintf("SMSG: Scan progress %u / %u blocks (%.1f%%).\n",
+                          nDone, nBlocks, 100.0 * nDone / nBlocks);
+            }
         }
+        vThreadProcessed[threadIdx] = nLocal;
     };
 
     // Launch workers.
@@ -2192,42 +2198,98 @@ bool CSMSG::ScanChainForPublicKeys(CBlockIndex *pindexStart)
     for (auto &t : vThreads)
         t.join();
 
-    // Write all extracted pubkeys to DB in a single batch.
-    uint32_t nPubkeys   = 0;
+    bool fAborted = m_fScanAbort.load(std::memory_order_acquire);
+
+    // Compute the contiguous block count from block 0.
+    // Each thread owns a sequential chunk; count fully completed chunks
+    // plus the partial count of the first incomplete chunk.
+    uint32_t nContiguous = 0;
+    for (int i = 0; i < nThreads; i++) {
+        uint32_t nPerThread = nBlocks / nThreads;
+        uint32_t nChunkSize = (i == nThreads - 1) ? (nBlocks - i * nPerThread) : nPerThread;
+        nContiguous += vThreadProcessed[i];
+        if (vThreadProcessed[i] < nChunkSize)
+            break; // this chunk was incomplete; stop here
+    }
+    nScannedOut = nContiguous;
+
+    // Write all extracted pubkeys to DB (even on abort — they are valid).
+    // Do NOT use TxnBegin()/TxnCommit() here: ExistsPK with an active batch
+    // calls ScanBatch() which iterates the entire WriteBatch linearly — O(N²)
+    // total for N pubkeys, making a 3M-block scan take many minutes.
+    // Instead, write in chunks via pdb->Write() directly; ExistsPK with no
+    // active batch does a fast O(log N) LevelDB Get.
+    uint32_t nPubkeys    = 0;
     uint32_t nDuplicates = 0;
 
     {
         LOCK(cs_smsgDB);
 
         SecMsgDB addrpkdb;
-        if (!addrpkdb.Open("cw")
-            || !addrpkdb.TxnBegin()) {
+        if (!addrpkdb.Open("cw")) {
             return false;
         }
 
+        const uint32_t CHUNK_SIZE = 1000;
+        leveldb::WriteBatch batch;
+        uint32_t nChunkCount = 0;
+
+        auto flushChunk = [&]() -> bool {
+            if (nChunkCount == 0) return true;
+            leveldb::WriteOptions wo;
+            wo.sync = false;
+            leveldb::Status s = addrpkdb.pdb->Write(wo, &batch);
+            batch.Clear();
+            nChunkCount = 0;
+            if (!s.ok()) {
+                LogPrintf("SMSG: DB chunk write failed: %s\n", s.ToString());
+                return false;
+            }
+            return true;
+        };
+
         for (auto &results : vThreadResults) {
             for (auto &[hashKey, pubKey] : results) {
-                switch (InsertAddress(hashKey, pubKey, addrpkdb)) {
-                    case SMSG_NO_ERROR:      nPubkeys++;    break;
-                    case SMSG_PUBKEY_EXISTS:  nDuplicates++; break;
+                if (addrpkdb.ExistsPK(hashKey)) {
+                    nDuplicates++;
+                    continue;
+                }
+                // Build key/value in the same layout as WritePK.
+                CDataStream ssKey(SER_DISK, CLIENT_VERSION);
+                ssKey.reserve(sizeof(hashKey) + 2);
+                ssKey << 'p' << 'k' << hashKey;
+                CDataStream ssValue(SER_DISK, CLIENT_VERSION);
+                ssValue << pubKey;
+                batch.Put(ssKey.str(), ssValue.str());
+                nPubkeys++;
+                if (++nChunkCount >= CHUNK_SIZE) {
+                    if (!flushChunk()) return false;
                 }
             }
         }
-
-        addrpkdb.TxnCommit();
+        flushChunk();
     } // cs_smsgDB
 
-    LogPrintf("Scanned %u blocks, found %u public keys, %u duplicates.\n",
-              nBlocks, nPubkeys, nDuplicates);
-    LogPrintf("Took %d ms\n", GetTimeMillis() - nStart);
+    if (fAborted) {
+        LogPrintf("SMSG: Chain scan aborted by user after %u / %u blocks, %u public keys saved.\n",
+                  nContiguous, nBlocks, nPubkeys);
+    } else {
+        LogPrintf("Scanned %u blocks, found %u public keys, %u duplicates.\n",
+                  nBlocks, nPubkeys, nDuplicates);
+        LogPrintf("Took %d ms\n", GetTimeMillis() - nStart);
+    }
 
     return true;
 };
 
 bool CSMSG::ScanBlockChain()
 {
-    TRY_LOCK(cs_main, lockMain);
-    if (lockMain) {
+    std::vector<FlatFilePos> vBlockPos;
+    int nStartHeight = 0;
+
+    // Hold cs_main only long enough to collect block positions.
+    {
+        LOCK(cs_main);
         CBlockIndex *pindexScan = nullptr;
 
         // Resume from last scanned height if available.
@@ -2237,7 +2299,6 @@ bool CSMSG::ScanBlockChain()
             if (db.Open("r")) {
                 int nLastHeight = -1;
                 if (db.ReadScanHeight(nLastHeight) && nLastHeight >= 0) {
-                    // Start from the block after the last fully scanned height.
                     int nResumeHeight = nLastHeight + 1;
                     if (nResumeHeight <= ::ChainActive().Height()) {
                         pindexScan = ::ChainActive()[nResumeHeight];
@@ -2258,28 +2319,38 @@ bool CSMSG::ScanBlockChain()
             LogPrintf("SMSG: Starting chain scan from genesis.\n");
         }
 
-        try {
-            if (!ScanChainForPublicKeys(pindexScan)) {
-                return false;
-            }
-        } catch (std::exception &e) {
-            return error("%s: threw: %s.", __func__, e.what());
-        }
+        nStartHeight = pindexScan->nHeight;
 
-        // Store the chain tip height as last scanned.
-        {
-            LOCK(cs_smsgDB);
-            SecMsgDB db;
-            if (db.Open("cw")) {
-                db.WriteScanHeight(::ChainActive().Height());
-            }
+        // Collect block file positions while cs_main is held.
+        CBlockIndex *pindex = pindexScan;
+        while (pindex) {
+            vBlockPos.push_back(pindex->GetBlockPos());
+            pindex = ::ChainActive().Next(pindex);
         }
-    } else {
-        return error("%s: Could not lock main.", __func__);
+    } // cs_main released — worker threads can proceed without blocking the node.
+
+    uint32_t nScanned = 0;
+    try {
+        if (!ScanChainForPublicKeys(vBlockPos, nScanned)) {
+            return false;
+        }
+    } catch (std::exception &e) {
+        return error("%s: threw: %s.", __func__, e.what());
     }
 
-    return true;
-};
+    // Store the last scanned height (start + contiguous blocks processed - 1).
+    if (nScanned > 0) {
+        int nSaveHeight = nStartHeight + (int)nScanned - 1;
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (db.Open("cw")) {
+            db.WriteScanHeight(nSaveHeight);
+            LogPrintf("SMSG: Saved scan height %d.\n", nSaveHeight);
+        }
+    }
+
+    return !m_fScanAbort.load(std::memory_order_acquire);
+}
 
 bool CSMSG::ScanBuckets()
 {

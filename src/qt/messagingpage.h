@@ -10,9 +10,11 @@
 #include <QMenu>
 #include <QTimer>
 
+#include <atomic>
 #include <memory>
 #include <set>
 #include <string>
+#include <thread>
 
 #include <boost/signals2/signal.hpp>
 
@@ -127,6 +129,9 @@ private:
     void filterInbox(const QString& text);
     void filterOutbox(const QString& text);
     void filterKeys(const QString& text);
+
+    std::thread m_scanThread;
+    std::atomic<bool> m_fScanning{false};
 };
 
 #endif // OMEGA_QT_MESSAGINGPAGE_H

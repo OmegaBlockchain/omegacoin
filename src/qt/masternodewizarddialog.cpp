@@ -37,10 +37,16 @@ MasternodeWizardDialog::MasternodeWizardDialog(interfaces::Node& node, WalletMod
     ui->lineEditIpAddress->setValidator(new QRegularExpressionValidator(
         QRegularExpression("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$"), this));
 
-    connect(ui->btnNext, &QPushButton::clicked, this, &MasternodeWizardDialog::onNextClicked);
-    connect(ui->btnBack, &QPushButton::clicked, this, &MasternodeWizardDialog::onBackClicked);
-    connect(ui->btnCancel, &QPushButton::clicked, this, &MasternodeWizardDialog::reject);
-    connect(ui->btnGenerate, &QPushButton::clicked, this, &MasternodeWizardDialog::onGenerateKeysClicked);
+    connect(ui->btnNext,     &QPushButton::clicked,  this, &MasternodeWizardDialog::onNextClicked);
+    connect(ui->btnBack,     &QPushButton::clicked,  this, &MasternodeWizardDialog::onBackClicked);
+    connect(ui->btnCancel,   &QPushButton::clicked,  this, &MasternodeWizardDialog::reject);
+    connect(ui->btnGenerate, &QPushButton::clicked,  this, &MasternodeWizardDialog::onGenerateKeysClicked);
+    connect(ui->radioRegular, &QRadioButton::toggled, this, &MasternodeWizardDialog::onMnTypeChanged);
+    connect(ui->radioHP,      &QRadioButton::toggled, this, &MasternodeWizardDialog::onMnTypeChanged);
+
+    // Pre-fill fixed platform ports (enforced by consensus on mainnet)
+    ui->lineEditPlatformP2PPort->setText(QString::number(Params().GetDefaultPlatformP2PPort()));
+    ui->lineEditPlatformHTTPPort->setText(QString::number(Params().GetDefaultPlatformHTTPPort()));
 
     updateStepDisplay();
     GUIUtil::updateFonts();
@@ -164,6 +170,10 @@ QString MasternodeWizardDialog::translateRpcError(const QString& raw) const
         {"bad-protx-type",         "MNW-603",
          "The masternode type is not supported on this network.",
          "Ensure you are on the correct network and your wallet is up to date."},
+
+        {"bad-protx-hpmn-not-active", "MNW-604",
+         "High Performance masternodes are not yet active on this network.",
+         "HP masternodes activate at block 3,200,000. Check the current block height and try again later."},
     };
 
     for (const auto& m : mappings) {
@@ -203,6 +213,12 @@ bool MasternodeWizardDialog::executeRpc(const std::string& command, std::string&
     }
 }
 
+void MasternodeWizardDialog::onMnTypeChanged()
+{
+    m_mnType = ui->radioHP->isChecked() ? MnType::HighPerformance : MnType::Regular;
+    ui->groupBoxPlatform->setVisible(m_mnType == MnType::HighPerformance);
+}
+
 void MasternodeWizardDialog::updateStepDisplay()
 {
     ui->stackedWidget->setCurrentIndex(currentStep);
@@ -213,15 +229,23 @@ void MasternodeWizardDialog::updateStepDisplay()
     if (currentStep == 3) {
         ui->btnNext->setText(tr("Register"));
 
+        const auto& mnTypeInfo = GetMnType(m_mnType);
         QString summary;
+        summary += tr("Type: %1").arg(QLatin1String(mnTypeInfo.description.data())) + "\n\n";
+        summary += tr("Collateral: %1 OMEGA").arg(QString::number(mnTypeInfo.collat_amount / COIN)) + "\n\n";
+        summary += tr("Governance votes: %1").arg(mnTypeInfo.voting_weight) + "\n\n";
         summary += tr("Server: %1:%2").arg(cachedIpAddress, cachedPort) + "\n\n";
         summary += tr("Owner Address: %1").arg(ownerAddress) + "\n\n";
         summary += tr("Payout Address: %1").arg(payoutAddress) + "\n\n";
         summary += tr("Voting Address: %1").arg(votingAddress) + "\n\n";
         summary += tr("BLS Public Key: %1").arg(blsPublicKey) + "\n\n";
         summary += tr("BLS Secret Key: %1").arg(blsSecretKey) + "\n\n";
-        summary += tr("Operator Reward: 0%") + "\n\n";
-        summary += tr("Collateral: %1").arg(QString::number(dmn_types::Regular.collat_amount / COIN));
+        summary += tr("Operator Reward: 0%");
+        if (m_mnType == MnType::HighPerformance) {
+            summary += "\n\n" + tr("Platform Node ID: %1").arg(ui->lineEditPlatformNodeID->text().trimmed());
+            summary += "\n" + tr("Platform P2P Port: %1").arg(ui->lineEditPlatformP2PPort->text());
+            summary += "\n" + tr("Platform HTTP Port: %1").arg(ui->lineEditPlatformHTTPPort->text());
+        }
         ui->textEditSummary->setPlainText(summary);
     } else {
         ui->btnNext->setText(tr("Next"));
@@ -254,6 +278,14 @@ void MasternodeWizardDialog::onNextClicked()
             int val = octet.toInt(&ok);
             if (!ok || val < 0 || val > 255) {
                 ui->labelStatus->setText(tr("Invalid IP address."));
+                return;
+            }
+        }
+        if (m_mnType == MnType::HighPerformance) {
+            QString nodeID = ui->lineEditPlatformNodeID->text().trimmed();
+            QRegularExpression hexRe("^[0-9a-fA-F]{40}$");
+            if (!hexRe.match(nodeID).hasMatch()) {
+                ui->labelStatus->setText(tr("Platform Node ID must be exactly 40 hex characters."));
                 return;
             }
         }
@@ -380,8 +412,8 @@ bool MasternodeWizardDialog::findExistingCollateral(QString& txid, int& vout)
     if (!utxos.read(result) || utxos.empty())
         return false;
 
-    // Filter to UTXOs that are exactly the collateral amount
-    CAmount collatAmount = dmn_types::Regular.collat_amount;
+    // Filter to UTXOs that are exactly the collateral amount for the selected type
+    CAmount collatAmount = GetMnType(m_mnType).collat_amount;
     double collatCoins = (double)collatAmount / COIN;
 
     // Collect all registered masternode collateral outpoints
@@ -549,7 +581,13 @@ bool MasternodeWizardDialog::registerMasternode()
     int collateralIndex = -1;
     findCollateralForIP(ipPort, collateralHash, collateralIndex);
 
-    // Strategy 1: Use an existing (unused) 1000 OMEGA UTXO as collateral.
+    const CAmount collatAmount = GetMnType(m_mnType).collat_amount;
+    const bool isHP = (m_mnType == MnType::HighPerformance);
+    const QString platformNodeID  = isHP ? ui->lineEditPlatformNodeID->text().trimmed()  : QString();
+    const QString platformP2PPort = isHP ? ui->lineEditPlatformP2PPort->text().trimmed()  : QString();
+    const QString platformHTTPPort= isHP ? ui->lineEditPlatformHTTPPort->text().trimmed() : QString();
+
+    // Strategy 1: Use an existing unused collateral UTXO of the correct amount.
     if (collateralIndex < 0) {
         findExistingCollateral(collateralHash, collateralIndex);
     }
@@ -557,18 +595,32 @@ bool MasternodeWizardDialog::registerMasternode()
     if (collateralIndex >= 0) {
         QString feeSourceAddress;
         QString cmd;
-        if (findFundingAddress(feeSourceAddress, 0.001, collateralHash, collateralIndex)) {
-            // protx register "hash" index "ip" "owner" "blsPub" "voting" reward "payout" "feeSource"
-            cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\" \"%8\"")
-                .arg(collateralHash)
-                .arg(collateralIndex)
-                .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress, feeSourceAddress);
+        findFundingAddress(feeSourceAddress, 0.001, collateralHash, collateralIndex);
+
+        if (isHP) {
+            // protx register_hpmn "hash" index "ip" "owner" "blsPub" "voting" reward "payout" "nodeID" p2pPort httpPort ["feeSource"]
+            if (!feeSourceAddress.isEmpty()) {
+                cmd = QString("protx register_hpmn \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\" \"%8\" %9 %10 \"%11\"")
+                    .arg(collateralHash).arg(collateralIndex)
+                    .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress)
+                    .arg(platformNodeID, platformP2PPort, platformHTTPPort, feeSourceAddress);
+            } else {
+                cmd = QString("protx register_hpmn \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\" \"%8\" %9 %10")
+                    .arg(collateralHash).arg(collateralIndex)
+                    .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress)
+                    .arg(platformNodeID, platformP2PPort, platformHTTPPort);
+            }
         } else {
-            // No separate fee source — let the wallet pick one automatically
-            cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\"")
-                .arg(collateralHash)
-                .arg(collateralIndex)
-                .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+            if (!feeSourceAddress.isEmpty()) {
+                // protx register "hash" index "ip" "owner" "blsPub" "voting" reward "payout" "feeSource"
+                cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\" \"%8\"")
+                    .arg(collateralHash).arg(collateralIndex)
+                    .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress, feeSourceAddress);
+            } else {
+                cmd = QString("protx register \"%1\" %2 \"%3\" \"%4\" \"%5\" \"%6\" 0 \"%7\"")
+                    .arg(collateralHash).arg(collateralIndex)
+                    .arg(ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+            }
         }
 
         registered = executeRpc(cmd.toStdString(), result);
@@ -579,7 +631,7 @@ bool MasternodeWizardDialog::registerMasternode()
                                             "the transaction fee.\n\n"
                                             "Suggestion: Send a small amount (at least 0.001 OMEGA) to any "
                                             "address in this wallet and wait for it to confirm.")
-                    .arg(QString::number(dmn_types::Regular.collat_amount / COIN)));
+                    .arg(QString::number(collatAmount / COIN)));
             } else {
                 ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
             }
@@ -588,10 +640,7 @@ bool MasternodeWizardDialog::registerMasternode()
     }
 
     // Strategy 2: No existing collateral found — fund a new one.
-    // The wallet's coin selection gathers inputs from all addresses, so
-    // funds do NOT need to sit in a single address.
     if (!registered) {
-        // Generate a fresh collateral address
         if (!executeRpc("getnewaddress \"mn-collateral\"", result)) {
             ui->labelStatus->setText(translateRpcError(QString::fromStdString(result)));
             return false;
@@ -600,11 +649,17 @@ bool MasternodeWizardDialog::registerMasternode()
         if (collateralAddress.startsWith('"') && collateralAddress.endsWith('"'))
             collateralAddress = collateralAddress.mid(1, collateralAddress.length() - 2);
 
-        // protx register_fund "collateral" "ip" "owner" "blsPub" "voting" reward "payout"
-        // Omit feeSourceAddress — the RPC defaults to using the payout address
-        // for change, and coin selection picks inputs from the whole wallet.
-        QString cmd = QString("protx register_fund \"%1\" \"%2\" \"%3\" \"%4\" \"%5\" 0 \"%6\"")
-            .arg(collateralAddress, ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+        QString cmd;
+        if (isHP) {
+            // protx register_fund_hpmn "collateral" "ip" "owner" "blsPub" "voting" reward "payout" "nodeID" p2pPort httpPort
+            cmd = QString("protx register_fund_hpmn \"%1\" \"%2\" \"%3\" \"%4\" \"%5\" 0 \"%6\" \"%7\" %8 %9")
+                .arg(collateralAddress, ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress)
+                .arg(platformNodeID, platformP2PPort, platformHTTPPort);
+        } else {
+            // protx register_fund "collateral" "ip" "owner" "blsPub" "voting" reward "payout"
+            cmd = QString("protx register_fund \"%1\" \"%2\" \"%3\" \"%4\" \"%5\" 0 \"%6\"")
+                .arg(collateralAddress, ipPort, ownerAddress, blsPublicKey, votingAddress, payoutAddress);
+        }
 
         if (!executeRpc(cmd.toStdString(), result)) {
             ui->labelStatus->setStyleSheet("color: #c0392b;");

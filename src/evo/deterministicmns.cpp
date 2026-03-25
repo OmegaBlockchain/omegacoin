@@ -1523,6 +1523,9 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
     }
 
     if (ptx.nType == MnType::HighPerformance) {
+        if (pindexPrev->nHeight + 1 < Params().GetConsensus().nHPMasternodeHeight) {
+            return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-hpmn-not-active");
+        }
         if (!CheckPlatformFields(ptx, state)) {
             return false;
         }

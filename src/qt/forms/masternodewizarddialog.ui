@@ -89,14 +89,15 @@
        <item>
         <widget class="QLabel" name="labelWelcomeText">
          <property name="text">
-          <string>To create a masternode you must dedicate 1000 coins to the network as collateral. These coins remain in your wallet and are still yours - they never leave your possession.
+          <string>To create a masternode you must dedicate collateral coins to the network. These coins remain in your wallet and are still yours — they never leave your possession.
 
 You can deactivate the masternode and unlock the coins at any time.
 
 This wizard will guide you through the setup process:
-1. Enter your server IP address
-2. Generate keys and addresses
-3. Review and register
+1. Select masternode type below
+2. Enter your server IP address
+3. Generate keys and addresses
+4. Review and register
 
 You will need a server (VPS) with a static IP address already running the masternode daemon before proceeding.</string>
          </property>
@@ -106,6 +107,32 @@ You will need a server (VPS) with a static IP address already running the master
          <property name="alignment">
           <set>Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxMnType">
+         <property name="title">
+          <string>Masternode Type</string>
+         </property>
+         <layout class="QVBoxLayout" name="mnTypeLayout">
+          <item>
+           <widget class="QRadioButton" name="radioRegular">
+            <property name="text">
+             <string>Regular  —  1,000 OMEGA collateral  ·  1 governance vote</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioHP">
+            <property name="text">
+             <string>High Performance  —  10,000 OMEGA collateral  ·  10 governance votes  (active from block 3,200,000)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
@@ -207,6 +234,60 @@ You will need a server (VPS) with a static IP address already running the master
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxPlatform">
+         <property name="title">
+          <string>Platform Fields (High Performance only)</string>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
+         </property>
+         <layout class="QFormLayout" name="platformFormLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelPlatformNodeID">
+            <property name="text">
+             <string>Platform Node ID:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEditPlatformNodeID">
+            <property name="placeholderText">
+             <string>40-character hex node identity from your server</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelPlatformP2PPort">
+            <property name="text">
+             <string>Platform P2P Port:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineEditPlatformP2PPort">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelPlatformHTTPPort">
+            <property name="text">
+             <string>Platform HTTP Port:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="lineEditPlatformHTTPPort">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <spacer name="serverBottomSpacer">
@@ -362,7 +443,7 @@ masternodeblsprivkey=&lt;BLS Secret Key&gt;</string>
        <item>
         <widget class="QLabel" name="labelConfirmDesc">
          <property name="text">
-          <string>Please review your masternode configuration. A transaction of 1000 coins will be created as collateral. Make sure your wallet is unlocked and has sufficient funds.</string>
+          <string>Please review your masternode configuration. Make sure your wallet is unlocked and has sufficient funds for the collateral and transaction fee.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

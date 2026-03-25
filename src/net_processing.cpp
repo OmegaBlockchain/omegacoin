@@ -2619,6 +2619,19 @@ void PeerLogicValidation::ProcessMessage(
             return;
         }
 
+        // Disconnect peers running pre-fork software once enforcement height is reached
+        {
+            LOCK(cs_main);
+            const int nEnforceHeight = Params().GetConsensus().nForkEnforcementHeight;
+            if (nEnforceHeight > 0 && ::ChainActive().Height() >= nEnforceHeight &&
+                nVersion < FORK_3200000_MIN_PROTO_VERSION) {
+                LogPrint(BCLog::NET, "peer=%d using pre-fork version %i; disconnecting (enforcement height %d reached)\n",
+                         pfrom.GetId(), nVersion, nEnforceHeight);
+                pfrom.fDisconnect = true;
+                return;
+            }
+        }
+
         if (!vRecv.empty())
             vRecv >> addrFrom >> nNonce;
         if (!vRecv.empty()) {
@@ -4391,6 +4404,20 @@ void PeerLogicValidation::CheckForStaleTipAndEvictPeers(const Consensus::Params 
     LOCK(cs_main);
 
     int64_t time_in_seconds = GetTime();
+
+    // Disconnect any already-connected peers running pre-fork software
+    const int nEnforceHeight = consensusParams.nForkEnforcementHeight;
+    if (nEnforceHeight > 0 && ::ChainActive().Height() >= nEnforceHeight) {
+        m_connman.ForEachNode([&](CNode* pnode) {
+            AssertLockHeld(cs_main);
+            if (pnode->fDisconnect) return;
+            if (pnode->nVersion < FORK_3200000_MIN_PROTO_VERSION) {
+                LogPrint(BCLog::NET, "peer=%d using pre-fork version %i; disconnecting (enforcement height %d reached)\n",
+                         pnode->GetId(), pnode->nVersion, nEnforceHeight);
+                pnode->fDisconnect = true;
+            }
+        });
+    }
 
     EvictExtraOutboundPeers(time_in_seconds);
 

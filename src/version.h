@@ -12,7 +12,7 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70230;
+static const int PROTOCOL_VERSION = 70231;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -59,6 +59,9 @@ static const int SMNLE_VERSIONED_PROTO_VERSION = 70228;
 
 //! SMSG protocol version
 static const int SMSG_PROTO_VERSION = 70229;
+
+//! Minimum protocol version required once the block 3,200,000 fork enforcement height is reached
+static const int FORK_3200000_MIN_PROTO_VERSION = 70231;
 
 // Make sure that none of the values above collide with `ADDRV2_FORMAT`.
 

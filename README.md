@@ -1,5 +1,5 @@
-Omega Core 0.20
-===============
+Omega Core 0.20.1
+=================
 
 https://omegablockchain.net
 
@@ -11,12 +11,131 @@ It is forked from Dash Core and extends it with a number of protocol-level featu
 on-chain encrypted messaging, Schnorr signatures, and an improved proof-of-work difficulty
 algorithm. The network runs with 60-second block times and masternode-based governance.
 
-- **Port:** 7777 (mainnet), 17778 (testnet)
-- **Block time:** 60 seconds
-- **Addresses start with:** `o`
-- **Script addresses start with:** `7`
-- **Genesis block:** 2 January 2018
-- **Seed node:** seed.omegablockchain.net
+Blockchain Specification
+------------------------
+
+### Network Ports
+
+| Network  | P2P   | RPC   | Platform P2P | Platform HTTP |
+|----------|-------|-------|--------------|---------------|
+| Mainnet  | 7777  | 7778  | 26656        | 443           |
+| Testnet  | 17777 | 17778 | 22000        | 22001         |
+| Devnet   | 17577 | 17578 | 22100        | 22101         |
+| Regtest  | 17677 | 17678 | 22200        | 22201         |
+
+### Block Parameters
+
+| Parameter                        | Mainnet          | Testnet          |
+|----------------------------------|------------------|------------------|
+| Block time                       | 60 seconds       | 60 seconds       |
+| Difficulty retarget window       | 600 seconds      | 86400 seconds    |
+| Miner confirmation window        | 2016 blocks      | 1440 blocks      |
+| Rule change activation threshold | 1916 (95%)       | 1080 (75%)       |
+| Coinbase maturity                | 100 blocks       | 100 blocks       |
+| Maximum block size               | 2 MB (DIP0001)   | 2 MB             |
+| Maximum standard tx size        | 400 KB           | 400 KB           |
+
+### Addresses
+
+| Type                 | Mainnet prefix | Testnet prefix |
+|----------------------|----------------|----------------|
+| Pay-to-pubkey-hash   | `o`            | `y`            |
+| Pay-to-script-hash   | `7`            | `8` or `9`     |
+| Genesis block        | 2 January 2018 |                |
+| Seed node            | seed.omegablockchain.net | |
+
+### Block Reward Schedule (Mainnet)
+
+The block reward follows a stepped schedule for early blocks, then a
+difficulty-proportional formula, with a periodic halving applied on top.
+
+| Block range        | Base reward      |
+|--------------------|------------------|
+| 0 (genesis)        | 580,000 OMEGA (premine, ~0.5% of supply cap) |
+| 1 – 999            | 10 OMEGA         |
+| 1,000 – 9,999      | 15 OMEGA         |
+| 10,000 – 19,999    | 30 OMEGA         |
+| 20,000 – 29,999    | 50 OMEGA         |
+| 30,000 – 49,999    | 75 OMEGA         |
+| 50,000 – 59,999    | 100 OMEGA        |
+| 60,000 – 74,999    | 135 OMEGA        |
+| 75,000 – 94,999    | 170 OMEGA        |
+| 95,000 – 124,999   | 195 OMEGA        |
+| 125,000 – 144,999  | 81 OMEGA         |
+| 145,000 – 174,999  | 41 OMEGA         |
+| 175,000 – 199,999  | 21 OMEGA         |
+| 200,000+           | Difficulty-adjusted: `2,222,222 / ((diff + 2600) / 9)²`, clamped to 5–21 OMEGA |
+
+**Periodic decline:** Every 498,855 blocks (~1 year), the subsidy is reduced by
+approximately 30.3% (`nSubsidy -= nSubsidy / 3.3`). There is no fixed supply cap —
+the difficulty-adjusted reward (5–21 OMEGA) continues indefinitely, declining with
+each halving interval. Circulating supply exceeds 33 million OMEGA.
+
+### Block Reward Distribution (Heights > 66,000)
+
+| Recipient           | Share of total subsidy |
+|---------------------|------------------------|
+| Miners              | 63%                    |
+| Masternodes         | 27%                    |
+| Governance budget   | 10%                    |
+
+Early network (historical):
+
+| Height range   | Masternode share of miner+MN pool |
+|----------------|-----------------------------------|
+| 0 – 33,000     | 80%                               |
+| 33,001 – 66,000 | 50%                              |
+| 66,001+        | 30%                               |
+
+### Masternode Collateral
+
+| Type                | Collateral    | Governance voting weight | Active from   |
+|---------------------|---------------|--------------------------|---------------|
+| Regular             | 1,000 OMEGA   | 1                        | genesis       |
+| High Performance    | 10,000 OMEGA  | 10                       | block 3,200,000 |
+
+Collateral must reach **15 confirmations** before the masternode is accepted into
+the valid set. InstantSend locks require **6 confirmations** and are kept for
+**24 blocks**.
+
+### Governance & Budget
+
+| Parameter                      | Mainnet value                                   |
+|--------------------------------|-------------------------------------------------|
+| Superblock cycle               | 16,616 blocks (~30 days)                        |
+| Superblock maturity window     | 1,662 blocks (~3 days before superblock)        |
+| Budget start block             | 115,000                                         |
+| Proposal fee (current)         | 1 OMEGA (non-refundable)                        |
+| Proposal fee (pre-DIP0024)     | 5 OMEGA (non-refundable)                        |
+| Collateral confirmations required | 6                                            |
+| Minimum quorum                 | 10 masternodes                                  |
+| Passing threshold              | (Yes − No) ≥ total\_masternodes / 10            |
+| Governance filter elements     | 20,000                                          |
+
+### Transaction Fees
+
+| Parameter               | Value                          |
+|-------------------------|--------------------------------|
+| Min relay transaction fee | 1,000 sat/kB               |
+| Dust relay fee          | 3,000 sat/kB                   |
+| Default wallet tx fee   | 0 (uses fee estimator)         |
+| Max standard tx sigops  | 4,000                          |
+
+### Consensus Activation Heights (Mainnet)
+
+| Feature                              | Activation height |
+|--------------------------------------|-------------------|
+| DIP0001 (2 MB blocks)                | 782,208           |
+| DIP0003 (deterministic masternodes)  | 2,250,000         |
+| DIP0003 enforcement                  | 2,300,000         |
+| DIP0008 (ChainLocks)                 | 2,350,000         |
+| Confidential SMSG funding            | 3,144,000         |
+| **Peer enforcement** (protocol 70231 required) | **3,190,000** |
+| Schnorr signatures                   | 3,200,000         |
+| Large script elements (4096 bytes)   | 3,200,000         |
+| SMSG_ROOM transactions (type 8)      | 3,200,000         |
+| LWMA difficulty algorithm            | 3,200,000         |
+| High Performance masternodes         | 3,200,000         |
 
 What's New in 2025-2026
 -----------------------
@@ -26,16 +145,22 @@ starting from the Dash 19.3 base:
 
 ### Consensus Protocol Upgrades
 
-- **Schnorr Signatures** — Full Schnorr signature consensus activated at block 3,205,000.
+- **Version-gated peer disconnect** — Nodes running protocol version below 70231 are
+  disconnected at block 3,190,000 (10,000 blocks before the hard fork). This ensures the
+  network is fully upgraded before consensus rules change at block 3,200,000. Omega 0.20.1
+  advertises protocol version 70231.
+
+- **Schnorr Signatures** — Full Schnorr signature consensus activated at block 3,200,000.
   Includes `OP_CHECKDATASIG` and `OP_CHECKDATASIGVERIFY` opcodes, enabling compact
   multi-party signing and cross-chain atomic swap constructions.
 
 - **LWMA Difficulty Algorithm** — Zawy's LWMA (Linearly Weighted Moving Average) difficulty
-  adjustment activated at block 3,220,000 with a 60-block window. Provides faster and more
+  adjustment activated at block 3,200,000 with a 60-block window. Provides faster and more
   stable difficulty retargeting compared to the legacy algorithm, improving resistance to
   hash rate fluctuations.
 
-- **Increased Script Element Size** — `MAX_SCRIPT_ELEMENT_SIZE` raised from 520 to 4096 bytes,
+- **Increased Script Element Size** — Extended script element size of 4096 bytes activated at
+  block 3,200,000 via `SCRIPT_ENABLE_LARGE_ELEMENTS` (up from the base 520-byte limit),
   enabling more complex script constructions.
 
 - **Increased Standard Transaction Size** — `MAX_STANDARD_TX_SIZE` raised to 400 KB.
@@ -55,11 +180,23 @@ the Omega consensus layer:
   messaging rooms on-chain.
 
 - **Confidential SMSG Funding** — Confidential transaction support for SMSG room funding,
-  activated at block 3,205,000 on mainnet.
+  activated at block 3,144,000 on mainnet. SMSG_ROOM transactions (type 8) activate at
+  block 3,200,000.
 
 - **SMSG Key Generation UI** — GUI button in the Qt wallet to generate and manage SMSG keys.
 
 - **Messages Tab** — Dedicated messaging tab in the Qt wallet interface.
+
+- **SMSG Blockchain Scan Performance** — Replaced O(N²) LevelDB batch-write with chunked
+  direct writes (`sync=false`, 1000 keys per flush). A full mainnet public-key scan now
+  completes in seconds rather than hanging indefinitely.
+
+- **SMSG Scan Abort and Resume** — The blockchain scan can be stopped mid-way via the
+  Messages tab. Progress (last fully-processed block height) and all discovered public keys
+  up to that point are saved immediately. The next scan resumes from where it left off.
+
+- **SMSG Scan Progress Logging** — Block progress is logged every 50,000 blocks during a
+  scan so the user can monitor throughput in the debug log.
 
 ### Wallet & GUI
 
@@ -72,6 +209,14 @@ the Omega consensus layer:
   proposals directly from the GUI. Supports wallets controlling multiple masternodes —
   each vote is cast with every masternode whose voting key is held in the wallet.
   See the Governance Guide below.
+
+- **Update Notification** — The Qt wallet checks the GitHub Releases API once after the
+  blockchain is fully synchronised. If a newer release is available, a clickable status bar
+  label appears with a direct download link.
+
+- **Linux Application Identity** — `StartupWMClass` in the `.desktop` file and Qt application
+  name updated to `OmegaCoin-Qt`, so the running process is correctly identified by the Linux
+  taskbar and window manager instead of being shown as `dash-qt`.
 
 - **Rebranding** — Full Omega branding applied throughout: splash screen, colour scheme,
   icons, window titles, and copyright notices updated.

@@ -98,6 +98,10 @@ struct Params {
     int nSmsgRoomHeight;
     /** Block height at which confidential SMSG funding becomes active */
     int nConfidentialSmsgHeight;
+    /** Block height at which High Performance masternodes (10000 OMEGA, 10 votes) become active */
+    int nHPMasternodeHeight;
+    /** Block height at which peers below FORK_3200000_MIN_PROTO_VERSION are disconnected */
+    int nForkEnforcementHeight;
     /** Don't warn about unknown BIP 9 activations below this height.
      * This prevents us from warning about the CSV and DIP activations. */
     int MinBIP9WarningHeight;

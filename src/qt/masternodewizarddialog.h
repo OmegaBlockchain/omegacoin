@@ -5,6 +5,8 @@
 #ifndef BITCOIN_QT_MASTERNODEWIZARDDIALOG_H
 #define BITCOIN_QT_MASTERNODEWIZARDDIALOG_H
 
+#include <evo/dmn_types.h>
+
 #include <QDialog>
 #include <QPointer>
 
@@ -30,12 +32,14 @@ private Q_SLOTS:
     void onNextClicked();
     void onBackClicked();
     void onGenerateKeysClicked();
+    void onMnTypeChanged();
 
 private:
     Ui::MasternodeWizardDialog* ui;
     interfaces::Node& m_node;
     QPointer<WalletModel> walletModel;
     int currentStep{0};
+    MnType m_mnType{MnType::Regular};
 
     QString ownerAddress;
     QString payoutAddress;

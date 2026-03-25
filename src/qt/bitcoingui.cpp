@@ -33,6 +33,7 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <clientversion.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
 #include <qt/governancelist.h>
@@ -43,6 +44,12 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QDesktopServices>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QDateTime>
@@ -192,6 +199,17 @@ BitcoinGUI::BitcoinGUI(interfaces::Node& node, const NetworkStyle* networkStyle,
     statusBar()->addWidget(progressBarLabel);
     statusBar()->addWidget(progressBar);
     statusBar()->addPermanentWidget(frameBlocks);
+
+    // Update-available label — hidden until a newer release is detected
+    labelUpdateAvailable = new QLabel();
+    labelUpdateAvailable->setVisible(false);
+    labelUpdateAvailable->setTextFormat(Qt::RichText);
+    labelUpdateAvailable->setOpenExternalLinks(false);
+    labelUpdateAvailable->setObjectName("lblUpdateAvailable");
+    connect(labelUpdateAvailable, &QLabel::linkActivated, [](const QString& link) {
+        QDesktopServices::openUrl(QUrl(link));
+    });
+    statusBar()->addPermanentWidget(labelUpdateAvailable);
 
     // Install event filter to be able to catch status tip events (QEvent::StatusTip)
     this->installEventFilter(this);
@@ -821,6 +839,7 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
 
             connect(optionsModel, &OptionsModel::coinJoinEnabledChanged, this, &BitcoinGUI::updateCoinJoinVisibility);
         }
+
     } else {
         // Disable possibility to show main window via action
         toggleHideAction->setEnabled(false);
@@ -1454,6 +1473,11 @@ void BitcoinGUI::setNumBlocks(int count, const QDateTime& blockDate, const QStri
         setAdditionalDataSyncProgress(1);
     }
 
+    // Trigger update check once, as soon as the blockchain is fully synced
+    if (m_node.masternodeSync().isBlockchainSynced()) {
+        checkForUpdates();
+    }
+
     // Don't word-wrap this (fixed-width) tooltip
     tooltip = QString("<nobr>") + tooltip + QString("</nobr>");
 
@@ -1989,6 +2013,52 @@ void BitcoinGUI::handleRestart(QStringList args)
 {
     if (!m_node.shutdownRequested())
         Q_EMIT requestedRestart(args);
+}
+
+void BitcoinGUI::checkForUpdates()
+{
+    if (m_update_manager) return; // already requested
+    m_update_manager = new QNetworkAccessManager(this);
+    connect(m_update_manager, &QNetworkAccessManager::finished,
+            this, &BitcoinGUI::onUpdateCheckFinished);
+    QNetworkRequest request(QUrl("https://api.github.com/repos/OmegaBlockchain/omega/releases/latest"));
+    request.setRawHeader("Accept", "application/vnd.github.v3+json");
+    request.setRawHeader("User-Agent", "omega-qt");
+    m_update_manager->get(request);
+}
+
+void BitcoinGUI::onUpdateCheckFinished(QNetworkReply* reply)
+{
+    reply->deleteLater();
+    if (reply->error() != QNetworkReply::NoError) return;
+
+    const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+    if (!doc.isObject()) return;
+
+    QString tagName = doc.object().value("tag_name").toString().trimmed();
+    if (tagName.startsWith('v') || tagName.startsWith('V'))
+        tagName.remove(0, 1);
+
+    const QStringList parts = tagName.split('.');
+    if (parts.size() < 2) return;
+
+    bool ok0 = false, ok1 = false, ok2 = true;
+    const int rMajor = parts.at(0).toInt(&ok0);
+    const int rMinor = parts.at(1).toInt(&ok1);
+    const int rBuild = (parts.size() >= 3) ? parts.at(2).toInt(&ok2) : 0;
+    if (!ok0 || !ok1 || !ok2) return;
+
+    const bool newerAvailable =
+        (rMajor > CLIENT_VERSION_MAJOR) ||
+        (rMajor == CLIENT_VERSION_MAJOR && rMinor > CLIENT_VERSION_MINOR) ||
+        (rMajor == CLIENT_VERSION_MAJOR && rMinor == CLIENT_VERSION_MINOR && rBuild > CLIENT_VERSION_BUILD);
+
+    if (!newerAvailable) return;
+
+    const QString releaseUrl = "https://github.com/OmegaBlockchain/omega/releases/latest";
+    labelUpdateAvailable->setText(
+        tr("New version %1 available. <a href=\"%2\">Download</a>").arg(tagName, releaseUrl));
+    labelUpdateAvailable->setVisible(true);
 }
 
 UnitDisplayStatusBarControl::UnitDisplayStatusBarControl() :

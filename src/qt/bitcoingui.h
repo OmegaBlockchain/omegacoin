@@ -49,6 +49,8 @@ class QAction;
 class QButtonGroup;
 class QComboBox;
 class QMenu;
+class QNetworkAccessManager;
+class QNetworkReply;
 class QProgressBar;
 class QProgressDialog;
 class QToolButton;
@@ -191,6 +193,9 @@ private:
     /** Stop the spinner animation in the status bar */
     void stopSpinner();
 
+    QNetworkAccessManager* m_update_manager{nullptr};
+    QLabel* labelUpdateAvailable{nullptr};
+
     /** Timer to update the connection icon during connecting phase */
     QTimer* timerConnecting = nullptr;
     /** Start the connecting animation */
@@ -213,6 +218,10 @@ private:
     /** Timer to update custom css styling in -debug-ui mode periodically */
     QTimer* timerCustomCss = nullptr;
     const NetworkStyle* const m_network_style;
+
+    /** Fetch latest release tag from GitHub and show a status bar label if newer. */
+    void checkForUpdates();
+    void onUpdateCheckFinished(QNetworkReply* reply);
 
     /** Create the main UI actions. */
     void createActions();

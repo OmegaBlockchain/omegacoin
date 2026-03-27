@@ -753,6 +753,36 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
 
     DecreasePoSePenalties(newList);
 
+    // One-time ghost masternode cleanup at fork height.
+    // Ban any MN that was registered at least one payment cycle before this height
+    // and has not received a payment in the last payment cycle.
+    // A healthy MN with ~290 registered peers is paid every ~290 blocks; any MN
+    // unpaid for 35,000 blocks has missed ~120 payment turns and is structurally absent.
+    // Banned MNs can revive by submitting a ProUpServTx once their service is restored.
+    if (nHeight == consensusParams.nHPMasternodeHeight) {
+        const int nCycle = consensusParams.nSuperblockCycle;
+        std::vector<uint256> toGhostBan;
+        newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
+            if (dmn.pdmnState->confirmedHash.IsNull()) return;                        // not yet confirmed
+            if (dmn.pdmnState->nRegisteredHeight >= nHeight - nCycle) return;        // registered recently
+            if (dmn.pdmnState->nLastPaidHeight   >= nHeight - nCycle) return;        // paid recently
+            toGhostBan.emplace_back(dmn.proTxHash);
+        });
+        for (const auto& proTxHash : toGhostBan) {
+            auto dmn = newList.GetMN(proTxHash);
+            assert(dmn);
+            auto newState = std::make_shared<CDeterministicMNState>(*dmn->pdmnState);
+            newState->BanIfNotBanned(nHeight);
+            newList.UpdateMN(proTxHash, newState);
+            if (debugLogs) {
+                LogPrintf("CDeterministicMNManager::%s -- ghost MN %s banned at fork height %d "
+                          "(registeredHeight=%d, lastPaidHeight=%d)\n",
+                          __func__, proTxHash.ToString(), nHeight,
+                          dmn->pdmnState->nRegisteredHeight, dmn->pdmnState->nLastPaidHeight);
+            }
+        }
+    }
+
     // we skip the coinbase
     for (int i = 1; i < (int)block.vtx.size(); i++) {
         const CTransaction& tx = *block.vtx[i];

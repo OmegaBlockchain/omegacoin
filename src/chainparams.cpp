@@ -311,11 +311,11 @@ public:
         AddLLMQ(Consensus::LLMQType::LLMQ_400_60);
         AddLLMQ(Consensus::LLMQType::LLMQ_400_85);
         AddLLMQ(Consensus::LLMQType::LLMQ_100_67);
-        consensus.llmqTypeChainLocks = Consensus::LLMQType::LLMQ_400_60;
+        consensus.llmqTypeChainLocks = Consensus::LLMQType::LLMQ_50_60;   // reduced from LLMQ_400_60: network has <300 MNs
         consensus.llmqTypeInstantSend = Consensus::LLMQType::LLMQ_50_60;
         consensus.llmqTypeDIP0024InstantSend = Consensus::LLMQType::LLMQ_60_75;
         consensus.llmqTypePlatform = Consensus::LLMQType::LLMQ_100_67;
-        consensus.llmqTypeMnhf = Consensus::LLMQType::LLMQ_400_85;
+        consensus.llmqTypeMnhf = Consensus::LLMQType::LLMQ_50_60;         // reduced from LLMQ_400_85: network has <350 MNs
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;

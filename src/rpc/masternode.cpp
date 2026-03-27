@@ -45,13 +45,13 @@ static void masternode_list_help(const JSONRPCRequest& request)
         "  json           - Print info in JSON format (can be additionally filtered, partial match)\n"
         "  lastpaidblock  - Print the last block height a node was paid on the network\n"
         "  lastpaidtime   - Print the last time a node was paid on the network\n"
-        "  owneraddress   - Print the masternode owner Dash address\n"
-        "  payee          - Print the masternode payout Dash address (can be additionally filtered,\n"
+        "  owneraddress   - Print the masternode owner Omega address\n"
+        "  payee          - Print the masternode payout Omega address (can be additionally filtered,\n"
         "                   partial match)\n"
         "  pubKeyOperator - Print the masternode operator public key\n"
-        "  status         - Print masternode status: ENABLED / POSE_BANNED\n"
+        "  status         - Print masternode status: ENABLED / WAITING_CONFIRMATION / POSE_BANNED\n"
         "                   (can be additionally filtered, partial match)\n"
-        "  votingaddress  - Print the masternode voting Dash address\n",
+        "  votingaddress  - Print the masternode voting Omega address\n",
         {
             {"mode", RPCArg::Type::STR, /* default */ "json", "The mode to run list in"},
             {"filter", RPCArg::Type::STR, /* default */ "", "Filter results. Partial match by outpoint by default in all modes, additional matches in some modes are also available"},
@@ -112,6 +112,7 @@ static UniValue masternode_count(const JSONRPCRequest& request)
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("total", total);
     obj.pushKV("enabled", enabled);
+    obj.pushKV("pose_banned", total - enabled);
 
     int hpmn_total = mnList.GetAllHPMNsCount();
     int hpmn_enabled = mnList.GetValidHPMNsCount();
@@ -119,10 +120,12 @@ static UniValue masternode_count(const JSONRPCRequest& request)
     UniValue hpmnObj(UniValue::VOBJ);
     hpmnObj.pushKV("total", hpmn_total);
     hpmnObj.pushKV("enabled", hpmn_enabled);
+    hpmnObj.pushKV("pose_banned", hpmn_total - hpmn_enabled);
 
     UniValue regularObj(UniValue::VOBJ);
     regularObj.pushKV("total", total - hpmn_total);
     regularObj.pushKV("enabled", enabled - hpmn_enabled);
+    regularObj.pushKV("pose_banned", (total - hpmn_total) - (enabled - hpmn_enabled));
 
     UniValue detailedObj(UniValue::VOBJ);
     detailedObj.pushKV("regular", regularObj);
@@ -237,8 +240,12 @@ static UniValue masternode_outputs(const JSONRPCRequest& request)
 static void masternode_status_help(const JSONRPCRequest& request)
 {
     RPCHelpMan{"masternode status",
-        "Print masternode status information\n",
-        {},
+        "Print masternode status information.\n"
+        "When called with a proTxHash argument, any node can query the on-chain state of\n"
+        "a specific masternode without running in masternode mode.\n",
+        {
+            {"proTxHash", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, "The ProRegTx hash of the masternode to query"},
+        },
         RPCResults{},
         RPCExamples{""}
     }.Check(request);
@@ -247,6 +254,22 @@ static void masternode_status_help(const JSONRPCRequest& request)
 static UniValue masternode_status(const JSONRPCRequest& request)
 {
     masternode_status_help(request);
+
+    if (!request.params[0].isNull()) {
+        uint256 proTxHash = ParseHashV(request.params[0], "proTxHash");
+        auto mnList = deterministicMNManager->GetListAtChainTip();
+        auto dmn = mnList.GetMN(proTxHash);
+        if (!dmn) throw JSONRPCError(RPC_INVALID_PARAMETER, "masternode not found");
+        UniValue mnObj(UniValue::VOBJ);
+        mnObj.pushKV("proTxHash", dmn->proTxHash.ToString());
+        mnObj.pushKV("type", std::string(GetMnType(dmn->nType).description));
+        mnObj.pushKV("collateralHash", dmn->collateralOutpoint.hash.ToString());
+        mnObj.pushKV("collateralIndex", (int)dmn->collateralOutpoint.n);
+        UniValue stateObj;
+        dmn->pdmnState->ToJson(stateObj, dmn->nType);
+        mnObj.pushKV("dmnState", stateObj);
+        return mnObj;
+    }
 
     if (!fMasternodeMode)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "This is not a masternode");
@@ -361,7 +384,7 @@ static UniValue masternode_winners(const JSONRPCRequest& request)
         obj.pushKV(strprintf("%d", h), strPayments);
     }
 
-    auto projection = deterministicMNManager->GetListForBlock(pindexTip).GetProjectedMNPayees(20);
+    auto projection = deterministicMNManager->GetListForBlock(pindexTip).GetProjectedMNPayees(nCount);
     for (size_t i = 0; i < projection.size(); i++) {
         int h = nChainTipHeight + 1 + i;
         std::string strPayments = GetRequiredPaymentsString(h, projection[i]);
@@ -428,6 +451,8 @@ static UniValue masternode_payments(const JSONRPCRequest& request)
     }
 
     int64_t nCount = request.params.size() > 1 ? ParseInt64V(request.params[1], "count") : 1;
+    if (std::abs(nCount) > 1000)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "count out of range, maximum is 1000");
 
     // A temporary vector which is used to sort results properly (there is no "reverse" in/for UniValue)
     std::vector<UniValue> vecPayments;
@@ -591,13 +616,13 @@ static UniValue masternodelist(const JSONRPCRequest& request)
 
     auto mnList = deterministicMNManager->GetListAtChainTip();
     auto dmnToStatus = [&](auto& dmn) {
-        if (mnList.IsMNValid(dmn)) {
-            return "ENABLED";
-        }
         if (mnList.IsMNPoSeBanned(dmn)) {
             return "POSE_BANNED";
         }
-        return "UNKNOWN";
+        if (dmn.pdmnState->confirmedHash.IsNull()) {
+            return "WAITING_CONFIRMATION";
+        }
+        return "ENABLED";
     };
     auto dmnToLastPaidTime = [&](auto& dmn) {
         if (dmn.pdmnState->nLastPaidHeight == 0) {
@@ -703,6 +728,9 @@ static UniValue masternodelist(const JSONRPCRequest& request)
             objMN.pushKV("votingaddress", EncodeDestination(PKHash(dmn.pdmnState->keyIDVoting)));
             objMN.pushKV("collateraladdress", collateralAddressStr);
             objMN.pushKV("pubkeyoperator", dmn.pdmnState->pubKeyOperator.ToString());
+            objMN.pushKV("registeredheight",  dmn.pdmnState->nRegisteredHeight);
+            objMN.pushKV("posebanheight",     dmn.pdmnState->GetBannedHeight());
+            objMN.pushKV("poserevidedheight", dmn.pdmnState->nPoSeRevivedHeight);
             obj.pushKV(strOutpoint, objMN);
         } else if (strMode == "lastpaidblock") {
             if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) return;

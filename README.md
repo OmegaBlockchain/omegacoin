@@ -181,6 +181,37 @@ starting from the Dash 19.3 base:
 - **Legacy Fork Activations Buried** — Old soft fork activation logic (BIP65, BIP66, CSV)
   buried at their historical heights, simplifying validation.
 
+### Masternode RPC Improvements
+
+- **`masternode count` — PoSe ban counts** — The top-level object and each per-type sub-object
+  (`regular`, `hpmn`) now include a `pose_banned` field, so you can see at a glance how many
+  masternodes are currently banned without parsing `masternodelist` manually.
+
+- **`masternodelist json` — extended fields** — Each entry now includes three additional fields
+  after `pubkeyoperator`:
+
+  | Field | Type | Description |
+  |---|---|---|
+  | `registeredheight` | number | Block height at which the ProRegTx was mined |
+  | `posebanheight` | number | Block height at which the masternode was PoSe-banned (−1 if not banned) |
+  | `poserevidedheight` | number | Block height at which the masternode last revived from a PoSe ban (−1 if never revived) |
+
+- **Correct status ordering** — Status values are now evaluated in the correct priority order:
+  `POSE_BANNED` → `WAITING_CONFIRMATION` → `ENABLED`. Previously a banned masternode that was
+  also awaiting collateral confirmation could be shown as `WAITING_CONFIRMATION`.
+
+- **`masternode status [proTxHash]`** — Accepts an optional `proTxHash` argument. When supplied,
+  returns the full status object for that masternode regardless of whether the local node is
+  running in masternode mode. Useful for monitoring any masternode from a full node or wallet.
+
+- **`masternode payments` — count limit** — The `count` parameter is now capped at ±1000.
+  Requests above this limit return an `RPC_INVALID_PARAMETER` error immediately, preventing
+  unbounded disk reads.
+
+- **`masternode winners` — count-aware projection** — The forward projection (blocks after the
+  chain tip) now honours the `count` argument. Previously it always returned exactly 20 projected
+  entries regardless of the requested window.
+
 ### Secure Messaging (SMSG)
 
 On-chain encrypted peer-to-peer messaging ported from Particl, integrated directly into
@@ -388,6 +419,136 @@ Errors displayed by the masternode wizard follow the format
 | Code    | Meaning                                    | Suggested Fix |
 |---------|--------------------------------------------|---------------|
 | MNW-900 | Unexpected error (raw detail is shown).    | Check that the blockchain is fully synced and the wallet is unlocked. If the problem persists, copy the error and ask for help. |
+
+PoSe Ban & Revival
+------------------
+
+### What is a PoSe ban?
+
+Proof of Service (PoSe) is a consensus mechanism that removes non-performing
+masternodes from the payment queue and from LLMQ quorum participation. A
+masternode accumulates a PoSe penalty score for each LLMQ DKG session it
+fails to complete. When the score reaches the network maximum the masternode
+is placed in `POSE_BANNED` state and stops receiving payments and participating
+in quorums.
+
+A banned masternode is **not removed** from the chain. The operator can revive
+it at any time by submitting a `ProUpServTx`.
+
+### Automatic ban at block 3,200,000
+
+As part of the block 3,200,000 hard fork, the network performs a one-time
+cleanup. Any masternode that:
+
+- was registered more than 35,000 blocks before the fork, **and**
+- has not received a payment in the last 35,000 blocks (~24 days)
+
+will be automatically placed in `POSE_BANNED` state at that height.
+Operators whose masternodes are caught by this rule must submit a
+`ProUpServTx` to rejoin the network (see below).
+
+### Checking your masternode status
+
+```bash
+# Count banned masternodes across the whole network
+omega-cli masternode count
+
+# List all banned masternodes with ban height and address
+omega-cli masternodelist json | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for k, v in data.items():
+    if v['status'] == 'POSE_BANNED':
+        print(k, 'banned at block', v['posebanheight'], v['address'])
+"
+
+# Check status of a specific masternode by proTxHash (works on any full node)
+omega-cli masternode status "<proTxHash>"
+
+# If running in masternode mode, check local status without a proTxHash
+omega-cli masternode status
+```
+
+Your `proTxHash` is the transaction ID of your original `protx register`
+transaction. It is also shown in `masternode status` under `proTxHash`.
+
+### Reviving a Regular masternode
+
+The `ProUpServTx` is signed by the **operator BLS private key** — not the
+owner key. The operator key is the one set on the masternode server in
+`omega.conf` as `masternodeblsprivkey=`.
+
+```bash
+omega-cli protx update_service \
+    "<proTxHash>" \
+    "<ip>:<port>" \
+    "<operatorBLSPrivKey>" \
+    "" \
+    "<feeSourceAddress>"
+```
+
+| Parameter | Description |
+|---|---|
+| `proTxHash` | Transaction ID of the original ProRegTx |
+| `ip:port` | Current public IP and port of your masternode server (mainnet: `7777`) |
+| `operatorBLSPrivKey` | BLS private key from `masternodeblsprivkey` in `omega.conf` |
+| `operatorPayoutAddress` | Optional — operator reward address. Leave `""` to keep existing |
+| `feeSourceAddress` | An address in the wallet with a small balance to pay the transaction fee |
+
+**Example:**
+
+```bash
+omega-cli protx update_service \
+    "4a782d6e8e72b40d3e7f849d8a0a94e5fbbf5d0f6e5a0e3bc78f42d5a3c1b2e" \
+    "203.0.113.10:7777" \
+    "3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b" \
+    "" \
+    "oXXXYourFeeSourceAddressXXX"
+```
+
+The command returns a transaction ID. Once mined, your masternode will
+reappear as `ENABLED` in `masternodelist status`.
+
+### Reviving a High Performance masternode (HPMN)
+
+HPMNs require additional Platform fields in the `ProUpServTx`:
+
+```bash
+omega-cli protx update_service_hpmn \
+    "<proTxHash>" \
+    "<ip>:<port>" \
+    "<operatorBLSPrivKey>" \
+    "<platformNodeID>" \
+    <platformP2PPort> \
+    <platformHTTPPort> \
+    "" \
+    "<feeSourceAddress>"
+```
+
+| Parameter | Description |
+|---|---|
+| `platformNodeID` | 20-byte hex node ID (Ed25519 public key of the Platform node) |
+| `platformP2PPort` | Platform P2P port (mainnet default: `26656`) |
+| `platformHTTPPort` | Platform HTTP/API port (mainnet default: `443`) |
+
+All other parameters are the same as for Regular masternodes.
+
+### After revival
+
+Submitting and mining the `ProUpServTx` immediately restores `ENABLED`
+status. The PoSe penalty score is reset to 0.
+
+Once LLMQ quorums are active (after SPORK_17 is enabled), your masternode
+must participate in DKG sessions to remain in good standing. Ensure:
+
+- Port `7777` is reachable from the internet
+- The daemon is running with `masternodeblsprivkey` set to the **current**
+  operator key matching the on-chain ProTx
+- The IP in the ProUpServTx matches the actual public IP of the server
+
+A masternode that fails two consecutive DKG sessions will be PoSe-banned
+again. Each DKG session for `LLMQ_50_60` occurs every 24 blocks (~24 minutes
+at 60-second block time).
 
 Building
 --------

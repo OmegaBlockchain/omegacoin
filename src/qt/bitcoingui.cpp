@@ -2021,7 +2021,7 @@ void BitcoinGUI::checkForUpdates()
     m_update_manager = new QNetworkAccessManager(this);
     connect(m_update_manager, &QNetworkAccessManager::finished,
             this, &BitcoinGUI::onUpdateCheckFinished);
-    QNetworkRequest request(QUrl("https://api.github.com/repos/OmegaBlockchain/omega/releases/latest"));
+    QNetworkRequest request(QUrl("https://api.github.com/repos/OmegaBlockchain/omegacoin/releases/latest"));
     request.setRawHeader("Accept", "application/vnd.github.v3+json");
     request.setRawHeader("User-Agent", "omega-qt");
     m_update_manager->get(request);
@@ -2055,7 +2055,7 @@ void BitcoinGUI::onUpdateCheckFinished(QNetworkReply* reply)
 
     if (!newerAvailable) return;
 
-    const QString releaseUrl = "https://github.com/OmegaBlockchain/omega/releases/latest";
+    const QString releaseUrl = "https://github.com/OmegaBlockchain/omegacoin/releases/latest";
     labelUpdateAvailable->setText(
         tr("New version %1 available. <a href=\"%2\">Download</a>").arg(tagName, releaseUrl));
     labelUpdateAvailable->setVisible(true);

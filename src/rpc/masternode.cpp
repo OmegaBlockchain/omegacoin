@@ -109,10 +109,19 @@ static UniValue masternode_count(const JSONRPCRequest& request)
     int total = mnList.GetAllMNsCount();
     int enabled = mnList.GetValidMNsCount();
 
+    int pose_banned = 0;
+    int hpmn_pose_banned = 0;
+    mnList.ForEachMN(false /* all */, [&](const auto& dmn) {
+        if (CDeterministicMNList::IsMNPoSeBanned(dmn)) {
+            pose_banned++;
+            if (dmn.nType == MnType::HighPerformance) hpmn_pose_banned++;
+        }
+    });
+
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("total", total);
     obj.pushKV("enabled", enabled);
-    obj.pushKV("pose_banned", total - enabled);
+    obj.pushKV("pose_banned", pose_banned);
 
     int hpmn_total = mnList.GetAllHPMNsCount();
     int hpmn_enabled = mnList.GetValidHPMNsCount();
@@ -120,12 +129,12 @@ static UniValue masternode_count(const JSONRPCRequest& request)
     UniValue hpmnObj(UniValue::VOBJ);
     hpmnObj.pushKV("total", hpmn_total);
     hpmnObj.pushKV("enabled", hpmn_enabled);
-    hpmnObj.pushKV("pose_banned", hpmn_total - hpmn_enabled);
+    hpmnObj.pushKV("pose_banned", hpmn_pose_banned);
 
     UniValue regularObj(UniValue::VOBJ);
     regularObj.pushKV("total", total - hpmn_total);
     regularObj.pushKV("enabled", enabled - hpmn_enabled);
-    regularObj.pushKV("pose_banned", (total - hpmn_total) - (enabled - hpmn_enabled));
+    regularObj.pushKV("pose_banned", pose_banned - hpmn_pose_banned);
 
     UniValue detailedObj(UniValue::VOBJ);
     detailedObj.pushKV("regular", regularObj);
@@ -366,6 +375,8 @@ static UniValue masternode_winners(const JSONRPCRequest& request)
     if (!request.params[0].isNull()) {
         nCount = LocaleIndependentAtoi<int>(request.params[0].get_str());
     }
+    if (nCount < 1 || nCount > 1000)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "count out of range (1-1000)");
 
     if (!request.params[1].isNull()) {
         strFilter = request.params[1].get_str();
@@ -730,7 +741,7 @@ static UniValue masternodelist(const JSONRPCRequest& request)
             objMN.pushKV("pubkeyoperator", dmn.pdmnState->pubKeyOperator.ToString());
             objMN.pushKV("registeredheight",  dmn.pdmnState->nRegisteredHeight);
             objMN.pushKV("posebanheight",     dmn.pdmnState->GetBannedHeight());
-            objMN.pushKV("poserevidedheight", dmn.pdmnState->nPoSeRevivedHeight);
+            objMN.pushKV("poserevivedheight", dmn.pdmnState->nPoSeRevivedHeight);
             obj.pushKV(strOutpoint, objMN);
         } else if (strMode == "lastpaidblock") {
             if (strFilter !="" && strOutpoint.find(strFilter) == std::string::npos) return;

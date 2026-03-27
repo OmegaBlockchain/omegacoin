@@ -647,30 +647,34 @@ static UniValue smsggetpubkey(const JSONRPCRequest &request)
 
 static UniValue smsgsend(const JSONRPCRequest &request)
 {
-    if (request.fHelp || request.params.size() < 3 || request.params.size() > 8)
+    if (request.fHelp || request.params.size() < 3 || request.params.size() > 11)
         throw std::runtime_error(
-            "smsgsend \"address_from\" \"address_to\" \"message\" ( paid_msg days_retention testfee )\n"
+            "smsgsend \"address_from\" \"address_to\" \"message\" ( paid_msg days_retention testfee fromfile decodehex topic parent_msgid retention_days )\n"
             "Send an encrypted message from \"address_from\" to \"address_to\".\n"
+            "For broadcast topic messages, set \"address_to\" to \"\" and specify a topic.\n"
+            "The message is encrypted to the topic's shared key so all subscribers can read it.\n"
             "\nArguments:\n"
             "1. \"address_from\"       (string, required) The address of the sender.\n"
-            "2. \"address_to\"         (string, required) The address of the recipient.\n"
+            "2. \"address_to\"         (string, required) Recipient address, or \"\" for broadcast topic messages.\n"
             "3. \"message\"            (string, required) The message.\n"
             "4. paid_msg             (bool, optional, default=false) Send as paid message.\n"
             "5. days_retention       (int, optional, default=1) Days paid message will be retained by network.\n"
             "6. testfee              (bool, optional, default=false) Don't send the message, only estimate the fee.\n"
-            "7. fromfile             (bool, optional, default=false) Send file as message, path specified in \"message\".\n"
+            "7. fromfile             (bool, optional, default=false) Send file as message, path in \"message\".\n"
             "8. decodehex            (bool, optional, default=false) Decode \"message\" from hex before sending.\n"
+            "9. \"topic\"              (string, optional) Topic channel, e.g. \"omega.listings.uk\".\n"
+            "10. \"parent_msgid\"      (string, optional) Hex msgid of prior message (listing update/reply).\n"
+            "11. retention_days      (int, optional, default=0) Suggested local retention for subscribers (days).\n"
             "\nResult:\n"
             "{\n"
-            "  \"result\": \"Sent\"/\"Not Sent\"       (string) address of public key\n"
-            "  \"msgid\": \"...\"                    (string) if sent, a message identifier\n"
-            "  \"txid\": \"...\"                     (string) if paid_msg the txnid of the funding txn\n"
-            "  \"fee\": n                          (amount) if paid_msg the fee paid\n"
+            "  \"result\": \"Sent\"/\"Not Sent\"       (string)\n"
+            "  \"msgid\": \"...\"                    (string) message identifier\n"
+            "  \"topic\": \"...\"                    (string) topic channel, if specified\n"
             "}\n"
             "\nExamples:\n"
-            + HelpExampleCli("smsgsend", "\"myaddress\" \"toaddress\" \"message\"") +
+            + HelpExampleCli("smsgsend", "\"myaddress\" \"\" \"listing payload\" false 0 false false false \"omega.listings.uk\" \"\" 30") +
             "\nAs a JSON-RPC call\n"
-            + HelpExampleRpc("smsgsend", "\"myaddress\", \"toaddress\", \"message\""));
+            + HelpExampleRpc("smsgsend", "\"myaddress\", \"\", \"message\", false, 0, false, false, false, \"omega.listings\""));
 
     EnsureSMSGIsEnabled();
 
@@ -695,6 +699,32 @@ static UniValue smsgsend(const JSONRPCRequest &request)
     bool fTestFee   = parseBool(request.params[5], false);
     bool fFromFile  = parseBool(request.params[6], false);
     bool fDecodeHex = parseBool(request.params[7], false);
+    std::string topic = request.params.size() > 8 && !request.params[8].isNull()
+                        ? request.params[8].get_str() : "";
+
+    // Parent message ID for update/reply referencing
+    uint160 parentMsgId;
+    if (request.params.size() > 9 && !request.params[9].isNull()) {
+        std::string sParent = request.params[9].get_str();
+        if (!sParent.empty()) {
+            if (!IsHex(sParent) || sParent.size() != 40)
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "parent_msgid must be 40 hex characters.");
+            std::vector<uint8_t> vParent = ParseHex(sParent);
+            memcpy(parentMsgId.begin(), vParent.data(), 20);
+        }
+    }
+
+    // Suggested local retention for topic subscribers
+    uint16_t nTopicRetentionDays = 0;
+    if (request.params.size() > 10 && !request.params[10].isNull()) {
+        int val = request.params[10].get_int();
+        if (val < 0 || val > 365)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "retention_days must be 0-365.");
+        nTopicRetentionDays = (uint16_t)val;
+    }
+
+    if (!topic.empty() && !smsg::IsValidTopic(topic))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid topic string.");
 
     if (fFromFile && fDecodeHex)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Can't use decodehex with fromfile.");
@@ -713,15 +743,23 @@ static UniValue smsgsend(const JSONRPCRequest &request)
     if (!IsValidDestination(coinAddress))
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid from address.");
     kiFrom = ToKeyID(std::get<PKHash>(coinAddress));
-    coinAddress = DecodeDestination(addrTo);
-    if (!IsValidDestination(coinAddress))
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid to address.");
-    kiTo = ToKeyID(std::get<PKHash>(coinAddress));
+
+    // Broadcast mode: empty addressTo with a topic — recipient is derived from topic shared key
+    if (addrTo.empty()) {
+        if (topic.empty())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "address_to is required unless a topic is specified for broadcast.");
+        // kiTo stays null — Send() will derive it from the topic
+    } else {
+        coinAddress = DecodeDestination(addrTo);
+        if (!IsValidDestination(coinAddress))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid to address.");
+        kiTo = ToKeyID(std::get<PKHash>(coinAddress));
+    }
 
     UniValue result(UniValue::VOBJ);
     std::string sError;
     smsg::SecureMessage smsgOut;
-    if (smsgModule.Send(kiFrom, kiTo, msg, smsgOut, sError, fPaid, nRetention, fTestFee, &nFee, fFromFile) != 0)
+    if (smsgModule.Send(kiFrom, kiTo, msg, smsgOut, sError, fPaid, nRetention, fTestFee, &nFee, fFromFile, topic, parentMsgId, nTopicRetentionDays) != 0)
     {
         result.pushKV("result", "Send failed.");
         result.pushKV("error", sError);
@@ -742,6 +780,8 @@ static UniValue smsgsend(const JSONRPCRequest &request)
             };
             result.pushKV("fee", ValueFromAmount(nFee));
         }
+        if (!topic.empty())
+            result.pushKV("topic", topic);
     };
 
     return result;
@@ -2332,6 +2372,134 @@ static UniValue trollboxlist(const JSONRPCRequest &request)
     return result;
 }
 
+// ---- Topic Channel RPCs ----
+
+static UniValue smsgsubscribe(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgsubscribe \"topic\"\n"
+            "\nSubscribe to an SMSG topic channel. Incoming messages for this topic will be stored.\n"
+            "\nArguments:\n"
+            "1. \"topic\"   (string, required) Topic string, e.g. \"omega.listings\"\n"
+            "\nResult:\n"
+            "{ \"result\": \"ok\" }\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsgsubscribe", "\"omega.listings\""));
+
+    EnsureSMSGIsEnabled();
+
+    std::string topic = request.params[0].get_str();
+    std::string sError;
+    if (!smsgModule.SubscribeTopic(topic, sError))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, sError);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "ok");
+    result.pushKV("topic", topic);
+    return result;
+}
+
+static UniValue smsgunsubscribe(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgunsubscribe \"topic\"\n"
+            "\nUnsubscribe from an SMSG topic channel.\n"
+            "\nArguments:\n"
+            "1. \"topic\"   (string, required) Topic string, e.g. \"omega.listings\"\n"
+            "\nResult:\n"
+            "{ \"result\": \"ok\" }\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsgunsubscribe", "\"omega.listings\""));
+
+    EnsureSMSGIsEnabled();
+
+    std::string topic = request.params[0].get_str();
+    std::string sError;
+    if (!smsgModule.UnsubscribeTopic(topic, sError))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, sError);
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "ok");
+    result.pushKV("topic", topic);
+    return result;
+}
+
+static UniValue smsglisttopics(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "smsglisttopics\n"
+            "\nList currently subscribed SMSG topic channels.\n"
+            "\nResult:\n"
+            "[\"omega.listings\", ...]\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsglisttopics", ""));
+
+    EnsureSMSGIsEnabled();
+
+    UniValue result(UniValue::VARR);
+    {
+        LOCK(smsgModule.cs_smsgSubs);
+        for (const auto &t : smsgModule.m_subscribed_topics) {
+            result.push_back(t);
+        }
+    }
+    return result;
+}
+
+static UniValue smsggetmessages(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "smsggetmessages \"topic\" ( count )\n"
+            "\nRetrieve indexed messages for an SMSG topic channel.\n"
+            "\nArguments:\n"
+            "1. \"topic\"   (string, required) Topic string, e.g. \"omega.listings\"\n"
+            "2. count      (int, optional, default=50) Maximum number of messages to return (newest first).\n"
+            "\nResult:\n"
+            "[{ \"msgid\": \"...\", \"timestamp\": n, \"from\": \"...\", \"topic\": \"...\" }, ...]\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsggetmessages", "\"omega.listings\"")
+            + HelpExampleCli("smsggetmessages", "\"omega.listings\" 20"));
+
+    EnsureSMSGIsEnabled();
+
+    std::string topic = request.params[0].get_str();
+    if (!smsg::IsValidTopic(topic))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid topic string.");
+
+    int nCount = request.params.size() > 1 ? request.params[1].get_int() : 50;
+    if (nCount < 1 || nCount > 1000)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "count must be between 1 and 1000.");
+
+    std::vector<smsg::SecMsgDB::TopicEntry> entries;
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("r"))
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Cannot open SMSG database.");
+        db.ReadTopicMessages(topic, entries, (size_t)nCount);
+    }
+
+    UniValue result(UniValue::VARR);
+    // entries are ascending; iterate newest-first
+    for (int i = (int)entries.size() - 1; i >= 0; --i) {
+        const auto &e = entries[i];
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("msgid",     HexStr(Span<const uint8_t>(e.msgId.begin(), e.msgId.end())));
+        obj.pushKV("timestamp", e.timestamp);
+        obj.pushKV("topic",     topic);
+        if (!e.parentMsgId.IsNull())
+            obj.pushKV("parent_msgid", HexStr(Span<const uint8_t>(e.parentMsgId.begin(), e.parentMsgId.end())));
+        if (e.nRetentionDays > 0)
+            obj.pushKV("retention_days", (int)e.nRetentionDays);
+        result.push_back(obj);
+    }
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -2345,7 +2513,7 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsgaddlocaladdress",    &smsgaddlocaladdress,    {"address"} },
     { "smsg",               "smsgimportprivkey",      &smsgimportprivkey,      {"privkey","label"} },
     { "smsg",               "smsggetpubkey",          &smsggetpubkey,          {"address"} },
-    { "smsg",               "smsgsend",               &smsgsend,               {"address_from","address_to","message","paid_msg","days_retention","testfee","fromfile","decodehex"} },
+    { "smsg",               "smsgsend",               &smsgsend,               {"address_from","address_to","message","paid_msg","days_retention","testfee","fromfile","decodehex","topic","parent_msgid","retention_days"} },
     { "smsg",               "smsgsendanon",           &smsgsendanon,           {"address_to","message"} },
     { "smsg",               "smsginbox",              &smsginbox,              {"mode","filter"} },
     { "smsg",               "smsgoutbox",             &smsgoutbox,             {"mode","filter"} },
@@ -2372,6 +2540,11 @@ static const CRPCCommand commands[] =
     // Trollbox — public chat
     { "smsg",               "trollboxsend",           &trollboxsend,           {"message","paid"} },
     { "smsg",               "trollboxlist",           &trollboxlist,            {"count"} },
+    // Topic channels
+    { "smsg",               "smsgsubscribe",          &smsgsubscribe,          {"topic"} },
+    { "smsg",               "smsgunsubscribe",        &smsgunsubscribe,        {"topic"} },
+    { "smsg",               "smsglisttopics",         &smsglisttopics,         {} },
+    { "smsg",               "smsggetmessages",        &smsggetmessages,        {"topic","count"} },
 };
 
 void RegisterSmsgRPCCommands(CRPCTable &t)

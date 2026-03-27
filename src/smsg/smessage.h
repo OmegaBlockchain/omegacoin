@@ -91,6 +91,39 @@ const CAmount nMsgFeePerKPerDay =   50000;
 
 const unsigned int SMSG_BLIND_KEY_LEN = 32;   // blinding key length for confidential funding
 
+// Topic channel message version
+static const uint8_t SMSG_VERSION_TOPIC = 4;
+
+// Maximum topic string length (must fit in 1 byte length prefix)
+static const uint8_t SMSG_MAX_TOPIC_LEN = 64;
+
+// Worst-case encrypted payload for a topic message:
+// PL_HDR + 1 topic_len + 64 topic + 20 parent_msgid + 2 retention_days + message
+const unsigned int SMSG_MAX_MSG_WORST_TOPIC = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES + SMSG_PL_HDR_LEN + 1 + SMSG_MAX_TOPIC_LEN + 20 + 2);
+
+/** FNV-1a 32-bit hash of a topic string — stored in nonce[0..3] for cleartext routing. */
+inline uint32_t SMSGTopicHash(const std::string &topic)
+{
+    uint32_t h = 2166136261u;
+    for (unsigned char c : topic) {
+        h ^= c;
+        h *= 16777619u;
+    }
+    return h;
+}
+
+/** Validate a topic string: must start with "omega.", ASCII [a-z0-9.], max 64 chars. */
+inline bool IsValidTopic(const std::string &topic)
+{
+    if (topic.size() < 7 || topic.size() > SMSG_MAX_TOPIC_LEN) return false;
+    if (topic.substr(0, 6) != "omega.") return false;
+    for (char c : topic) {
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.'))
+            return false;
+    }
+    return true;
+}
+
 // Trollbox — public chat channel (all nodes share this keypair, no secrecy by design)
 const char* const TROLLBOX_PRIVKEY_HEX = "1e76e258b28dee7edec4f1d7443f80fcc84dba50473fbbb03e2b99082302b6bd";
 const unsigned int TROLLBOX_MAX_MSG_BYTES = 256;                  // max message length (chars)
@@ -172,6 +205,11 @@ public:
         return version[0] == 3;
     };
 
+    bool IsTopicVersion() const
+    {
+        return version[0] == SMSG_VERSION_TOPIC;
+    };
+
     bool IsBlindedPaid() const
     {
         return version[0] == 3 && version[1] == 1;
@@ -223,6 +261,9 @@ public:
     int64_t               timestamp;
     std::string           sToAddress;
     std::string           sFromAddress;
+    std::string           sTopic;             // topic channel string (version[0]==SMSG_VERSION_TOPIC only)
+    uint160               parentMsgId;        // references a prior message (listing update/reply); zero if none
+    uint16_t              nRetentionDays = 0; // suggested local retention (days); 0 = default TTL
     std::vector<uint8_t>  vchMessage;         // null terminated plaintext
 };
 
@@ -491,7 +532,9 @@ public:
 
     int Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         SecureMessage &smsg, std::string &sError, bool fPaid=false,
-        size_t nDaysRetention=0, bool fTestFee=false, CAmount *nFee=NULL, bool fFromFile=false);
+        size_t nDaysRetention=0, bool fTestFee=false, CAmount *nFee=NULL,
+        bool fFromFile=false, const std::string &topic="",
+        const uint160 &parentMsgId=uint160(), uint16_t nTopicRetentionDays=0);
 
 
     int HashMsg(const SecureMessage &smsg, const uint8_t *pPayload, uint32_t nPayload, uint160 &hash);
@@ -503,13 +546,30 @@ public:
     int Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload);
     int SetHash (uint8_t *pHeader, uint8_t *pPayload, uint32_t nPayload);
 
-    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message);
+    int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message,
+        const std::string &topic="", const uint160 &parentMsgId=uint160(), uint16_t nTopicRetentionDays=0);
 
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
     int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
     int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
     int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
+
+    // Topic channel subscriptions
+    bool SubscribeTopic(const std::string &topic, std::string &sError);
+    bool UnsubscribeTopic(const std::string &topic, std::string &sError);
+    bool IsSubscribedTopicHash(uint32_t hash) const;
+    bool LoadTopicSubs();
+    bool SaveTopicSubs();
+
+    // Broadcast channel: derive a deterministic shared key from a topic string.
+    // All subscribers hold the same key, enabling public/broadcast messaging (like Trollbox per-topic).
+    static CKey GetTopicSharedKey(const std::string &topic);
+    CKeyID ImportTopicKey(const std::string &topic);
+
+    mutable CCriticalSection cs_smsgSubs; // guards m_subscribed_topics and m_subscribed_topic_hashes
+    std::set<std::string> m_subscribed_topics;       // full topic strings
+    std::set<uint32_t>    m_subscribed_topic_hashes; // FNV-1a hashes for fast cleartext routing
 
     CCriticalSection cs_smsg; // all except inbox and outbox
 

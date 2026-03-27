@@ -242,6 +242,101 @@ the Omega consensus layer:
 - **SMSG Scan Progress Logging** — Block progress is logged every 50,000 blocks during a
   scan so the user can monitor throughput in the debug log.
 
+### SMSG Topic Channels
+
+Topic Channels extend the SMSG module with broadcast messaging and per-topic routing,
+enabling application-layer protocols such as decentralised real estate marketplaces,
+classified listings, and contract signalling — all running on the Omega P2P network
+without any centralised server.
+
+#### Broadcast Channels (Shared-Key)
+
+Each topic has a deterministic shared keypair derived from the topic string. When a
+node subscribes to a topic, the shared key is imported into its SMSG keystore. Messages
+sent to a topic with an empty recipient address are encrypted to this shared key, so
+**all subscribers can decrypt and read them** — similar to the Trollbox but per-topic.
+
+This enables public listings: a seller publishes a property to `omega.listings.uk` and
+every subscribed node can read it without knowing the seller in advance.
+
+#### FNV-1a Cleartext Routing
+
+Each topic-channel message (version `4`) carries a 4-byte FNV-1a hash of the full topic
+string in the cleartext header (`nonce[0..3]`). Nodes compare this hash against their
+subscribed topic hashes and drop non-matching messages **without decryption**, minimising
+storage and CPU overhead.
+
+This is per-topic granular: subscribing to `omega.listings.uk` does **not** force the node
+to store `omega.listings.japan`.
+
+#### Message Referencing
+
+Topic messages carry an optional 20-byte `parent_msgid` field. This enables:
+
+- **Listing updates** — publish a new message referencing the original listing ID
+- **Listing withdrawal** — send a cancellation referencing the listing
+- **Reply threads** — link negotiations back to a specific listing
+
+#### Extended Local Retention
+
+Each topic message includes a `retention_days` field (0–365). Subscribing nodes honour
+this value for topic index persistence — a listing with `retention_days=30` remains in
+the local index for 30 days even after the raw SMSG bucket expires at the default TTL.
+
+#### Topic Naming
+
+Topics follow the format `omega.<domain>[.<subdomain>]`:
+
+| Topic | Purpose |
+|-------|---------|
+| `omega.listings` | General classified listings |
+| `omega.listings.uk` | UK property listings |
+| `omega.listings.uk.london` | London-specific listings |
+| `omega.chat` | Public chat channels |
+| `omega.contract` | Contract signalling |
+| `omega.match` | Matching / discovery |
+
+Rules: lowercase ASCII `[a-z0-9.]`, starts with `omega.`, max 64 characters.
+
+#### RPC Commands
+
+```bash
+# Subscribe to a topic (imports the topic's shared key)
+omega-cli smsgsubscribe "omega.listings.uk"
+
+# Unsubscribe
+omega-cli smsgunsubscribe "omega.listings.uk"
+
+# List current subscriptions
+omega-cli smsglisttopics
+
+# Broadcast a listing (empty address_to = broadcast to all subscribers)
+omega-cli smsgsend "oMyAddress" "" '{"title":"3BR flat","price":250000}' \
+    false 0 false false false "omega.listings.uk" "" 30
+
+# Update an existing listing (reference the original msgid)
+omega-cli smsgsend "oMyAddress" "" '{"price":240000}' \
+    false 0 false false false "omega.listings.uk" "a1b2c3...original_msgid" 30
+
+# Retrieve the newest 20 listings for a topic
+omega-cli smsggetmessages "omega.listings.uk" 20
+```
+
+#### Wire Format (version 4)
+
+| Field | Location | Description |
+|-------|----------|-------------|
+| `version[0]` | Header byte 4 | `4` — topic channel message |
+| `version[1]` | Header byte 5 | `0` — free topic message |
+| `nonce[0..3]` | Header bytes 96–99 | FNV-1a hash of topic string (cleartext routing) |
+| `topic_len` | Encrypted payload at PL_HDR+0 | 1 byte, topic string length |
+| `topic` | Encrypted payload at PL_HDR+1 | ASCII topic string |
+| `parent_msgid` | After topic | 20 bytes, zero if no parent |
+| `retention_days` | After parent_msgid | 2 bytes (uint16), suggested local retention |
+
+Old nodes (version < 4 awareness): `Store()` accepts the message, `Decrypt()` returns
+`SMSG_UNKNOWN_VERSION` — old nodes relay topic messages transparently. No hard fork required.
+
 ### Wallet & GUI
 
 - **Masternode Wizard** — Step-by-step masternode setup wizard added to the Qt GUI.

@@ -315,7 +315,7 @@ public:
         consensus.llmqTypeInstantSend = Consensus::LLMQType::LLMQ_50_60;
         consensus.llmqTypeDIP0024InstantSend = Consensus::LLMQType::LLMQ_60_75;
         consensus.llmqTypePlatform = Consensus::LLMQType::LLMQ_100_67;
-        consensus.llmqTypeMnhf = Consensus::LLMQType::LLMQ_50_60;         // reduced from LLMQ_400_85: network has <350 MNs
+        consensus.llmqTypeMnhf = Consensus::LLMQType::LLMQ_100_67;        // reduced from LLMQ_400_85: 67% of 100 keeps a high threshold with ~200 MNs
 
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;

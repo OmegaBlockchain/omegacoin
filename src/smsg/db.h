@@ -74,6 +74,23 @@ public:
 
     bool NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKeyID &idk, SecMsgKey &key);
 
+    // Topic index entry — stored as value in LevelDB
+    struct TopicEntry {
+        int64_t timestamp;
+        uint160 msgId;
+        uint160 parentMsgId;  // zero if no parent
+        uint16_t nRetentionDays = 0;
+    };
+
+    // Topic channel index: key = "ti" + uint8(topic_len) + topic + int64_be(timestamp) + uint160(msgId)
+    // Value = msgId(20) + parentMsgId(20) + retentionDays(2)
+    bool WriteTopicIndex(const std::string &topic, int64_t timestamp, const uint160 &msgId,
+                         const uint160 &parentMsgId = uint160(), uint16_t nRetentionDays = 0);
+    bool ReadTopicMessages(const std::string &topic,
+                           std::vector<TopicEntry> &out,
+                           size_t maxEntries = 0);
+    bool EraseTopicIndex(const std::string &topic, int64_t timestamp, const uint160 &msgId);
+
     leveldb::DB *pdb; // points to the global instance
     leveldb::WriteBatch *activeBatch;
 };

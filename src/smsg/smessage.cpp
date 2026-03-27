@@ -781,6 +781,9 @@ int CSMSG::ReadIni()
 
     fclose(fp);
     LogPrintf("Loaded %u addresses.\n", addresses.size());
+
+    LoadTopicSubs();
+
     return SMSG_NO_ERROR;
 };
 
@@ -2845,6 +2848,26 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
             }
         } // cs_smsgDB
 
+        // For topic messages: if the full topic was recovered, write the index entry
+        if (!fExisted && !fTrollbox && psmsg->version[0] == SMSG_VERSION_TOPIC) {
+            if (msg.sTopic.empty()) {
+                // Test-only decrypt was used; do a full decrypt to recover sTopic
+                MessageData topicMsg;
+                Decrypt(false, addressTo, pHeader, pPayload, nPayload, topicMsg);
+                msg.sTopic = topicMsg.sTopic;
+                msg.parentMsgId = topicMsg.parentMsgId;
+                msg.nRetentionDays = topicMsg.nRetentionDays;
+            }
+            if (!msg.sTopic.empty()) {
+                LOCK(cs_smsgDB);
+                SecMsgDB dbIdx;
+                if (dbIdx.Open("cw")) {
+                    dbIdx.WriteTopicIndex(msg.sTopic, psmsg->timestamp, hash,
+                                          msg.parentMsgId, msg.nRetentionDays);
+                }
+            }
+        }
+
         if (!fExisted && !fTrollbox) {
             // notify an external script when a message comes in
             std::string strCmd = gArgs.GetArg("-smsgnotify", "");
@@ -3428,6 +3451,17 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
             continue;
         }
 
+        // Topic routing: for version-4 messages, check FNV-1a hash in nonce[0..3]
+        if (psmsg->version[0] == SMSG_VERSION_TOPIC) {
+            uint32_t topicHash;
+            memcpy(&topicHash, psmsg->nonce, 4);
+            LOCK(cs_smsgSubs);
+            if (!IsSubscribedTopicHash(topicHash)) {
+                n += SMSG_HDR_LEN + psmsg->nPayload;
+                continue;
+            }
+        }
+
         {
             LOCK(cs_smsg);
             // Store message, but don't hash bucket
@@ -3734,6 +3768,10 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
         if (nPayload > SMSG_MAX_MSG_BYTES_PAID)
             return SMSG_PAYLOAD_OVER_SIZE;
     } else
+    if (psmsg->IsTopicVersion()) {
+        if (nPayload > SMSG_MAX_MSG_WORST_TOPIC)
+            return SMSG_PAYLOAD_OVER_SIZE;
+    } else
     if (nPayload > SMSG_MAX_MSG_WORST) {
         return SMSG_PAYLOAD_OVER_SIZE;
     }
@@ -3867,8 +3905,14 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
         return SMSG_NO_ERROR; // smsg is valid and funded
     }
 
-    if (psmsg->version[0] != 2)
+    if (psmsg->version[0] != 2 && psmsg->version[0] != SMSG_VERSION_TOPIC)
         return SMSG_UNKNOWN_VERSION;
+
+    // Topic messages need at least PL_HDR + topic_len(1) + min topic(7) + parent_msgid(20) + retention(2)
+    if (psmsg->version[0] == SMSG_VERSION_TOPIC
+        && nPayload < SMSG_PL_HDR_LEN + 1 + 7 + 20 + 2) {
+        return SMSG_GENERAL_ERROR;
+    }
 
     uint8_t civ[32];
     uint8_t sha256Hash[32];
@@ -3979,7 +4023,8 @@ int CSMSG::SetHash(uint8_t *pHeader, uint8_t *pPayload, uint32_t nPayload)
     return SMSG_NO_ERROR;
 };
 
-int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message)
+int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message,
+    const std::string &topic, const uint160 &parentMsgId, uint16_t nTopicRetentionDays)
 {
 #ifdef ENABLE_WALLET
     /* Create a secure message
@@ -4087,6 +4132,21 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         lenMsgData = lenMsg;
     }
 
+    // Validate and apply topic for version-4 messages
+    if (!topic.empty()) {
+        if (fSendAnonymous) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: Topic messages cannot be anonymous.", __func__);
+        }
+        if (!IsValidTopic(topic)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: Invalid topic string.", __func__);
+        }
+        smsg.version[0] = SMSG_VERSION_TOPIC;
+        smsg.version[1] = 0;
+        // Store FNV-1a hash of topic in nonce[0..3] for cleartext routing
+        uint32_t topicHash = SMSGTopicHash(topic);
+        memcpy(smsg.nonce, &topicHash, 4);
+    }
+
     if (fSendAnonymous) {
         try { vchPayload.resize(9 + lenMsgData); } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, 9 + lenMsgData, e.what());
@@ -4098,11 +4158,27 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         // Next 4 bytes are unused - there to ensure encrypted payload always > 8 bytes
         memcpy(&vchPayload[5], &lenMsg, 4); // length of uncompressed plain text
     } else {
-        try { vchPayload.resize(SMSG_PL_HDR_LEN + lenMsgData); } catch (std::exception &e) {
-            return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, SMSG_PL_HDR_LEN + lenMsgData, e.what());
+        // For topic messages: topic string + parent_msgid + retention_days after the fixed PL_HDR
+        uint32_t topicExtra = 0;
+        if (!topic.empty()) {
+            topicExtra = (uint32_t)(1 + topic.size() + 20 + 2); // topic_len + topic + parent_msgid + retention_days
+        }
+        uint32_t totalSize  = SMSG_PL_HDR_LEN + topicExtra + lenMsgData;
+        try { vchPayload.resize(totalSize); } catch (std::exception &e) {
+            return errorN(SMSG_ALLOCATE_FAILED, "%s: vchPayload.resize %u threw: %s.", __func__, totalSize, e.what());
         }
 
-        memcpy(&vchPayload[SMSG_PL_HDR_LEN], pMsgData, lenMsgData);
+        if (topicExtra > 0) {
+            uint32_t off = SMSG_PL_HDR_LEN;
+            vchPayload[off] = (uint8_t)topic.size();
+            off += 1;
+            memcpy(&vchPayload[off], topic.c_str(), topic.size());
+            off += (uint32_t)topic.size();
+            memcpy(&vchPayload[off], parentMsgId.begin(), 20);
+            off += 20;
+            memcpy(&vchPayload[off], &nTopicRetentionDays, 2);
+        }
+        memcpy(&vchPayload[SMSG_PL_HDR_LEN + topicExtra], pMsgData, lenMsgData);
         // Compact signature proves ownership of from address and allows the public key to be recovered, recipient can always reply.
         auto* spk_man = pwallet ? pwallet->GetLegacyScriptPubKeyMan() : nullptr;
         bool fGotKey = spk_man && spk_man->GetKey(ckidFrom, keyFrom);
@@ -4157,7 +4233,8 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
 int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
     SecureMessage &smsg, std::string &sError, bool fPaid,
-    size_t nDaysRetention, bool fTestFee, CAmount *nFee, bool fFromFile)
+    size_t nDaysRetention, bool fTestFee, CAmount *nFee, bool fFromFile,
+    const std::string &topic, const uint160 &parentMsgId, uint16_t nTopicRetentionDays)
 {
 #ifdef ENABLE_WALLET
     /* Encrypt secure message, and place it on the network
@@ -4227,8 +4304,22 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         LOCK(cs_main);
         fBlinded = ::ChainActive().Height() >= Params().GetConsensus().nConfidentialSmsgHeight;
     }
+    if (!topic.empty()) {
+        if (fPaid) {
+            return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Topic messages cannot be paid messages.");
+        }
+        if (!IsValidTopic(topic)) {
+            return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Invalid topic string.");
+        }
+        // Broadcast mode: if no explicit recipient, encrypt to the topic's shared key
+        if (addressTo.IsNull()) {
+            CKey topicKey = GetTopicSharedKey(topic);
+            addressTo = topicKey.GetPubKey().GetID();
+        }
+    }
+
     smsg = SecureMessage(fPaid, nDaysRetention, fBlinded);
-    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData)) != 0) {
+    if ((rv = Encrypt(smsg, addressFrom, addressTo, sData, topic, parentMsgId, nTopicRetentionDays)) != 0) {
         sError = GetString(rv);
         return errorN(rv, "%s: %s.", __func__, sError);
     }
@@ -4554,7 +4645,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     if (psmsg->version[0] == 3) {
         nPayload -= psmsg->GetPaidTailSize(); // Exclude funding tail (blind key + txid)
     } else
-    if (psmsg->version[0] != 2) {
+    if (psmsg->version[0] != 2 && psmsg->version[0] != SMSG_VERSION_TOPIC) {
         return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown version number.", __func__);
     }
 
@@ -4617,9 +4708,31 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
         pMsgData = &vchPayload[9];
     } else {
         fFromAnonymous = false;
-        lenData = vchPayload.size() - (SMSG_PL_HDR_LEN);
+        // For topic messages: topic string + parent_msgid + retention_days follow the fixed PL_HDR
+        uint32_t topicOffset = 0;
+        if (psmsg->version[0] == SMSG_VERSION_TOPIC) {
+            if (vchPayload.size() <= SMSG_PL_HDR_LEN) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: Payload too small for topic message.", __func__);
+            }
+            uint8_t topic_len = vchPayload[SMSG_PL_HDR_LEN];
+            if (topic_len == 0 || topic_len > SMSG_MAX_TOPIC_LEN
+                || vchPayload.size() < SMSG_PL_HDR_LEN + 1 + (uint32_t)topic_len + 20 + 2) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: Invalid topic length in payload.", __func__);
+            }
+            uint32_t off = SMSG_PL_HDR_LEN + 1;
+            msg.sTopic = std::string((char*)&vchPayload[off], topic_len);
+            off += (uint32_t)topic_len;
+            if (!IsValidTopic(msg.sTopic)) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: Invalid topic string in payload.", __func__);
+            }
+            memcpy(msg.parentMsgId.begin(), &vchPayload[off], 20);
+            off += 20;
+            memcpy(&msg.nRetentionDays, &vchPayload[off], 2);
+            topicOffset = 1 + (uint32_t)topic_len + 20 + 2;
+        }
+        lenData = vchPayload.size() - (SMSG_PL_HDR_LEN + topicOffset);
         memcpy(&lenPlain, &vchPayload[1+20+65], 4);
-        pMsgData = &vchPayload[SMSG_PL_HDR_LEN];
+        pMsgData = &vchPayload[SMSG_PL_HDR_LEN + topicOffset];
     }
 
     try {
@@ -4729,6 +4842,153 @@ int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader
 int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)
 {
     return CSMSG::Decrypt(fTestOnly, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg);
+};
+
+bool CSMSG::IsSubscribedTopicHash(uint32_t hash) const
+{
+    return m_subscribed_topic_hashes.count(hash) > 0;
+};
+
+CKey CSMSG::GetTopicSharedKey(const std::string &topic)
+{
+    // Deterministic key: SHA256("omega_topic_key:" + topic)
+    uint256 h;
+    CSHA256().Write((const uint8_t*)"omega_topic_key:", 16)
+             .Write((const uint8_t*)topic.data(), topic.size())
+             .Finalize(h.begin());
+    CKey key;
+    key.Set(h.begin(), h.end(), true);
+    return key;
+};
+
+CKeyID CSMSG::ImportTopicKey(const std::string &topic)
+{
+    CKey topicKey = GetTopicSharedKey(topic);
+    if (!topicKey.IsValid()) {
+        LogPrintf("%s: derived key invalid for topic %s\n", __func__, topic);
+        return CKeyID();
+    }
+    CKeyID addr = topicKey.GetPubKey().GetID();
+    if (!keyStore.HaveKey(addr)) {
+        SecMsgKey smsgKey;
+        smsgKey.key = topicKey;
+        smsgKey.sLabel = "topic:" + topic;
+        smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
+        keyStore.AddKey(addr, smsgKey);
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (db.Open("cr+")) {
+            db.WriteKey(addr, smsgKey);
+        }
+        LogPrintf("Imported shared key for topic %s → %s\n", topic, EncodeDestination(PKHash(addr)));
+    }
+    return addr;
+};
+
+bool CSMSG::SubscribeTopic(const std::string &topic, std::string &sError)
+{
+    if (!IsValidTopic(topic)) {
+        sError = "Invalid topic string.";
+        return false;
+    }
+    // Import the topic's shared key so this node can decrypt broadcast messages
+    ImportTopicKey(topic);
+    {
+        LOCK(cs_smsgSubs);
+        m_subscribed_topics.insert(topic);
+        m_subscribed_topic_hashes.insert(SMSGTopicHash(topic));
+    }
+    return SaveTopicSubs();
+};
+
+bool CSMSG::UnsubscribeTopic(const std::string &topic, std::string &sError)
+{
+    if (!IsValidTopic(topic)) {
+        sError = "Invalid topic string.";
+        return false;
+    }
+    {
+        LOCK(cs_smsgSubs);
+        m_subscribed_topics.erase(topic);
+        // Rebuild the hash set from remaining subscriptions
+        m_subscribed_topic_hashes.clear();
+        for (const auto &t : m_subscribed_topics) {
+            m_subscribed_topic_hashes.insert(SMSGTopicHash(t));
+        }
+    }
+    return SaveTopicSubs();
+};
+
+bool CSMSG::LoadTopicSubs()
+{
+    LOCK(cs_smsgSubs);
+    m_subscribed_topics.clear();
+    m_subscribed_topic_hashes.clear();
+
+    fs::path fpath = GetDataDir() / "smsgstore" / "topic_subs.dat";
+    if (!fs::exists(fpath)) {
+        return true; // no subscriptions yet, not an error
+    }
+
+    FILE *fp = fopen(fpath.string().c_str(), "r");
+    if (!fp) {
+        LogPrintf("%s: Could not open %s: %s\n", __func__, fpath.string(), strerror(errno));
+        return false;
+    }
+
+    char buf[128];
+    while (fgets(buf, sizeof(buf), fp)) {
+        std::string line(buf);
+        // Strip trailing newline/carriage-return
+        while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+            line.pop_back();
+        }
+        if (line.empty() || line[0] == '#') continue;
+        if (IsValidTopic(line)) {
+            m_subscribed_topics.insert(line);
+            m_subscribed_topic_hashes.insert(SMSGTopicHash(line));
+            ImportTopicKey(line);
+        }
+    }
+
+    fclose(fp);
+    LogPrintf("Loaded %zu topic subscriptions.\n", m_subscribed_topics.size());
+    return true;
+};
+
+bool CSMSG::SaveTopicSubs()
+{
+    fs::path dir   = GetDataDir() / "smsgstore";
+    fs::path fpath = dir / "topic_subs.dat";
+    fs::path tmp   = dir / "topic_subs.dat~";
+
+    // Ensure smsgstore directory exists
+    if (!fs::exists(dir)) {
+        try { fs::create_directories(dir); } catch (const fs::filesystem_error &ex) {
+            LogPrintf("%s: Could not create dir %s: %s\n", __func__, dir.string(), ex.what());
+            return false;
+        }
+    }
+
+    FILE *fp = fopen(tmp.string().c_str(), "w");
+    if (!fp) {
+        LogPrintf("%s: Could not open %s: %s\n", __func__, tmp.string(), strerror(errno));
+        return false;
+    }
+
+    for (const auto &t : m_subscribed_topics) {
+        fprintf(fp, "%s\n", t.c_str());
+    }
+    fclose(fp);
+
+    try {
+        fs::rename(tmp, fpath);
+    } catch (const fs::filesystem_error &ex) {
+        LogPrintf("%s: Could not rename %s: %s\n", __func__, tmp.string(), ex.what());
+        return false;
+    }
+
+    return true;
 };
 
 } // namespace smsg

@@ -7,6 +7,7 @@
 #include <smsg/smessage.h>
 #include <serialize.h>
 #include <clientversion.h>
+#include <algorithm>
 
 namespace smsg {
 
@@ -695,6 +696,144 @@ bool SecMsgDB::NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKe
         LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
         return false;
     };
+
+    return true;
+};
+
+// Build the LevelDB key for a topic index entry.
+// Format: "ti" + uint8(topic_len) + topic_bytes + int64_be(timestamp) + uint160(msgId)
+// Storing timestamp big-endian ensures entries are sorted by time within a topic prefix.
+static std::string MakeTopicKey(const std::string &topic, int64_t timestamp, const uint160 &msgId)
+{
+    std::string sKey;
+    sKey.reserve(2 + 1 + topic.size() + 8 + 20);
+    sKey += "ti";
+    sKey += (char)(uint8_t)topic.size();
+    sKey += topic;
+    for (int i = 7; i >= 0; --i) {
+        sKey += (char)((timestamp >> (i * 8)) & 0xFF);
+    }
+    sKey.append((const char*)msgId.begin(), 20);
+    return sKey;
+}
+
+static std::string MakeTopicPrefix(const std::string &topic)
+{
+    std::string sPrefix;
+    sPrefix.reserve(2 + 1 + topic.size());
+    sPrefix += "ti";
+    sPrefix += (char)(uint8_t)topic.size();
+    sPrefix += topic;
+    return sPrefix;
+}
+
+bool SecMsgDB::WriteTopicIndex(const std::string &topic, int64_t timestamp, const uint160 &msgId,
+                               const uint160 &parentMsgId, uint16_t nRetentionDays)
+{
+    if (!pdb) return false;
+
+    std::string sKey = MakeTopicKey(topic, timestamp, msgId);
+    // Value: msgId(20) + parentMsgId(20) + retentionDays(2) = 42 bytes
+    std::string sValue;
+    sValue.reserve(42);
+    sValue.append((const char*)msgId.begin(), 20);
+    sValue.append((const char*)parentMsgId.begin(), 20);
+    sValue.append((const char*)&nRetentionDays, 2);
+
+    if (activeBatch) {
+        activeBatch->Put(sKey, sValue);
+        return true;
+    }
+
+    leveldb::WriteOptions wo;
+    wo.sync = false; // topic index is derived; can be rebuilt if lost
+    leveldb::Status s = pdb->Put(wo, sKey, sValue);
+    if (!s.ok())
+        return error("SecMsgDB WriteTopicIndex failed: %s\n", s.ToString());
+
+    return true;
+};
+
+bool SecMsgDB::ReadTopicMessages(const std::string &topic,
+                                  std::vector<TopicEntry> &out,
+                                  size_t maxEntries)
+{
+    if (!pdb) return false;
+
+    std::string sPrefix = MakeTopicPrefix(topic);
+    leveldb::Iterator *it = pdb->NewIterator(leveldb::ReadOptions());
+
+    // Helper: parse a key+value pair into a TopicEntry
+    auto parseEntry = [&](leveldb::Slice k, leveldb::Slice v) -> bool {
+        size_t tsOffset = 2 + 1 + topic.size();
+        if (k.size() < tsOffset + 8 + 20) return false;
+        TopicEntry e;
+        e.timestamp = 0;
+        for (int i = 0; i < 8; ++i) {
+            e.timestamp = (e.timestamp << 8) | (uint8_t)k[tsOffset + i];
+        }
+        memcpy(e.msgId.begin(), k.data() + tsOffset + 8, 20);
+        // Parse value: msgId(20) + parentMsgId(20) + retentionDays(2)
+        if (v.size() >= 42) {
+            memcpy(e.parentMsgId.begin(), v.data() + 20, 20);
+            memcpy(&e.nRetentionDays, v.data() + 40, 2);
+        } else if (v.size() >= 20) {
+            // Legacy entries: value is just msgId
+            e.parentMsgId.SetNull();
+            e.nRetentionDays = 0;
+        }
+        out.push_back(e);
+        return true;
+    };
+
+    if (maxEntries > 0) {
+        // Reverse scan: seek past the prefix range, then iterate backwards.
+        std::string sEnd = sPrefix;
+        sEnd.back() = (char)((uint8_t)sEnd.back() + 1);
+        it->Seek(sEnd);
+        if (it->Valid()) {
+            it->Prev();
+        } else {
+            it->SeekToLast();
+        }
+        while (it->Valid() && out.size() < maxEntries) {
+            leveldb::Slice k = it->key();
+            if (k.size() < sPrefix.size() || memcmp(k.data(), sPrefix.data(), sPrefix.size()) != 0)
+                break;
+            parseEntry(k, it->value());
+            it->Prev();
+        }
+        std::reverse(out.begin(), out.end());
+    } else {
+        // Forward scan: return all entries in ascending order.
+        for (it->Seek(sPrefix);
+             it->Valid() && it->key().starts_with(sPrefix);
+             it->Next()) {
+            parseEntry(it->key(), it->value());
+        }
+    }
+
+    bool ok = it->status().ok();
+    delete it;
+    return ok;
+};
+
+bool SecMsgDB::EraseTopicIndex(const std::string &topic, int64_t timestamp, const uint160 &msgId)
+{
+    if (!pdb) return false;
+
+    std::string sKey = MakeTopicKey(topic, timestamp, msgId);
+
+    if (activeBatch) {
+        activeBatch->Delete(sKey);
+        return true;
+    }
+
+    leveldb::WriteOptions wo;
+    wo.sync = false;
+    leveldb::Status s = pdb->Delete(wo, sKey);
+    if (!s.ok() && !s.IsNotFound())
+        return error("SecMsgDB EraseTopicIndex failed: %s\n", s.ToString());
 
     return true;
 };

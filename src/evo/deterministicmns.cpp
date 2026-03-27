@@ -759,8 +759,9 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
     // A healthy MN with ~290 registered peers is paid every ~290 blocks; any MN
     // unpaid for 35,000 blocks has missed ~120 payment turns and is structurally absent.
     // Banned MNs can revive by submitting a ProUpServTx once their service is restored.
-    if (nHeight == consensusParams.nHPMasternodeHeight) {
-        const int nCycle = consensusParams.nSuperblockCycle;
+    const auto& ghostParams = Params().GetConsensus();
+    if (nHeight == ghostParams.nHPMasternodeHeight) {
+        const int nCycle = ghostParams.nSuperblockCycle;
         std::vector<uint256> toGhostBan;
         newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
             if (dmn.pdmnState->confirmedHash.IsNull()) return;                        // not yet confirmed

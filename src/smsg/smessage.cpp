@@ -76,6 +76,10 @@ Notes:
 #include <util/system.h>
 #include <thread>
 
+#if ENABLE_ZMQ
+#include <zmq/zmqnotificationinterface.h>
+#endif
+
 extern CConnman* g_connman;
 
 extern void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="");
@@ -2842,6 +2846,12 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
                             NotifySecMsgInboxChanged(smsgInbox);
                         }
                     }
+#if ENABLE_ZMQ
+                    // Fire ZMQ notification for new SMSG message
+                    if (g_zmq_notification_interface) {
+                        g_zmq_notification_interface->NotifySmsgReceived(smsgInbox.vchMessage);
+                    }
+#endif
                     LogPrintf("SecureMsg saved to %s, received with %s.\n",
                         fTrollbox ? "trollbox" : "inbox", EncodeDestination(PKHash(addressTo)));
                 }

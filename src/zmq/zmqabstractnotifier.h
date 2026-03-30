@@ -61,6 +61,7 @@ public:
     virtual bool NotifyGovernanceObject(const std::shared_ptr<const CGovernanceObject>& object);
     virtual bool NotifyInstantSendDoubleSpendAttempt(const CTransactionRef& currentTx, const CTransactionRef& previousTx);
     virtual bool NotifyRecoveredSig(const std::shared_ptr<const llmq::CRecoveredSig>& sig);
+    virtual bool NotifySmsg(const std::vector<uint8_t>& vchMessage);
 
 protected:
     void *psocket;

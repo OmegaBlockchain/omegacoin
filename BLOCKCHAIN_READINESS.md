@@ -123,7 +123,7 @@ Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested |
 |----|-------|----------|--------|
 | 6.1 | ZMQ compiled in | ✅ CONFIRMED — `getzmqnotifications` RPC present | 🟡 |
 | 6.2 | ZMQ topics published | Run `omega-cli getzmqnotifications` and record output | 🔴 |
-| 6.3 | SMSG ZMQ topic | If `smsg` topic present, P4-05 needs app-side work only | ⚠️ PENDING |
+| 6.3 | SMSG ZMQ topic | `zmqpubhashsmsg` + `zmqpubrawsmsg` built in 0.20.3. Config: `-zmqpubhashsmsg=tcp://...` `-zmqpubrawsmsg=tcp://...` | 🟢 Built (needs testnet verification) |
 
 ---
 
@@ -163,4 +163,4 @@ Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested |
 | 9.6 | PSBT escrow flow | ✅ RESOLVED — see docs/rpc-interface.md |
 | 9.7 | Anonymous sender SMSG | ✅ RESOLVED — separate command `smsgsendanon "to" "msg"` |
 | 9.8 | TTL values | ✅ PARTIALLY RESOLVED — unit confirmed as days, max TTL needs testing |
-| 9.9 | ZMQ SMSG topic | ⚠️ PENDING — ZMQ present, run `getzmqnotifications` to confirm SMSG topic |
+| 9.9 | ZMQ SMSG topic | ✅ RESOLVED — Native ZMQ publishers `zmqpubhashsmsg` + `zmqpubrawsmsg` built in 0.20.3. Fires on inbox message receipt via `g_zmq_notification_interface->NotifySmsgReceived()`. Needs testnet verification (R-21). |

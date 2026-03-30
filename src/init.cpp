@@ -28,6 +28,7 @@
 #include <httprpc.h>
 #include <interfaces/chain.h>
 #include <index/blockfilterindex.h>
+#include <index/smsgroomindex.h>
 #include <index/txindex.h>
 #include <interfaces/node.h>
 #include <key.h>
@@ -215,6 +216,9 @@ void Interrupt(NodeContext& node)
     if (g_txindex) {
         g_txindex->Interrupt();
     }
+    if (g_smsgroomindex) {
+        g_smsgroomindex->Interrupt();
+    }
     ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Interrupt(); });
 }
 
@@ -333,6 +337,10 @@ void PrepareShutdown(NodeContext& node)
     if (g_txindex) {
         g_txindex->Stop();
         g_txindex.reset();
+    }
+    if (g_smsgroomindex) {
+        g_smsgroomindex->Stop();
+        g_smsgroomindex.reset();
     }
     ForEachBlockFilterIndex([](BlockFilterIndex& index) { index.Stop(); });
     DestroyAllBlockFilterIndexes();
@@ -2306,6 +2314,10 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
         g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
         g_txindex->Start();
     }
+
+    // SMSG room index — always enabled, lightweight (only indexes type 8 txs)
+    g_smsgroomindex = std::make_unique<SmsgRoomIndex>(1 << 20 /* 1 MiB cache */, false, fReindex);
+    g_smsgroomindex->Start();
 
     for (const auto& filter_type : g_enabled_filter_types) {
         InitBlockFilterIndex(filter_type, filter_index_cache, false, fReindex);

@@ -17,8 +17,22 @@
 #include <wallet/ismine.h>
 #include <wallet/rpcwallet.h>
 
+#include <chainparams.h>
+#include <consensus/validation.h>
+#include <evo/smsgroomtx.h>
+#include <evo/specialtx.h>
+#include <evo/specialtxman.h>
+#include <index/smsgroomindex.h>
+#include <util/translation.h>
+#include <util/validation.h>
+#include <key.h>
+#include <key_io.h>
+#include <validation.h>
+
 #ifdef ENABLE_WALLET
+#include <wallet/coincontrol.h>
 #include <wallet/wallet.h>
+extern UniValue sendrawtransaction(const JSONRPCRequest& request);
 #endif
 
 #include <univalue.h>
@@ -2500,6 +2514,350 @@ static UniValue smsggetmessages(const JSONRPCRequest &request)
     return result;
 }
 
+// ---- Room RPCs (0.20.3) ----
+
+static UniValue smsgcreateroom(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
+        throw std::runtime_error(
+            "smsgcreateroom \"name\" ( flags retention_days )\n"
+            "\nCreate an SMSG room via a TRANSACTION_SMSG_ROOM special transaction.\n"
+            "Generates a room keypair, constructs and broadcasts the room transaction,\n"
+            "and auto-subscribes to the room topic.\n"
+            "\nArguments:\n"
+            "1. \"name\"           (string, required) Room name (stored in OP_RETURN, max 64 chars).\n"
+            "2. flags             (numeric, optional, default=1) Room flags: 1=open, 2=moderated, 3=both.\n"
+            "3. retention_days    (numeric, optional, default=31) Message retention 1-31 days.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"txid\": \"...\",\n"
+            "  \"room_address\": \"...\",\n"
+            "  \"room_pubkey\": \"...\",\n"
+            "  \"room_privkey_wif\": \"...\",\n"
+            "  \"topic\": \"omega.room.<short_txid>\"\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsgcreateroom", "\"General Chat\"")
+            + HelpExampleCli("smsgcreateroom", "\"Moderated Room\" 3 14"));
+
+#ifdef ENABLE_WALLET
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, "Wallet not available.");
+    CWallet* const pwallet = wallet.get();
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    std::string sName = request.params[0].get_str();
+    if (sName.empty() || sName.size() > 64)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Room name must be 1-64 characters.");
+
+    uint32_t nFlags = SMSG_ROOM_OPEN;
+    if (request.params.size() > 1 && !request.params[1].isNull())
+        nFlags = (uint32_t)request.params[1].get_int();
+    if (nFlags & ~(SMSG_ROOM_OPEN | SMSG_ROOM_MODERATED))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid flags. Use 1=open, 2=moderated, 3=both.");
+
+    uint32_t nRetentionDays = 31;
+    if (request.params.size() > 2 && !request.params[2].isNull()) {
+        nRetentionDays = (uint32_t)request.params[2].get_int();
+        if (nRetentionDays < 1 || nRetentionDays > 31)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "retention_days must be 1-31.");
+    }
+
+    // Generate fresh room keypair
+    CKey roomKey;
+    roomKey.MakeNewKey(true);
+    CPubKey roomPubKey = roomKey.GetPubKey();
+
+    // Construct room payload
+    CSmsgRoomTx roomTx;
+    roomTx.nVersion = CSmsgRoomTx::CURRENT_VERSION;
+    roomTx.nFlags = nFlags;
+    roomTx.vchRoomPubKey.assign(roomPubKey.begin(), roomPubKey.end());
+    roomTx.nRetentionDays = nRetentionDays;
+    roomTx.nMaxMembers = 0;
+
+    // Build special transaction
+    CMutableTransaction tx;
+    tx.nVersion = 3;
+    tx.nType = TRANSACTION_SMSG_ROOM;
+
+    // OP_RETURN output carrying the room name
+    CScript opReturnScript = CScript() << OP_RETURN << std::vector<uint8_t>(sName.begin(), sName.end());
+    tx.vout.emplace_back(0, opReturnScript);
+
+    // Serialise payload into tx
+    SetTxPayload(tx, roomTx);
+
+    // Fund the transaction using wallet
+    {
+        pwallet->BlockUntilSyncedToCurrentChain();
+        LOCK(pwallet->cs_wallet);
+
+        // Build recipient list from outputs
+        std::vector<CRecipient> vecSend;
+        for (const auto& txOut : tx.vout) {
+            CRecipient recipient = {txOut.scriptPubKey, txOut.nValue, false};
+            vecSend.push_back(recipient);
+        }
+
+        CCoinControl coinControl;
+        coinControl.fRequireAllInputs = false;
+
+        CTransactionRef newTx;
+        CAmount nFee;
+        int nChangePos = -1;
+        bilingual_str strFailReason;
+
+        if (!pwallet->CreateTransaction(vecSend, newTx, nFee, nChangePos, strFailReason, coinControl, false, tx.vExtraPayload.size())) {
+            throw JSONRPCError(RPC_WALLET_ERROR, strFailReason.original);
+        }
+
+        tx.vin = newTx->vin;
+        tx.vout = newTx->vout;
+    }
+
+    // Validate the funded tx
+    {
+        LOCK(cs_main);
+        CValidationState state;
+        if (!CheckSpecialTx(CTransaction(tx), ::ChainActive().Tip(), state, ::ChainstateActive().CoinsTip(), false)) {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, FormatStateMessage(state));
+        }
+    }
+
+    // Sign and broadcast
+    CDataStream ds(SER_NETWORK, PROTOCOL_VERSION);
+    ds << tx;
+
+    JSONRPCRequest signReq(request);
+    signReq.params.setArray();
+    signReq.params.push_back(HexStr(ds));
+    UniValue signResult = signrawtransactionwithwallet(signReq);
+
+    JSONRPCRequest sendReq(request);
+    sendReq.params.setArray();
+    sendReq.params.push_back(signResult["hex"].get_str());
+    std::string txid = sendrawtransaction(sendReq).get_str();
+
+    // Derive room topic from txid
+    std::string shortTxid = txid.substr(0, 12);
+    std::string topic = "omega.room." + shortTxid;
+
+    // Auto-subscribe to the room topic
+    if (smsg::fSecMsgEnabled) {
+        std::string sError;
+        smsgModule.SubscribeTopic(topic, sError);
+    }
+
+    // Import room private key into SMSG keystore so we can decrypt room messages
+    if (smsg::fSecMsgEnabled) {
+        std::string sLabel = "room:" + sName;
+        smsgModule.ImportPrivkey(roomKey, sLabel);
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("txid", txid);
+    result.pushKV("room_address", EncodeDestination(PKHash(roomPubKey.GetID())));
+    result.pushKV("room_pubkey", HexStr(roomPubKey));
+    result.pushKV("room_privkey_wif", EncodeSecret(roomKey));
+    result.pushKV("topic", topic);
+    result.pushKV("name", sName);
+    result.pushKV("flags", (int)nFlags);
+    result.pushKV("retention_days", (int)nRetentionDays);
+    return result;
+#else
+    throw JSONRPCError(RPC_WALLET_ERROR, "Wallet support not compiled in.");
+#endif
+}
+
+static UniValue smsglistrooms(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+            "smsglistrooms ( flags_filter )\n"
+            "\nList all SMSG rooms registered on the blockchain.\n"
+            "\nArguments:\n"
+            "1. flags_filter  (numeric, optional) Filter by flags bitmask. Omit for all rooms.\n"
+            "\nResult:\n"
+            "[\n"
+            "  { \"txid\": \"...\", \"flags\": n, \"pubkey\": \"...\", \"retention_days\": n, \"height\": n, \"topic\": \"...\" }\n"
+            "]\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsglistrooms", "")
+            + HelpExampleCli("smsglistrooms", "1"));
+
+    if (!g_smsgroomindex)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "SMSG room index not available.");
+
+    g_smsgroomindex->BlockUntilSyncedToCurrentChain();
+
+    uint32_t nFlagsFilter = 0;
+    bool fFilter = false;
+    if (request.params.size() > 0 && !request.params[0].isNull()) {
+        nFlagsFilter = (uint32_t)request.params[0].get_int();
+        fFilter = true;
+    }
+
+    std::vector<std::pair<uint256, SmsgRoomIndexEntry>> rooms;
+    if (!g_smsgroomindex->ListRooms(rooms))
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Failed to read room index.");
+
+    UniValue result(UniValue::VARR);
+    for (const auto& [txid, entry] : rooms) {
+        if (fFilter && !(entry.nFlags & nFlagsFilter))
+            continue;
+
+        std::string shortTxid = txid.ToString().substr(0, 12);
+        std::string topic = "omega.room." + shortTxid;
+
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("txid", txid.ToString());
+        obj.pushKV("version", (int)entry.nVersion);
+        obj.pushKV("flags", (int)entry.nFlags);
+        obj.pushKV("flags_readable",
+            std::string(entry.nFlags & SMSG_ROOM_OPEN ? "open" : "private") +
+            std::string(entry.nFlags & SMSG_ROOM_MODERATED ? "+moderated" : ""));
+        obj.pushKV("pubkey", HexStr(entry.vchRoomPubKey));
+        obj.pushKV("retention_days", (int)entry.nRetentionDays);
+        obj.pushKV("max_members", (int)entry.nMaxMembers);
+        obj.pushKV("height", entry.nHeight);
+        obj.pushKV("topic", topic);
+        result.push_back(obj);
+    }
+    return result;
+}
+
+static UniValue smsggetroominfo(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsggetroominfo \"room_txid\"\n"
+            "\nReturn detailed information about an SMSG room.\n"
+            "\nArguments:\n"
+            "1. \"room_txid\"  (string, required) The txid of the room creation transaction.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"txid\": \"...\", \"flags\": n, \"pubkey\": \"...\", \"retention_days\": n,\n"
+            "  \"height\": n, \"confirmations\": n, \"topic\": \"...\", \"room_address\": \"...\"\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsggetroominfo", "\"abc123...\""));
+
+    if (!g_smsgroomindex)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "SMSG room index not available.");
+
+    g_smsgroomindex->BlockUntilSyncedToCurrentChain();
+
+    uint256 txid = ParseHashV(request.params[0], "room_txid");
+
+    SmsgRoomIndexEntry entry;
+    if (!g_smsgroomindex->FindRoom(txid, entry))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Room not found in index.");
+
+    int nConfirmations = 0;
+    {
+        LOCK(cs_main);
+        const int nTip = ::ChainActive().Height();
+        if (entry.nHeight > 0 && nTip >= entry.nHeight)
+            nConfirmations = nTip - entry.nHeight + 1;
+    }
+
+    std::string shortTxid = txid.ToString().substr(0, 12);
+    std::string topic = "omega.room." + shortTxid;
+
+    // Derive room address from pubkey
+    std::string roomAddress;
+    if (entry.vchRoomPubKey.size() == CPubKey::COMPRESSED_SIZE) {
+        CPubKey pk(entry.vchRoomPubKey);
+        if (pk.IsFullyValid())
+            roomAddress = EncodeDestination(PKHash(pk.GetID()));
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("txid", txid.ToString());
+    result.pushKV("version", (int)entry.nVersion);
+    result.pushKV("flags", (int)entry.nFlags);
+    result.pushKV("flags_readable",
+        std::string(entry.nFlags & SMSG_ROOM_OPEN ? "open" : "private") +
+        std::string(entry.nFlags & SMSG_ROOM_MODERATED ? "+moderated" : ""));
+    result.pushKV("pubkey", HexStr(entry.vchRoomPubKey));
+    result.pushKV("room_address", roomAddress);
+    result.pushKV("retention_days", (int)entry.nRetentionDays);
+    result.pushKV("max_members", (int)entry.nMaxMembers);
+    result.pushKV("height", entry.nHeight);
+    result.pushKV("confirmations", nConfirmations);
+    result.pushKV("topic", topic);
+    return result;
+}
+
+static UniValue smsgjoinroom(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "smsgjoinroom \"room_txid\" ( \"privkey_wif\" )\n"
+            "\nJoin an SMSG room: subscribe to the room topic and register the room key.\n"
+            "For open rooms, only the txid is needed.\n"
+            "For private rooms, provide the room private key (WIF) received via invite.\n"
+            "\nArguments:\n"
+            "1. \"room_txid\"     (string, required) The txid of the room creation transaction.\n"
+            "2. \"privkey_wif\"   (string, optional) Room private key WIF (for private rooms).\n"
+            "\nResult:\n"
+            "{ \"result\": \"joined\", \"topic\": \"...\" }\n"
+            "\nExamples:\n"
+            + HelpExampleCli("smsgjoinroom", "\"abc123...\"")
+            + HelpExampleCli("smsgjoinroom", "\"abc123...\" \"5Jxyz...\""));
+
+    EnsureSMSGIsEnabled();
+
+    if (!g_smsgroomindex)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "SMSG room index not available.");
+
+    g_smsgroomindex->BlockUntilSyncedToCurrentChain();
+
+    uint256 txid = ParseHashV(request.params[0], "room_txid");
+
+    SmsgRoomIndexEntry entry;
+    if (!g_smsgroomindex->FindRoom(txid, entry))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Room not found in index.");
+
+    std::string shortTxid = txid.ToString().substr(0, 12);
+    std::string topic = "omega.room." + shortTxid;
+
+    // Subscribe to room topic
+    std::string sError;
+    if (!smsgModule.SubscribeTopic(topic, sError))
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Failed to subscribe to topic: " + sError);
+
+    // For private rooms with a WIF key, import it
+    if (request.params.size() > 1 && !request.params[1].isNull()) {
+        std::string sWif = request.params[1].get_str();
+        CKey key = DecodeSecret(sWif);
+        if (!key.IsValid())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid private key WIF.");
+
+        std::string sLabel = "room:" + shortTxid;
+        if (smsgModule.ImportPrivkey(key, sLabel) != 0)
+            throw JSONRPCError(RPC_INTERNAL_ERROR, "Failed to import room key.");
+    } else {
+        // Open room — register the room public key so we can route messages
+        if (entry.vchRoomPubKey.size() == CPubKey::COMPRESSED_SIZE) {
+            CPubKey pk(entry.vchRoomPubKey);
+            if (pk.IsFullyValid()) {
+                std::string sAddr = EncodeDestination(PKHash(pk.GetID()));
+                std::string sPubHex = HexStr(pk);
+                smsgModule.AddAddress(sAddr, sPubHex);
+            }
+        }
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "joined");
+    result.pushKV("txid", txid.ToString());
+    result.pushKV("topic", topic);
+    return result;
+}
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -2545,6 +2903,11 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsgunsubscribe",        &smsgunsubscribe,        {"topic"} },
     { "smsg",               "smsglisttopics",         &smsglisttopics,         {} },
     { "smsg",               "smsggetmessages",        &smsggetmessages,        {"topic","count"} },
+    // Room management (0.20.3)
+    { "smsg",               "smsgcreateroom",         &smsgcreateroom,         {"name","flags","retention_days"} },
+    { "smsg",               "smsglistrooms",          &smsglistrooms,          {"flags_filter"} },
+    { "smsg",               "smsggetroominfo",        &smsggetroominfo,        {"room_txid"} },
+    { "smsg",               "smsgjoinroom",           &smsgjoinroom,           {"room_txid","privkey_wif"} },
 };
 
 void RegisterSmsgRPCCommands(CRPCTable &t)

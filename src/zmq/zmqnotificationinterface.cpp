@@ -50,6 +50,8 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
     factories["pubrawgovernanceobject"] = CZMQAbstractNotifier::Create<CZMQPublishRawGovernanceObjectNotifier>;
     factories["pubrawinstantsenddoublespend"] = CZMQAbstractNotifier::Create<CZMQPublishRawInstantSendDoubleSpendNotifier>;
     factories["pubrawrecoveredsig"] = CZMQAbstractNotifier::Create<CZMQPublishRawRecoveredSigNotifier>;
+    factories["pubhashsmsg"] = CZMQAbstractNotifier::Create<CZMQPublishHashSmsgNotifier>;
+    factories["pubrawsmsg"] = CZMQAbstractNotifier::Create<CZMQPublishRawSmsgNotifier>;
 
     std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
     for (const auto& entry : factories)
@@ -218,6 +220,13 @@ void CZMQNotificationInterface::NotifyRecoveredSig(const std::shared_ptr<const l
 {
     TryForEachAndRemoveFailed(notifiers, [&sig](CZMQAbstractNotifier* notifier) {
         return notifier->NotifyRecoveredSig(sig);
+    });
+}
+
+void CZMQNotificationInterface::NotifySmsgReceived(const std::vector<uint8_t>& vchMessage)
+{
+    TryForEachAndRemoveFailed(notifiers, [&vchMessage](CZMQAbstractNotifier* notifier) {
+        return notifier->NotifySmsg(vchMessage);
     });
 }
 

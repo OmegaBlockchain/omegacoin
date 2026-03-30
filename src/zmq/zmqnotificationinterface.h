@@ -37,6 +37,10 @@ protected:
     void NotifyInstantSendDoubleSpendAttempt(const CTransactionRef& currentTx, const CTransactionRef& previousTx) override;
     void NotifyRecoveredSig(const std::shared_ptr<const llmq::CRecoveredSig>& sig) override;
 
+public:
+    /** Called by the SMSG subsystem when a new message is received into inbox. */
+    void NotifySmsgReceived(const std::vector<uint8_t>& vchMessage);
+
 private:
     CZMQNotificationInterface();
 

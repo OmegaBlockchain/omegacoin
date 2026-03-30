@@ -5,6 +5,7 @@
 #include <zmq/zmqpublishnotifier.h>
 
 #include <chain.h>
+#include <crypto/sha256.h>
 #include <chainparams.h>
 #include <streams.h>
 #include <validation.h>
@@ -45,6 +46,8 @@ static const char *MSG_RAWGVOTE      = "rawgovernancevote";
 static const char *MSG_RAWGOBJ       = "rawgovernanceobject";
 static const char *MSG_RAWISCON      = "rawinstantsenddoublespend";
 static const char *MSG_RAWRECSIG     = "rawrecoveredsig";
+static const char *MSG_HASHSMSG      = "hashsmsg";
+static const char *MSG_RAWSMSG       = "rawsmsg";
 
 // Internal function to send multipart message
 static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
@@ -404,5 +407,20 @@ bool CZMQPublishRawRecoveredSigNotifier::NotifyRecoveredSig(const std::shared_pt
     ss << *sig;
 
     return SendZmqMessage(MSG_RAWRECSIG, &(*ss.begin()), ss.size());
+}
+
+bool CZMQPublishHashSmsgNotifier::NotifySmsg(const std::vector<uint8_t>& vchMessage)
+{
+    // Hash the full message (header + payload) and publish the 32-byte hash
+    uint256 hash;
+    CSHA256().Write(vchMessage.data(), vchMessage.size()).Finalize(hash.begin());
+    LogPrint(BCLog::ZMQ, "zmq: Publish hashsmsg %s\n", hash.ToString());
+    return SendZmqMessage(MSG_HASHSMSG, hash.begin(), hash.size());
+}
+
+bool CZMQPublishRawSmsgNotifier::NotifySmsg(const std::vector<uint8_t>& vchMessage)
+{
+    LogPrint(BCLog::ZMQ, "zmq: Publish rawsmsg (%u bytes)\n", vchMessage.size());
+    return SendZmqMessage(MSG_RAWSMSG, vchMessage.data(), vchMessage.size());
 }
 

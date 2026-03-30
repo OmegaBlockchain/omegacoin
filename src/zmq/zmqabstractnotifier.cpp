@@ -52,3 +52,8 @@ bool CZMQAbstractNotifier::NotifyRecoveredSig(const std::shared_ptr<const llmq::
 {
     return true;
 }
+
+bool CZMQAbstractNotifier::NotifySmsg(const std::vector<uint8_t>& /*vchMessage*/)
+{
+    return true;
+}

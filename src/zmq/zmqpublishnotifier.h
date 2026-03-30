@@ -137,4 +137,17 @@ class CZMQPublishRawRecoveredSigNotifier : public CZMQAbstractPublishNotifier
 public:
     bool NotifyRecoveredSig(const std::shared_ptr<const llmq::CRecoveredSig> &sig) override;
 };
+
+class CZMQPublishHashSmsgNotifier : public CZMQAbstractPublishNotifier
+{
+public:
+    bool NotifySmsg(const std::vector<uint8_t>& vchMessage) override;
+};
+
+class CZMQPublishRawSmsgNotifier : public CZMQAbstractPublishNotifier
+{
+public:
+    bool NotifySmsg(const std::vector<uint8_t>& vchMessage) override;
+};
+
 #endif // BITCOIN_ZMQ_ZMQPUBLISHNOTIFIER_H

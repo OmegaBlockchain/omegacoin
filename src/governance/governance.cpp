@@ -25,7 +25,12 @@ std::unique_ptr<CGovernanceManager> governance;
 
 int nSubmittedFinalBudget;
 
-const std::string CGovernanceManager::SERIALIZATION_VERSION_STRING = "CGovernanceManager-Version-16";
+// Version-17: bump after MN_CURRENT_FORMAT increased to MN_V3_FORMAT (adds nPoSeSuccessHeight
+// to CDeterministicMNState). Old governance.dat embeds a CDeterministicMNList serialised in
+// the old format; attempting to read it with format-3 semantics misaligns the stream and
+// throws a duplicate-internalId error. Bumping this string causes the old file to be
+// discarded cleanly at the version-check rather than mid-deserialisation.
+const std::string CGovernanceManager::SERIALIZATION_VERSION_STRING = "CGovernanceManager-Version-17";
 const int CGovernanceManager::MAX_TIME_FUTURE_DEVIATION = 60 * 60;
 const int CGovernanceManager::RELIABLE_PROPAGATION_TIME = 60;
 

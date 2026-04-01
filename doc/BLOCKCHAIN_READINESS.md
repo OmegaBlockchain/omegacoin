@@ -2,7 +2,7 @@
 
 Tracks which Omega daemon capabilities have been confirmed on live nodes.
 
-**Last audit:** 2026-03-20 — two peered nodes running omega-qt with SMSG.
+**Last audit:** 2026-04-01 — testnet nodes running omegad 0.20.3 with SMSG, topic channels, and room RPCs.
 
 Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested | ⚠️ pending
 
@@ -15,7 +15,7 @@ Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested |
 | ID | Method | Test command | Expected | Status |
 |----|--------|-------------|----------|--------|
 | 1.1.1 | `smsgsend` | `omega-cli smsgsend` | ✅ CONFIRMED — params: address_from address_to message paid_msg days_retention testfee | 🟢 |
-| 1.1.2 | `smsgbuckets` | `omega-cli smsgbuckets` | ✅ CONFIRMED — NOTE: command is `smsgbuckets` not `smsggetbuckets` | 🟢 |
+| 1.1.2 | `smsgbuckets` | `omega-cli smsgbuckets` | ✅ CONFIRMED — `smsgbuckets` lists buckets; `smsgbuckets dump` writes `smsgstore/buckets_dump.json` (non-destructive). Use `smsgclearbuckets true` for deletion. | 🟢 |
 | 1.1.3 | `smsg` | `omega-cli smsg <msgid>` | ✅ CONFIRMED — NOTE: command is `smsg` not `smsgget` | 🟢 |
 | 1.1.4 | `smsgsendanon` | `omega-cli smsgsendanon` | ✅ CONFIRMED — separate command, NOT a flag on smsgsend | 🟢 |
 | 1.1.5 | `smsginbox` | `omega-cli smsginbox` | ✅ CONFIRMED | 🟢 |
@@ -30,6 +30,17 @@ Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested |
 | 1.1.14 | `smsggetpubkey` | `omega-cli smsggetpubkey` | ✅ CONFIRMED — new, use for encrypted invites | 🟢 |
 | 1.1.15 | `smsgview` | `omega-cli smsgview` | ✅ CONFIRMED — new, use for room fetch by address | 🟢 |
 | 1.1.16 | `smsgpurge` | `omega-cli smsgpurge` | ✅ CONFIRMED — new, use for room expiry | 🟢 |
+| 1.1.17 | `smsgsubscribe` | `omega-cli smsgsubscribe "omega.room.<id>"` | ✅ CONFIRMED — subscribe to topic channel | 🟢 |
+| 1.1.18 | `smsgunsubscribe` | `omega-cli smsgunsubscribe "omega.room.<id>"` | ✅ CONFIRMED — unsubscribe from topic | 🟢 |
+| 1.1.19 | `smsglisttopics` | `omega-cli smsglisttopics` | ✅ CONFIRMED — list all subscribed topics | 🟢 |
+| 1.1.20 | `smsggetmessages` | `omega-cli smsggetmessages "omega.room.<id>"` | ✅ CONFIRMED — fetch messages for topic; default limit 50, silent truncation (WARN-07) | 🟢 |
+| 1.1.21 | `smsgcreateroom` | `omega-cli smsgcreateroom "name" flags retention_days` | ✅ CONFIRMED — creates type-8 special tx, auto-subscribes to `omega.room.<txid[0:12]>` topic | 🟢 |
+| 1.1.22 | `smsglistrooms` | `omega-cli smsglistrooms` | ✅ CONFIRMED — returns indexed rooms from SmsgRoomIndex (LevelDB) | 🟢 |
+| 1.1.23 | `smsggetroominfo` | `omega-cli smsggetroominfo <txid>` | ✅ CONFIRMED — full room details by txid | 🟢 |
+| 1.1.24 | `smsgjoinroom` | `omega-cli smsgjoinroom <txid>` | ✅ CONFIRMED — wrapper: subscribes to topic + registers room pubkey | 🟢 |
+| 1.1.25 | `smsgclearbuckets` | `omega-cli smsgclearbuckets true` | ✅ BUILT — permanently deletes all .dat files in smsgstore/; `confirm=true` mandatory. CRIT-01 fix. | 🟡 Built, pending testnet verification |
+| 1.1.26 | `trollboxsend` | `omega-cli trollboxsend "message"` | ✅ CONFIRMED — max 256 chars, 30s rate limit, 24h retention | 🟢 |
+| 1.1.27 | `trollboxlist` | `omega-cli trollboxlist 200` | ✅ CONFIRMED — returns up to N trollbox messages | 🟢 |
 
 ### 1.2 Message Delivery
 
@@ -121,9 +132,9 @@ Status legend: 🟢 confirmed | 🟡 partially confirmed | 🔴 not yet tested |
 
 | ID | Check | Expected | Status |
 |----|-------|----------|--------|
-| 6.1 | ZMQ compiled in | ✅ CONFIRMED — `getzmqnotifications` RPC present | 🟡 |
-| 6.2 | ZMQ topics published | Run `omega-cli getzmqnotifications` and record output | 🔴 |
-| 6.3 | SMSG ZMQ topic | `zmqpubhashsmsg` + `zmqpubrawsmsg` built in 0.20.3. Config: `-zmqpubhashsmsg=tcp://...` `-zmqpubrawsmsg=tcp://...` | 🟢 Built (needs testnet verification) |
+| 6.1 | ZMQ compiled in | ✅ CONFIRMED — `getzmqnotifications` RPC present | 🟢 |
+| 6.2 | ZMQ topics published | ✅ CONFIRMED — `hashblock`, `rawtx`, `hashsmsg`, `rawsmsg` all fire on testnet node configured with `-zmqpubhash*` / `-zmqpubraw*` flags | 🟢 |
+| 6.3 | SMSG ZMQ topics | ✅ CONFIRMED — `zmqpubhashsmsg` publishes SHA256(full_msg) on inbox receipt; `zmqpubrawsmsg` publishes full SMSG bytes. Topic hash in cleartext `nonce[0..3]`. Config: `-zmqpubhashsmsg=tcp://...` `-zmqpubrawsmsg=tcp://...` | 🟢 |
 
 ---
 

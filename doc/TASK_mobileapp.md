@@ -1,7 +1,7 @@
 # TASK: Omega Secure Messenger — Android App
 
 **Created:** 2026-03-30
-**Last revised:** 2026-03-30 (security review + threat report integrated)
+**Last revised:** 2026-04-01 (topic channels confirmed; smsgclearbuckets added; ZMQ SMSG verified)
 **Target platform:** Android 9.0+ (API 28+)
 **Blockchain:** Omega 0.20.x (Dash 0.19 lineage)
 **Core transport:** SMSG (SecureMessage protocol)
@@ -278,6 +278,7 @@ focused security audit of the modified SMSG code is required:
 - Review all changes from upstream Particl
 - Check for known Particl SMSG bugs / CVEs
 - Verify topic channel key derivation (FNV-1a hash routing)
+- `IsValidTopic()` hardened in 0.20.3: rejects consecutive dots (`..`) and trailing dot — validates `omega.*` prefix, lowercase alphanumeric+dots, length 7–64 (`smsg/smessage.h`)
 - Test boundary conditions (max payload, TTL overflow, nonce exhaustion)
 - Fuzz test `Encrypt()` / `Decrypt()` / `SetHash()` paths
 
@@ -287,12 +288,12 @@ focused security audit of the modified SMSG code is required:
 |---------|---------|--------|
 | `smsgenable` | Enable SMSG on daemon | 🟢 |
 | `smsgdisable` | Disable SMSG | 🟢 |
-| `smsgsend` | Send message (from, to, body, paid, days) | 🟢 |
+| `smsgsend` | Send message (address_from, address_to, message, paid_msg, days_retention, testfee, fromfile, decodehex, **topic**, parent_msgid) | 🟢 |
 | `smsgsendanon` | Send anonymous encrypted message | 🟢 |
 | `smsginbox` | Read inbox | 🟢 |
 | `smsgoutbox` | Read outbox | 🟢 |
 | `smsg` | Fetch single message by ID | 🟢 |
-| `smsgbuckets` | List message buckets | 🟢 |
+| `smsgbuckets` | List message buckets; `dump` mode writes `smsgstore/buckets_dump.json` (non-destructive) | 🟢 |
 | `smsgscanbuckets` | Force rescan | 🟢 |
 | `smsgaddaddress` | Add external address + pubkey | 🟢 |
 | `smsgaddlocaladdress` | Add wallet address to SMSG | 🟢 |
@@ -311,6 +312,7 @@ focused security audit of the modified SMSG code is required:
 | `smsglistrooms` | List all rooms from index | 🟢 New in 0.20.3 |
 | `smsggetroominfo` | Get room details by txid | 🟢 New in 0.20.3 |
 | `smsgjoinroom` | Join room (subscribe + register key) | 🟢 New in 0.20.3 |
+| `smsgclearbuckets` | Permanently delete all smsgstore .dat files (`confirm=true` required) | 🟢 New in 0.20.3 — admin/maintenance only |
 
 ### §2.2 Message types used by the app
 
@@ -331,13 +333,15 @@ The daemon must be configured with ZMQ endpoints:
 # omega.conf
 zmqpubhashblock=tcp://0.0.0.0:7780
 zmqpubrawtx=tcp://0.0.0.0:7780
-zmqpubsmsg=tcp://0.0.0.0:7780      # if SMSG ZMQ topic exists
+zmqpubhashsmsg=tcp://0.0.0.0:7780  # SHA256(full_msg) on inbox receipt
+zmqpubrawsmsg=tcp://0.0.0.0:7780   # full SMSG bytes on inbox receipt
 ```
 
 The app subscribes to ZMQ topics for push-style notifications:
 - `hashblock` — new block (update balance, confirmations)
 - `rawtx` — new transaction (instant balance update)
-- `smsg` — new SMSG message (if topic available; else poll)
+- `hashsmsg` — new SMSG message hash (lightweight ping; app then polls `smsginbox` / `smsggetmessages`)
+- `rawsmsg` — full SMSG bytes on receipt (topic hash visible in cleartext `nonce[0..3]`; use for topic routing)
 
 **Fallback polling** (if ZMQ SMSG topic unavailable):
 
@@ -915,19 +919,19 @@ Before the app can function, the daemon needs:
 | D-18 | PoW difficulty increase or per-message fee (anti-spam) | 🔴 Design needed |
 | D-19 | RPC auth rate-limiting (brute-force protection) | 🔴 Evaluate |
 
-### D-11: Room metadata RPC (needed)
-
-The daemon needs RPCs to query room transactions from the blockchain:
+### D-11: Room metadata RPC (built in 0.20.3)
 
 ```
-smsglistrooms [filter]
+smsglistrooms [flags_filter]
     → Returns all TRANSACTION_SMSG_ROOM txids with parsed CSmsgRoomTx fields
+    → Backed by SmsgRoomIndex (LevelDB, BaseIndex pattern) — no full chain scan
 
 smsggetroominfo <room_txid>
-    → Returns room details: flags, pubkey, retention, member count estimate
+    → Returns room details: flags, pubkey, retention, height, confirmations,
+      topic (omega.room.<txid[0:12]>), last_message_timestamp
 ```
 
-These do not exist yet and must be built before the Directory tab works.
+Both built in `src/smsg/rpcsmessage.cpp`. Index in `src/index/smsgroomindex.h/.cpp`.
 
 ---
 

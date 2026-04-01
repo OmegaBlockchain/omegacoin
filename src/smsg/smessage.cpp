@@ -271,7 +271,11 @@ void ThreadSecureMsg(const CBlockIndex* pindex)
             LogPrint(BCLog::SMSG, "smsg-thread: ignoring - looked peer %d, status on search %u\n", nPeerId, fExists);
         }
 
-        UninterruptibleSleep(std::chrono::milliseconds{SMSG_THREAD_DELAY * 1000});
+        try {
+            boost::this_thread::sleep_for(boost::chrono::seconds(SMSG_THREAD_DELAY));
+        } catch (const boost::thread_interrupted &) {
+            break;
+        }
     }
     return;
 };
@@ -1099,6 +1103,9 @@ bool CSMSG::Shutdown()
         m_handler_unlock_start->disconnect();
     }
 #endif
+    // Disconnect all per-wallet unload handlers so wallet teardown during
+    // process shutdown cannot call Disable() on an already-stopped module.
+    UnloadAllWallets();
     pwallet.reset();
     return true;
 };

@@ -25,8 +25,8 @@
 
 #include <memory>
 
-static const std::string DB_LIST_SNAPSHOT = "dmn_S3";
-static const std::string DB_LIST_DIFF = "dmn_D3";
+static const std::string DB_LIST_SNAPSHOT = "dmn_S4";
+static const std::string DB_LIST_DIFF = "dmn_D4";
 
 std::unique_ptr<CDeterministicMNManager> deterministicMNManager;
 
@@ -995,6 +995,53 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
         }
     }
 
+    // Periodic liveness check (post-fork): ban masternodes that have no record of LLMQ
+    // quorum participation while other masternodes are actively participating.  Targets
+    // phantom nodes — registered on-chain but never deployed — that otherwise collect
+    // payments indefinitely because they are never selected for a DKG session.
+    //
+    // The check fires every nSuperblockCycle/4 blocks.  It only applies bans when at
+    // least one other MN shows a recent nPoSeSuccessHeight (confirming that quorums are
+    // genuinely running).  This prevents false bans after a node restart, during quiet
+    // periods, or on networks where LLMQ quorums are not yet active.
+    //
+    // Banned MNs can be revived by submitting a ProUpServTx once the service is online.
+    if (nHeight > ghostParams.nHPMasternodeHeight) {
+        const int nLivenessPeriod   = ghostParams.nSuperblockCycle / 4;
+        const int nLivenessLookback = ghostParams.nSuperblockCycle / 2;
+        if ((nHeight % nLivenessPeriod) == 0) {
+            bool quorumsActive = false;
+            newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
+                if (dmn.pdmnState->nPoSeSuccessHeight >= nHeight - nLivenessLookback) {
+                    quorumsActive = true;
+                }
+            });
+            if (quorumsActive) {
+                std::vector<uint256> toLivenessBan;
+                newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
+                    if (dmn.pdmnState->confirmedHash.IsNull()) return;
+                    if (dmn.pdmnState->nRegisteredHeight >= nHeight - ghostParams.nSuperblockCycle) return;
+                    if (dmn.pdmnState->nPoSeSuccessHeight >= nHeight - nLivenessLookback) return;
+                    toLivenessBan.emplace_back(dmn.proTxHash);
+                });
+                for (const auto& proTxHash : toLivenessBan) {
+                    auto dmn = newList.GetMN(proTxHash);
+                    assert(dmn);
+                    auto newState = std::make_shared<CDeterministicMNState>(*dmn->pdmnState);
+                    newState->BanIfNotBanned(nHeight);
+                    newList.UpdateMN(proTxHash, newState);
+                    if (debugLogs) {
+                        LogPrintf("CDeterministicMNManager::%s -- liveness ban: MN %s at height %d "
+                                  "(registeredHeight=%d, nPoSeSuccessHeight=%d)\n",
+                                  __func__, proTxHash.ToString(), nHeight,
+                                  dmn->pdmnState->nRegisteredHeight,
+                                  dmn->pdmnState->nPoSeSuccessHeight);
+                    }
+                }
+            }
+        }
+    }
+
     // The payee for the current block was determined by the previous block's list, but it might have disappeared in the
     // current block. We still pay that MN one last time, however.
     if (payee && newList.HasMN(payee->proTxHash)) {
@@ -1056,6 +1103,16 @@ void CDeterministicMNManager::HandleQuorumCommitment(const llmq::CFinalCommitmen
             // If there were enough blocks between failures, the MN has a chance to recover as he reduces his penalty by 1 for every block
             // If it however fails 3 times in the timespan of a single payment cycle, it should definitely get banned
             mnList.PoSePunish(members[i]->proTxHash, mnList.CalcPenalty(66), debugLogs);
+        } else {
+            // Record successful quorum participation for the periodic liveness check.
+            // Only advance the height; never go backwards.
+            auto dmn = mnList.GetMN(members[i]->proTxHash);
+            if (dmn && !dmn->pdmnState->IsBanned() &&
+                    dmn->pdmnState->nPoSeSuccessHeight < mnList.GetHeight()) {
+                auto newState = std::make_shared<CDeterministicMNState>(*dmn->pdmnState);
+                newState->nPoSeSuccessHeight = mnList.GetHeight();
+                mnList.UpdateMN(members[i]->proTxHash, newState);
+            }
         }
     }
 }
@@ -1245,6 +1302,8 @@ bool CDeterministicMNManager::MigrateDBIfNeeded()
     static const std::string DB_OLD_LIST_DIFF = "dmn_D";
     static const std::string DB_OLD_BEST_BLOCK = "b_b2";
     static const std::string DB_OLD_BEST_BLOCK2 = "b_b3";
+    // "b_b4" was EVODB_BEST_BLOCK before migration 3 bumped it to "b_b5"
+    static const std::string DB_PREV_BEST_BLOCK = "b_b4";
 
     LOCK(cs_main);
 
@@ -1256,7 +1315,7 @@ bool CDeterministicMNManager::MigrateDBIfNeeded()
         return m_evoDb.IsEmpty();
     }
 
-    if (m_evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK) || m_evoDb.GetRawDB().Exists(DB_OLD_BEST_BLOCK2)) {
+    if (m_evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK) || m_evoDb.GetRawDB().Exists(DB_OLD_BEST_BLOCK2) || m_evoDb.GetRawDB().Exists(DB_PREV_BEST_BLOCK)) {
         LogPrintf("CDeterministicMNManager::%s -- migration already done. skipping.\n", __func__);
         return true;
     }
@@ -1344,6 +1403,8 @@ bool CDeterministicMNManager::MigrateDBIfNeeded2()
     static const std::string DB_OLD_LIST_SNAPSHOT = "dmn_S2";
     static const std::string DB_OLD_LIST_DIFF = "dmn_D2";
     static const std::string DB_OLD_BEST_BLOCK = "b_b3";
+    // "b_b4" was EVODB_BEST_BLOCK before migration 3 bumped it to "b_b5"
+    static const std::string DB_PREV_BEST_BLOCK = "b_b4";
 
     LOCK(cs_main);
 
@@ -1355,7 +1416,7 @@ bool CDeterministicMNManager::MigrateDBIfNeeded2()
         return m_evoDb.IsEmpty();
     }
 
-    if (m_evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK)) {
+    if (m_evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK) || m_evoDb.GetRawDB().Exists(DB_PREV_BEST_BLOCK)) {
         LogPrintf("CDeterministicMNManager::%s -- migration already done. skipping.\n", __func__);
         return true;
     }
@@ -1424,6 +1485,117 @@ bool CDeterministicMNManager::MigrateDBIfNeeded2()
     m_evoDb.GetRawDB().Erase(DB_OLD_LIST_SNAPSHOT);
 
     LogPrintf("CDeterministicMNManager::%s -- done cleaning old data\n", __func__);
+
+    m_evoDb.GetRawDB().CompactFull();
+
+    LogPrintf("CDeterministicMNManager::%s -- done compacting database\n", __func__);
+
+    // flush it to disk
+    if (!m_evoDb.CommitRootTransaction()) {
+        LogPrintf("CDeterministicMNManager::%s -- failed to commit to evoDB\n", __func__);
+        return false;
+    }
+
+    return true;
+}
+
+bool CDeterministicMNManager::MigrateDBIfNeeded3()
+{
+    // Migrates on-disk MN state from MN_VERSION_FORMAT (2, without nPoSeSuccessHeight)
+    // to MN_V3_FORMAT (3, with nPoSeSuccessHeight).  Old data is read from dmn_S3/dmn_D3
+    // and re-written to dmn_S4/dmn_D4 with nPoSeSuccessHeight defaulting to -1.
+    static const std::string DB_OLD_LIST_SNAPSHOT = "dmn_S3";
+    static const std::string DB_OLD_LIST_DIFF = "dmn_D3";
+    static const std::string DB_OLD_BEST_BLOCK = "b_b4"; // was EVODB_BEST_BLOCK before this migration
+
+    LOCK(cs_main);
+
+    LogPrintf("CDeterministicMNManager::%s -- upgrading DB to add nPoSeSuccessHeight\n", __func__);
+
+    if (::ChainActive().Tip() == nullptr) {
+        // should have no records
+        LogPrintf("CDeterministicMNManager::%s -- Chain empty. evoDB:%d.\n", __func__, m_evoDb.IsEmpty());
+        return m_evoDb.IsEmpty();
+    }
+
+    if (m_evoDb.GetRawDB().Exists(EVODB_BEST_BLOCK)) {
+        LogPrintf("CDeterministicMNManager::%s -- migration already done. skipping.\n", __func__);
+        return true;
+    }
+
+    // Removing the old EVODB_BEST_BLOCK value early results in older version to crash immediately,
+    // even if the upgrade process is cancelled in-between.  If the new version sees that the old
+    // EVODB_BEST_BLOCK is already removed, then we must assume that the upgrade process was already
+    // running before but was interrupted.
+    if (::ChainActive().Height() > 1 && !m_evoDb.GetRawDB().Exists(DB_OLD_BEST_BLOCK)) {
+        LogPrintf("CDeterministicMNManager::%s -- previous migration attempt failed.\n", __func__);
+        return false;
+    }
+    m_evoDb.GetRawDB().Erase(DB_OLD_BEST_BLOCK);
+
+    if (::ChainActive().Height() < Params().GetConsensus().DIP0003Height) {
+        // not reached DIP3 height yet, so no upgrade needed
+        LogPrintf("CDeterministicMNManager::%s -- migration not needed. dip3 not reached\n", __func__);
+        auto dbTx = m_evoDb.BeginTransaction();
+        m_evoDb.WriteBestBlock(::ChainActive().Tip()->GetBlockHash());
+        dbTx->Commit();
+        return true;
+    }
+
+    // Probe whether there is any old-format data to migrate.  A fresh install that synced
+    // entirely with the new code will already write to dmn_S4/dmn_D4 and have nothing here.
+    {
+        auto pindex_dip3 = ::ChainActive()[Params().GetConsensus().DIP0003Height];
+        CDataStream probe(SER_DISK, CLIENT_VERSION);
+        if (!m_evoDb.GetRawDB().ReadDataStream(
+                std::make_pair(DB_OLD_LIST_DIFF, pindex_dip3->GetBlockHash()), probe)) {
+            LogPrintf("CDeterministicMNManager::%s -- no old-format data found; nothing to migrate.\n", __func__);
+            auto dbTx = m_evoDb.BeginTransaction();
+            m_evoDb.WriteBestBlock(::ChainActive().Tip()->GetBlockHash());
+            dbTx->Commit();
+            if (!m_evoDb.CommitRootTransaction()) {
+                LogPrintf("CDeterministicMNManager::%s -- failed to commit to evoDB\n", __func__);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    CDBBatch batch(m_evoDb.GetRawDB());
+
+    for (const auto nHeight : irange::range(Params().GetConsensus().DIP0003Height, ::ChainActive().Height() + 1)) {
+        auto pindex = ::ChainActive()[nHeight];
+        // Read with MN_VERSION_FORMAT (without nPoSeSuccessHeight); write with MN_CURRENT_FORMAT = MN_V3_FORMAT.
+        // nPoSeSuccessHeight defaults to -1 for all migrated entries.
+        CDataStream diff_data(SER_DISK, CLIENT_VERSION);
+        if (!m_evoDb.GetRawDB().ReadDataStream(std::make_pair(DB_OLD_LIST_DIFF, pindex->GetBlockHash()), diff_data)) {
+            LogPrintf("CDeterministicMNManager::%s -- missing CDeterministicMNListDiff at height %d\n", __func__, nHeight);
+            return false;
+        }
+        CDeterministicMNListDiff mndiff;
+        mndiff.Unserialize(diff_data, CDeterministicMN::MN_VERSION_FORMAT);
+        batch.Write(std::make_pair(DB_LIST_DIFF, pindex->GetBlockHash()), mndiff);
+        CDataStream snapshot_data(SER_DISK, CLIENT_VERSION);
+        if (!m_evoDb.GetRawDB().ReadDataStream(std::make_pair(DB_OLD_LIST_SNAPSHOT, pindex->GetBlockHash()), snapshot_data)) {
+            // it's ok, we write snapshots every DISK_SNAPSHOT_PERIOD blocks only
+            continue;
+        }
+        CDeterministicMNList mnList;
+        mnList.Unserialize(snapshot_data, CDeterministicMN::MN_VERSION_FORMAT);
+        batch.Write(std::make_pair(DB_LIST_SNAPSHOT, pindex->GetBlockHash()), mnList);
+        m_evoDb.GetRawDB().WriteBatch(batch);
+        batch.Clear();
+        LogPrintf("CDeterministicMNManager::%s -- wrote snapshot at height %d\n", __func__, nHeight);
+    }
+
+    m_evoDb.GetRawDB().WriteBatch(batch);
+
+    // Writing EVODB_BEST_BLOCK (which is b_b5 now) marks the DB as upgraded
+    auto dbTx = m_evoDb.BeginTransaction();
+    m_evoDb.WriteBestBlock(::ChainActive().Tip()->GetBlockHash());
+    dbTx->Commit();
+
+    LogPrintf("CDeterministicMNManager::%s -- done migrating\n", __func__);
 
     m_evoDb.GetRawDB().CompactFull();
 

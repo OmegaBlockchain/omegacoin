@@ -46,7 +46,8 @@ public:
     static constexpr uint16_t MN_OLD_FORMAT = 0;
     static constexpr uint16_t MN_TYPE_FORMAT = 1;
     static constexpr uint16_t MN_VERSION_FORMAT = 2;
-    static constexpr uint16_t MN_CURRENT_FORMAT = MN_VERSION_FORMAT;
+    static constexpr uint16_t MN_V3_FORMAT = 3;
+    static constexpr uint16_t MN_CURRENT_FORMAT = MN_V3_FORMAT;
 
     CDeterministicMN() = delete; // no default constructor, must specify internalId
     explicit CDeterministicMN(uint64_t _internalId, MnType mnType = MnType::Regular) :
@@ -84,6 +85,11 @@ public:
             pdmnState = std::make_shared<const CDeterministicMNState>(old_state);
         } else if (ser_action.ForRead() && format_version == MN_TYPE_FORMAT) {
             CDeterministicMNState_mntype_format old_state;
+            READWRITE(old_state);
+            pdmnState = std::make_shared<const CDeterministicMNState>(old_state);
+        } else if (ser_action.ForRead() && format_version == MN_VERSION_FORMAT) {
+            // MN_VERSION_FORMAT predates nPoSeSuccessHeight; default it to -1.
+            CDeterministicMNState_v3_format old_state;
             READWRITE(old_state);
             pdmnState = std::make_shared<const CDeterministicMNState>(old_state);
         } else {
@@ -615,6 +621,7 @@ public:
 
     bool MigrateDBIfNeeded();
     bool MigrateDBIfNeeded2();
+    bool MigrateDBIfNeeded3();
 
     void DoMaintenance();
 

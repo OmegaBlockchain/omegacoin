@@ -128,6 +128,66 @@ public:
     }
 };
 
+// TODO: To remove this in the future
+// Serialisation snapshot of CDeterministicMNState before nPoSeSuccessHeight was added (format MN_VERSION_FORMAT = 2).
+// Used by MigrateDBIfNeeded3() to read existing on-disk data.
+class CDeterministicMNState_v3_format
+{
+private:
+    int nPoSeBanHeight{-1};
+
+    friend class CDeterministicMNStateDiff;
+    friend class CDeterministicMNState;
+
+public:
+    int nVersion{CProRegTx::LEGACY_BLS_VERSION};
+    int nRegisteredHeight{-1};
+    int nLastPaidHeight{0};
+    int nConsecutivePayments{0};
+    int nPoSePenalty{0};
+    int nPoSeRevivedHeight{-1};
+    uint16_t nRevocationReason{CProUpRevTx::REASON_NOT_SPECIFIED};
+    uint256 confirmedHash;
+    uint256 confirmedHashWithProRegTxHash;
+    CKeyID keyIDOwner;
+    CBLSLazyPublicKey pubKeyOperator;
+    CKeyID keyIDVoting;
+    CService addr;
+    CScript scriptPayout;
+    CScript scriptOperatorPayout;
+    uint160 platformNodeID{};
+    uint16_t platformP2PPort{0};
+    uint16_t platformHTTPPort{0};
+
+public:
+    CDeterministicMNState_v3_format() = default;
+
+    SERIALIZE_METHODS(CDeterministicMNState_v3_format, obj)
+    {
+        READWRITE(
+            obj.nVersion,
+            obj.nRegisteredHeight,
+            obj.nLastPaidHeight,
+            obj.nConsecutivePayments,
+            obj.nPoSePenalty,
+            obj.nPoSeRevivedHeight,
+            obj.nPoSeBanHeight,
+            obj.nRevocationReason,
+            obj.confirmedHash,
+            obj.confirmedHashWithProRegTxHash,
+            obj.keyIDOwner);
+        READWRITE(CBLSLazyPublicKeyVersionWrapper(const_cast<CBLSLazyPublicKey&>(obj.pubKeyOperator), obj.nVersion == CProRegTx::LEGACY_BLS_VERSION));
+        READWRITE(
+            obj.keyIDVoting,
+            obj.addr,
+            obj.scriptPayout,
+            obj.scriptOperatorPayout,
+            obj.platformNodeID,
+            obj.platformP2PPort,
+            obj.platformHTTPPort);
+    }
+};
+
 class CDeterministicMNState
 {
 private:
@@ -143,6 +203,10 @@ public:
     int nConsecutivePayments{0};
     int nPoSePenalty{0};
     int nPoSeRevivedHeight{-1};
+    // Height of the last block at which this MN was a valid LLMQ quorum member.
+    // -1 means never observed.  Not serialised in legacy snapshots; defaults to -1
+    // after loading an old snapshot, and is re-populated from stored diffs on replay.
+    int nPoSeSuccessHeight{-1};
     uint16_t nRevocationReason{CProUpRevTx::REASON_NOT_SPECIFIED};
 
     // the block hash X blocks after registration, used in quorum calculations
@@ -212,6 +276,27 @@ public:
         platformP2PPort(s.platformP2PPort),
         platformHTTPPort(s.platformHTTPPort) {}
 
+    explicit CDeterministicMNState(const CDeterministicMNState_v3_format& s) :
+        nPoSeBanHeight(s.nPoSeBanHeight),
+        nVersion(s.nVersion),
+        nRegisteredHeight(s.nRegisteredHeight),
+        nLastPaidHeight(s.nLastPaidHeight),
+        nConsecutivePayments(s.nConsecutivePayments),
+        nPoSePenalty(s.nPoSePenalty),
+        nPoSeRevivedHeight(s.nPoSeRevivedHeight),
+        nRevocationReason(s.nRevocationReason),
+        confirmedHash(s.confirmedHash),
+        confirmedHashWithProRegTxHash(s.confirmedHashWithProRegTxHash),
+        keyIDOwner(s.keyIDOwner),
+        pubKeyOperator(s.pubKeyOperator),
+        keyIDVoting(s.keyIDVoting),
+        addr(s.addr),
+        scriptPayout(s.scriptPayout),
+        scriptOperatorPayout(s.scriptOperatorPayout),
+        platformNodeID(s.platformNodeID),
+        platformP2PPort(s.platformP2PPort),
+        platformHTTPPort(s.platformHTTPPort) {}
+
     template <typename Stream>
     CDeterministicMNState(deserialize_type, Stream& s)
     {
@@ -240,7 +325,8 @@ public:
             obj.scriptOperatorPayout,
             obj.platformNodeID,
             obj.platformP2PPort,
-            obj.platformHTTPPort);
+            obj.platformHTTPPort,
+            obj.nPoSeSuccessHeight);
     }
 
     void ResetOperatorFields()
@@ -309,6 +395,7 @@ public:
         Field_platformP2PPort = 0x10000,
         Field_platformHTTPPort = 0x20000,
         Field_nVersion = 0x40000,
+        Field_nPoSeSuccessHeight = 0x80000,
     };
 
 #define DMN_STATE_DIFF_ALL_FIELDS                      \
@@ -330,7 +417,8 @@ public:
     DMN_STATE_DIFF_LINE(platformNodeID)                \
     DMN_STATE_DIFF_LINE(platformP2PPort)               \
     DMN_STATE_DIFF_LINE(platformHTTPPort)              \
-    DMN_STATE_DIFF_LINE(nVersion)
+    DMN_STATE_DIFF_LINE(nVersion)                      \
+    DMN_STATE_DIFF_LINE(nPoSeSuccessHeight)
 
 public:
     uint32_t fields{0};

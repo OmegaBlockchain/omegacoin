@@ -363,6 +363,7 @@ void MessagingPage::updateInboxList()
 
     QString filterText = ui->inboxFilterLineEdit->text();
     int nMessages = 0;
+    int nUnread = 0;
 
     {
         LOCK(smsg::cs_smsgDB);
@@ -454,6 +455,7 @@ void MessagingPage::updateInboxList()
                     QTableWidgetItem* item = table->item(row, col);
                     if (item) item->setFont(font);
                 }
+                nUnread++;
             }
 
             nMessages++;
@@ -463,6 +465,13 @@ void MessagingPage::updateInboxList()
 
     table->setSortingEnabled(true);
     ui->inboxCountLabel->setText(QString::number(nMessages) + tr(" messages"));
+
+    // Update Inbox tab: bold + unread count when there are unread messages.
+    QTabBar* tabBar = ui->tabWidget->tabBar();
+    QFont tabFont = tabBar->font();
+    tabFont.setBold(nUnread > 0);
+    tabBar->setTabFont(0, tabFont);
+    ui->tabWidget->setTabText(0, nUnread > 0 ? tr("Inbox (%1)").arg(nUnread) : tr("Inbox"));
 }
 
 void MessagingPage::updateOutboxList()

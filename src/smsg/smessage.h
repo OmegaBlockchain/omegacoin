@@ -121,6 +121,9 @@ inline bool IsValidTopic(const std::string &topic)
         if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.'))
             return false;
     }
+    // Reject consecutive dots and trailing dot
+    if (topic.find("..") != std::string::npos) return false;
+    if (topic.back() == '.') return false;
     return true;
 }
 

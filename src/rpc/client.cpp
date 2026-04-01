@@ -206,6 +206,20 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "upgradetohd", 3, "rescan"},
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
+    // SMSG
+    { "trollboxsend", 1, "paid"},
+    { "trollboxlist", 0, "count"},
+    { "smsggetmessages", 1, "count"},
+    { "smsgcreateroom", 1, "flags"},
+    { "smsgcreateroom", 2, "retention_days"},
+    { "smsglistrooms", 0, "flags_filter"},
+    { "smsgsend", 3, "paid_msg"},
+    { "smsgsend", 4, "days_retention"},
+    { "smsgsend", 5, "testfee"},
+    { "smsgsend", 6, "fromfile"},
+    { "smsgsend", 7, "decodehex"},
+    { "smsgsend", 10, "retention_days"},
+    { "smsgfund", 1, "testfee"},
 };
 // clang-format on
 

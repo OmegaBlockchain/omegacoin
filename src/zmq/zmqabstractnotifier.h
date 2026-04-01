@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 class CBlockIndex;
 class CGovernanceObject;

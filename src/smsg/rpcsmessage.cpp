@@ -6,6 +6,7 @@
 #include <rpc/server.h>
 
 #include <algorithm>
+#include <fstream>
 #include <string>
 
 #include <smsg/smessage.h>
@@ -700,6 +701,11 @@ static UniValue smsgsend(const JSONRPCRequest &request)
     std::string addrTo    = request.params[1].get_str();
     std::string msg       = request.params[2].get_str();
 
+    if (msg.empty())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Message must not be empty.");
+    if (msg.find('\0') != std::string::npos)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Message must not contain null bytes.");
+
     auto parseBool = [](const UniValue &v, bool def) -> bool {
         if (v.isNull()) return def;
         if (v.isBool()) return v.get_bool();
@@ -710,6 +716,8 @@ static UniValue smsgsend(const JSONRPCRequest &request)
     };
     bool fPaid      = parseBool(request.params[3], false);
     int nRetention  = request.params[4].isNull() ? 1 : request.params[4].get_int();
+    if (nRetention < 1 || nRetention > 31)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "days_retention must be 1-31.");
     bool fTestFee   = parseBool(request.params[5], false);
     bool fFromFile  = parseBool(request.params[6], false);
     bool fDecodeHex = parseBool(request.params[7], false);
@@ -1108,7 +1116,10 @@ static UniValue smsgbuckets(const JSONRPCRequest &request)
     if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             "smsgbuckets ( stats|dump )\n"
-            "Display some statistics.");
+            "Display bucket statistics, or write them to smsgstore/buckets_dump.json.\n"
+            "\nArguments:\n"
+            "1. mode      (string, optional, default=\"stats\") \"stats\" to display, \"dump\" to write to file.\n"
+            "\nTo clear all bucket data use smsgclearbuckets.\n");
 
     EnsureSMSGIsEnabled();
 
@@ -1189,28 +1200,33 @@ static UniValue smsgbuckets(const JSONRPCRequest &request)
     } else
     if (mode == "dump")
     {
+        // Write bucket statistics to smsgstore/buckets_dump.json — read-only, non-destructive.
+        UniValue dump(UniValue::VARR);
         {
             LOCK(smsgModule.cs_smsg);
-            std::map<int64_t, smsg::SecMsgBucket>::iterator it;
-            it = smsgModule.buckets.begin();
-
-            for (it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it)
+            for (auto it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it)
             {
-                std::string sFile = std::to_string(it->first) + "_01.dat";
+                std::set<smsg::SecMsgToken> &tokenSet = it->second.setTokens;
+                UniValue objM(UniValue::VOBJ);
+                objM.pushKV("bucket", std::to_string(it->first));
+                objM.pushKV("messages", (int)tokenSet.size());
+                objM.pushKV("active", (int)it->second.CountActive());
+                objM.pushKV("hash", std::to_string(it->second.hash));
+                dump.push_back(objM);
+            }
+        } // cs_smsg
 
-                try {
-                    fs::path fullPath = GetDataDir() / "smsgstore" / sFile;
-                    fs::remove(fullPath);
-                } catch (const fs::filesystem_error& ex)
-                {
-                    //objM.push_back(Pair("file size, error", ex.what()));
-                    LogPrintf("Error removing bucket file %s.\n", ex.what());
-                };
-            };
-            smsgModule.buckets.clear();
-        }; // cs_smsg
+        fs::path dumpPath = GetDataDir() / "smsgstore" / "buckets_dump.json";
+        try {
+            std::ofstream ofs(dumpPath.string());
+            ofs << dump.write(2);
+            ofs.close();
+        } catch (const std::exception &ex) {
+            throw JSONRPCError(RPC_INTERNAL_ERROR, strprintf("Failed to write dump file: %s", ex.what()));
+        }
 
-        result.pushKV("result", "Removed all buckets.");
+        result.pushKV("result", "Bucket data written to file.");
+        result.pushKV("file", dumpPath.string());
     } else
     {
         result.pushKV("result", "Unknown Mode.");
@@ -1219,6 +1235,46 @@ static UniValue smsgbuckets(const JSONRPCRequest &request)
 
     return result;
 };
+
+static UniValue smsgclearbuckets(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "smsgclearbuckets confirm\n"
+            "Permanently delete all SMSG message data (.dat files in smsgstore/).\n"
+            "\nArguments:\n"
+            "1. confirm   (bool, required) Must be true to execute. Any other value aborts.\n"
+            "\nWARNING: This is irreversible. All stored SMSG messages are lost.\n"
+            "\nResult:\n"
+            "{ \"result\": \"Removed all buckets.\", \"removed\": n }\n");
+
+    if (!request.params[0].get_bool())
+        throw JSONRPCError(RPC_INVALID_PARAMETER,
+            "Pass true to confirm permanent deletion of all SMSG message data.");
+
+    EnsureSMSGIsEnabled();
+
+    int nRemoved = 0;
+    {
+        LOCK(smsgModule.cs_smsg);
+        for (auto it = smsgModule.buckets.begin(); it != smsgModule.buckets.end(); ++it)
+        {
+            fs::path fullPath = GetDataDir() / "smsgstore" / (std::to_string(it->first) + "_01.dat");
+            try {
+                fs::remove(fullPath);
+                nRemoved++;
+            } catch (const fs::filesystem_error &ex) {
+                LogPrintf("smsgclearbuckets: error removing %s: %s\n", fullPath.string(), ex.what());
+            }
+        }
+        smsgModule.buckets.clear();
+    } // cs_smsg
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("result", "Removed all buckets.");
+    result.pushKV("removed", nRemoved);
+    return result;
+}
 
 static bool sortMsgAsc(const std::pair<int64_t, UniValue> &a, const std::pair<int64_t, UniValue> &b)
 {
@@ -1245,6 +1301,8 @@ static UniValue smsgview(const JSONRPCRequest &request)
     EnsureSMSGIsEnabled();
 
 #ifdef ENABLE_WALLET
+    if (!smsgModule.pwallet)
+        throw JSONRPCError(RPC_MISC_ERROR, "No wallet connected to SMSG.");
     if (smsgModule.pwallet->IsLocked())
         throw JSONRPCError(RPC_MISC_ERROR, "Wallet is locked.");
 
@@ -1461,7 +1519,7 @@ static UniValue smsgview(const JSONRPCRequest &request)
 
                     std::string sFrom = kiFrom.IsNull() ? "anon" : EncodeDestination(PKHash(kiFrom));
                     std::string sTo = EncodeDestination(PKHash(smsgStored.addrTo));
-                    if (lblFrom.length() != 0) {
+                    if (lblFrom.length() != 0)
                         sFrom += " (" + lblFrom + ")";
                     if (lblTo.length() != 0)
                         sTo += " (" + lblTo + ")";
@@ -1481,7 +1539,7 @@ static UniValue smsgview(const JSONRPCRequest &request)
             delete it;
 
             dbMsg.TxnCommit();
-        }};
+        };
     } // cs_smsgDB
 
 
@@ -2249,6 +2307,9 @@ static UniValue trollboxsend(const JSONRPCRequest &request)
     EnsureSMSGIsEnabled();
 
     std::string sMessage = request.params[0].get_str();
+    if (sMessage.empty()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Message must not be empty.");
+    }
     if (sMessage.size() > smsg::TROLLBOX_MAX_MSG_BYTES) {
         throw JSONRPCError(RPC_INVALID_PARAMETER,
             strprintf("Message too long (%d > %d)", sMessage.size(), smsg::TROLLBOX_MAX_MSG_BYTES));
@@ -2550,6 +2611,10 @@ static UniValue smsgcreateroom(const JSONRPCRequest &request)
     std::string sName = request.params[0].get_str();
     if (sName.empty() || sName.size() > 64)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Room name must be 1-64 characters.");
+    for (unsigned char c : sName) {
+        if (c < 0x20 || c == 0x7f || c == '<' || c == '>' || c == '&' || c == '"' || c == '\'' || c == '%')
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Room name contains invalid characters.");
+    }
 
     uint32_t nFlags = SMSG_ROOM_OPEN;
     if (request.params.size() > 1 && !request.params[1].isNull())
@@ -2876,6 +2941,7 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsginbox",              &smsginbox,              {"mode","filter"} },
     { "smsg",               "smsgoutbox",             &smsgoutbox,             {"mode","filter"} },
     { "smsg",               "smsgbuckets",            &smsgbuckets,            {"mode"} },
+    { "smsg",               "smsgclearbuckets",       &smsgclearbuckets,       {"confirm"} },
     { "smsg",               "smsgview",               &smsgview,               {}},
     { "smsg",               "smsg",                   &smsgone,                {"msgid","options"} },
     { "smsg",               "smsgpurge",              &smsgpurge,              {"msgid"} },

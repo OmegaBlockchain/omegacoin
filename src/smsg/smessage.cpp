@@ -1113,14 +1113,17 @@ bool CSMSG::Enable(std::shared_ptr<CWallet> pwallet)
 
     {
         LOCK(cs_smsg);
-
         addresses.clear(); // should be empty already
-        buckets.clear(); // should be empty already
+        buckets.clear();   // should be empty already
+    } // cs_smsg released — Start() acquires it internally via BuildBucketSet()
 
-        if (!Start(pwallet, false, false)) {
-            return error("%s: SecureMsgStart failed.\n", __func__);
-        }
-    } // cs_smsg
+    if (!Start(pwallet, false, false)) {
+        return error("%s: SecureMsgStart failed.\n", __func__);
+    }
+
+    if (pwallet) {
+        LoadWallet(pwallet);
+    }
 
     // Ping all connected peers to initiate the SMSG handshake.
     // Filter by peer's advertised services (nServices), not by our own

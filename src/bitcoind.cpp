@@ -109,14 +109,44 @@ static bool AppInit(int argc, char* argv[])
 
         // -server defaults to true for omegad but not for the GUI so do this here
         args.SoftSetBoolArg("-server", true);
-        // Enable ZMQ by default for omegad (masternodes serve the Android app).
-        // omega-qt does not set these, so ZMQ stays off for regular desktop users.
-        // SoftSetArg is a no-op if the user already set the value in omega.conf.
-        args.SoftSetArg("-zmqpubhashblock", "tcp://127.0.0.1:7780");
-        args.SoftSetArg("-zmqpubrawtx", "tcp://127.0.0.1:7780");
-        args.SoftSetArg("-zmqpubhashtx", "tcp://127.0.0.1:7780");
-        args.SoftSetArg("-zmqpubhashchainlock", "tcp://127.0.0.1:7780");
-        args.SoftSetArg("-zmqpubrawtxlock", "tcp://127.0.0.1:7780");
+        // Enable ZMQ and SMSG scan by default for omegad.
+        // omega-qt does not set these, so they stay off for regular desktop users.
+        // All SoftSetArg/SoftSetBoolArg calls are no-ops if the user already set
+        // the value in omega.conf, so these are safe overridable defaults.
+
+        // SMSG scan defaults
+        args.SoftSetBoolArg("-smsgscanchain", true);
+        args.SoftSetBoolArg("-smsgscanincoming", true);
+
+        // ZMQ defaults — all publishers on the loopback port 7780
+        // Blocks
+        args.SoftSetArg("-zmqpubhashblock",                  "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawblock",                   "tcp://127.0.0.1:7780");
+        // Transactions
+        args.SoftSetArg("-zmqpubhashtx",                     "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawtx",                      "tcp://127.0.0.1:7780");
+        // InstantSend
+        args.SoftSetArg("-zmqpubhashtxlock",                 "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawtxlock",                  "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawtxlocksig",               "tcp://127.0.0.1:7780");
+        // ChainLocks
+        args.SoftSetArg("-zmqpubhashchainlock",              "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawchainlock",               "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawchainlocksig",            "tcp://127.0.0.1:7780");
+        // Governance
+        args.SoftSetArg("-zmqpubhashgovernanceobject",       "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawgovernanceobject",        "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubhashgovernancevote",         "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawgovernancevote",          "tcp://127.0.0.1:7780");
+        // InstantSend double-spend alerts
+        args.SoftSetArg("-zmqpubhashinstantsenddoublespend", "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawinstantsenddoublespend",  "tcp://127.0.0.1:7780");
+        // LLMQ recovered signatures
+        args.SoftSetArg("-zmqpubhashrecoveredsig",           "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawrecoveredsig",            "tcp://127.0.0.1:7780");
+        // SMSG
+        args.SoftSetArg("-zmqpubhashsmsg",                   "tcp://127.0.0.1:7780");
+        args.SoftSetArg("-zmqpubrawsmsg",                    "tcp://127.0.0.1:7780");
         // Set this early so that parameter interactions go to console
         InitLogging(args);
         InitParameterInteraction(args);

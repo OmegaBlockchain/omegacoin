@@ -1,4 +1,4 @@
-Omega Core 0.20.1
+Omega Core 0.20.4
 =================
 
 https://omegablockchain.net
@@ -677,6 +677,21 @@ at `~/.cache/guix-sources`, so they survive `guix-clean`.
 cd depends
 make HOST=x86_64-linux-gnu -j$(nproc)
 ```
+
+### Default omega.conf file
+
+  daemon=1
+  listen=1
+  externalip=YOUR_VPS_PUBLIC_IP
+  maxconnections=128
+
+  rpcuser=YOUR_RPC_USER
+  rpcpassword=YOUR_STRONG_RPC_PASSWORD
+  rpcbind=127.0.0.1
+  rpcallowip=127.0.0.1
+
+  masternodeblsprivkey=YOUR_BLS_PRIVATE_KEY
+
 
 License
 -------

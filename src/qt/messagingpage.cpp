@@ -466,11 +466,6 @@ void MessagingPage::updateInboxList()
     table->setSortingEnabled(true);
     ui->inboxCountLabel->setText(QString::number(nMessages) + tr(" messages"));
 
-    // Update Inbox tab: bold + unread count when there are unread messages.
-    QTabBar* tabBar = ui->tabWidget->tabBar();
-    QFont tabFont = tabBar->font();
-    tabFont.setBold(nUnread > 0);
-    tabBar->setTabFont(0, tabFont);
     ui->tabWidget->setTabText(0, nUnread > 0 ? tr("Inbox (%1)").arg(nUnread) : tr("Inbox"));
 }
 

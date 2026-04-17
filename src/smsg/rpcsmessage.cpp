@@ -6,15 +6,20 @@
 #include <rpc/server.h>
 
 #include <algorithm>
+#include <ctime>
 #include <fstream>
 #include <string>
 
 #include <smsg/smessage.h>
 #include <smsg/db.h>
+#include <smsg/msganchor.h>
+#include <util/system.h>
 #include <util/strencodings.h>
 #include <core_io.h>
 #include <base58.h>
+#include <rpc/blockchain.h>
 #include <rpc/util.h>
+#include <script/script.h>
 #include <wallet/ismine.h>
 #include <wallet/rpcwallet.h>
 
@@ -2923,6 +2928,288 @@ static UniValue smsgjoinroom(const JSONRPCRequest &request)
     return result;
 }
 
+// --- Message Anchoring -------------------------------------------
+
+static void EnsureAnchorReady()
+{
+    if (!smsg::g_msgAnchor.IsLoaded()) {
+        throw JSONRPCError(RPC_DATABASE_ERROR,
+            "Anchor state is not initialized. Enable secure messaging first.");
+    }
+}
+
+static const char *QueueHashStatusString(const smsg::QueueHashResult result)
+{
+    switch (result) {
+    case smsg::QueueHashResult::QUEUED:
+        return "queued";
+    case smsg::QueueHashResult::PENDING:
+        return "pending";
+    case smsg::QueueHashResult::CONFIRMED:
+        return "confirmed";
+    case smsg::QueueHashResult::FULL:
+        return "full";
+    case smsg::QueueHashResult::QUEUE_ERROR:
+        return "error";
+    }
+    return "error";
+}
+
+static smsg::AnchorHashStatus RefreshAnchorStatus(const uint256 &hash,
+                                                  smsg::AnchorBatchInfo *batch_info_out = nullptr)
+{
+    smsg::AnchorBatchInfo batch_info;
+    const smsg::AnchorHashStatus status = smsg::g_msgAnchor.GetHashStatus(hash, &batch_info);
+    if (status == smsg::AnchorHashStatus::NOT_FOUND || status == smsg::AnchorHashStatus::PENDING) {
+        return status;
+    }
+    if (status == smsg::AnchorHashStatus::CONFIRMED) {
+        if (batch_info_out) {
+            *batch_info_out = batch_info;
+        }
+        return status;
+    }
+
+    const smsg::AnchorTxLookupResult lookup = smsg::LookupAnchorTransaction(
+        batch_info.txid, batch_info.merkle_root, batch_info.nAnchorTime,
+        /* mempool */ nullptr);
+    if (!lookup.confirmed) {
+        if (batch_info_out) {
+            *batch_info_out = batch_info;
+        }
+        return status;
+    }
+
+    std::string error;
+    const int64_t confirmed_time = lookup.confirmed_time != 0
+        ? lookup.confirmed_time
+        : static_cast<int64_t>(time(nullptr));
+    if (!smsg::g_msgAnchor.MarkBatchConfirmed(batch_info.txid, confirmed_time, &error)) {
+        throw JSONRPCError(RPC_DATABASE_ERROR,
+            error.empty() ? "Failed to persist confirmed anchor batch." : error);
+    }
+    batch_info.nCommitted = confirmed_time;
+    if (batch_info_out) {
+        *batch_info_out = batch_info;
+    }
+    return smsg::AnchorHashStatus::CONFIRMED;
+}
+
+static UniValue anchormsg(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "anchormsg \"msghash\" ( \"prevhash\" )\n"
+            "\nQueue a message hash for batch anchoring.\n"
+            "\nArguments:\n"
+            "1. \"msghash\"   (string, required) SHA-256 hex of the message (64 chars).\n"
+            "2. \"prevhash\"  (string, optional) SHA-256 hex of the previous revision.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"queued\": true|false,\n"
+            "  \"status\": \"queued|pending|confirmed|full\",\n"
+            "  \"pending\": n\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("anchormsg", "\"<sha256hex>\"")
+            + HelpExampleCli("anchormsg", "\"<sha256hex>\" \"<prevhex>\""));
+
+    std::string sHash = request.params[0].get_str();
+    if (sHash.size() != 64 || !IsHex(sHash))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "msghash must be 64 hex chars.");
+
+    uint256 hash = uint256S(sHash);
+    uint256 prev;
+    if (request.params.size() > 1 && !request.params[1].isNull()) {
+        std::string sPrev = request.params[1].get_str();
+        if (sPrev.size() != 64 || !IsHex(sPrev))
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "prevhash must be 64 hex chars.");
+        prev = uint256S(sPrev);
+    }
+
+    EnsureAnchorReady();
+    std::string error;
+    const smsg::QueueHashResult queue_result = smsg::g_msgAnchor.QueueHash(hash, prev, &error);
+    if (queue_result == smsg::QueueHashResult::QUEUE_ERROR) {
+        throw JSONRPCError(RPC_INVALID_REQUEST,
+            error.empty() ? "Failed to queue anchor hash." : error);
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("queued",  queue_result == smsg::QueueHashResult::QUEUED);
+    result.pushKV("status",  QueueHashStatusString(queue_result));
+    result.pushKV("pending", (uint64_t)smsg::g_msgAnchor.PendingCount());
+    return result;
+}
+
+static UniValue verifymsg(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "verifymsg \"msghash\"\n"
+            "\nCheck whether a message hash has been anchored on-chain.\n"
+            "\nArguments:\n"
+            "1. \"msghash\"  (string, required) SHA-256 hex of the message.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"anchored\": true|false,\n"
+            "  \"pending\": true|false,\n"
+            "  \"txid\": \"...\",\n"
+            "  \"root\": \"...\"\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("verifymsg", "\"<sha256hex>\""));
+
+    std::string sHash = request.params[0].get_str();
+    if (sHash.size() != 64 || !IsHex(sHash))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "msghash must be 64 hex chars.");
+
+    uint256 hash = uint256S(sHash);
+    EnsureAnchorReady();
+
+    smsg::AnchorBatchInfo batch_info;
+    const smsg::AnchorHashStatus status = RefreshAnchorStatus(hash, &batch_info);
+    const bool anchored = status == smsg::AnchorHashStatus::CONFIRMED;
+    const bool pending = status == smsg::AnchorHashStatus::PENDING
+        || status == smsg::AnchorHashStatus::SUBMITTED;
+    const bool has_batch = status == smsg::AnchorHashStatus::SUBMITTED
+        || status == smsg::AnchorHashStatus::CONFIRMED;
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("anchored", anchored);
+    result.pushKV("pending",  pending);
+    result.pushKV("txid",     has_batch ? batch_info.txid : "");
+    result.pushKV("root",     has_batch ? batch_info.merkle_root.GetHex() : "");
+    return result;
+}
+
+static UniValue getmsgproof(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            "getmsgproof \"msghash\"\n"
+            "\nReturn the Merkle branch proving inclusion of a message hash in an anchored batch.\n"
+            "\nArguments:\n"
+            "1. \"msghash\"  (string, required) SHA-256 hex of the message.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"hash\": \"...\",\n"
+            "  \"pending\": true|false,\n"
+            "  \"index\": n,\n"
+            "  \"branch\": [\"hex\", ...]\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getmsgproof", "\"<sha256hex>\""));
+
+    std::string sHash = request.params[0].get_str();
+    if (sHash.size() != 64 || !IsHex(sHash))
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "msghash must be 64 hex chars.");
+
+    uint256 hash = uint256S(sHash);
+    EnsureAnchorReady();
+
+    smsg::AnchorBatchInfo batch_info;
+    const smsg::AnchorHashStatus status = RefreshAnchorStatus(hash, &batch_info);
+    if (status == smsg::AnchorHashStatus::NOT_FOUND) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Hash not found in anchor state.");
+    }
+    if (status != smsg::AnchorHashStatus::CONFIRMED) {
+        UniValue pending_result(UniValue::VOBJ);
+        pending_result.pushKV("hash", hash.GetHex());
+        pending_result.pushKV("anchored", false);
+        pending_result.pushKV("pending", true);
+        pending_result.pushKV("txid",
+                              status == smsg::AnchorHashStatus::SUBMITTED ? batch_info.txid : "");
+        pending_result.pushKV("root",
+                              status == smsg::AnchorHashStatus::SUBMITTED
+                                  ? batch_info.merkle_root.GetHex()
+                                  : "");
+        return pending_result;
+    }
+
+    std::vector<uint256> branch;
+    uint32_t index = 0;
+    if (!smsg::g_msgAnchor.GetProof(hash, branch, index))
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Confirmed anchor batch found but proof could not be constructed.");
+
+    UniValue jBranch(UniValue::VARR);
+    for (const auto &h : branch) jBranch.push_back(h.GetHex());
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("hash",   hash.GetHex());
+    result.pushKV("anchored", true);
+    result.pushKV("pending", false);
+    result.pushKV("txid",   batch_info.txid);
+    result.pushKV("root",   batch_info.merkle_root.GetHex());
+    result.pushKV("index",  (uint64_t)index);
+    result.pushKV("branch", jBranch);
+    return result;
+}
+
+static UniValue anchorcommit(const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "anchorcommit\n"
+            "\nCommit all queued message hashes to the blockchain via OP_RETURN.\n"
+            "Requires a funded wallet.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"txid\": \"...\",\n"
+            "  \"root\": \"...\",\n"
+            "  \"count\": n\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("anchorcommit", ""));
+
+#ifdef ENABLE_WALLET
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, "Wallet not available.");
+    CWallet* const pwallet = wallet.get();
+    EnsureWalletIsUnlocked(pwallet);
+    NodeContext& node = EnsureNodeContext(request.context);
+
+    EnsureAnchorReady();
+
+    smsg::AnchorCommitResult commit_result;
+    std::string error;
+    if (!smsg::CommitPendingAnchorBatch(pwallet, node, /* wait_callback */ true,
+                                        commit_result, &error)) {
+        switch (commit_result.error) {
+        case smsg::AnchorCommitError::PREPARE:
+            throw JSONRPCError(RPC_INVALID_REQUEST,
+                error.empty() ? "Failed to prepare anchor batch." : error);
+        case smsg::AnchorCommitError::WALLET_UNAVAILABLE:
+        case smsg::AnchorCommitError::CREATE_TRANSACTION:
+            throw JSONRPCError(RPC_WALLET_ERROR,
+                error.empty() ? "Failed to create anchor transaction." : error);
+        case smsg::AnchorCommitError::BROADCAST:
+            if (commit_result.tx_error != TransactionError::OK) {
+                throw JSONRPCTransactionError(commit_result.tx_error, error);
+            }
+            throw JSONRPCError(RPC_TRANSACTION_ERROR,
+                error.empty() ? "Failed to broadcast anchor transaction." : error);
+        case smsg::AnchorCommitError::NOT_INITIALIZED:
+        case smsg::AnchorCommitError::DATABASE:
+            throw JSONRPCError(RPC_DATABASE_ERROR,
+                error.empty() ? "Failed to persist anchor state." : error);
+        case smsg::AnchorCommitError::NONE:
+            break;
+        }
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("txid",  commit_result.txid);
+    result.pushKV("root",  commit_result.merkle_root.GetHex());
+    result.pushKV("count", (uint64_t)commit_result.count);
+    return result;
+#else
+    throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Wallet support required.");
+#endif
+}
+
+// ---------------------------------------------------------------------------
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -2974,6 +3261,11 @@ static const CRPCCommand commands[] =
     { "smsg",               "smsglistrooms",          &smsglistrooms,          {"flags_filter"} },
     { "smsg",               "smsggetroominfo",        &smsggetroominfo,        {"room_txid"} },
     { "smsg",               "smsgjoinroom",           &smsgjoinroom,           {"room_txid","privkey_wif"} },
+    // Message anchoring (Phase 1 — Documentchain integration)
+    { "smsg",               "anchormsg",              &anchormsg,              {"msghash","prevhash"} },
+    { "smsg",               "verifymsg",              &verifymsg,              {"msghash"} },
+    { "smsg",               "getmsgproof",            &getmsgproof,            {"msghash"} },
+    { "smsg",               "anchorcommit",           &anchorcommit,           {} },
 };
 
 void RegisterSmsgRPCCommands(CRPCTable &t)

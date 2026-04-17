@@ -289,6 +289,7 @@ BITCOIN_CORE_H = \
   support/events.h \
   support/lockedpool.h \
   smsg/db.h \
+  smsg/msganchor.h \
   smsg/net.h \
   smsg/types.h \
   smsg/crypter.h \
@@ -762,6 +763,8 @@ libomega_smsg_a_SOURCES = \
   smsg/keystore.cpp \
   smsg/db.cpp \
   smsg/smessage.cpp \
+  smsg/msganchor.h \
+  smsg/msganchor.cpp \
   smsg/rpcsmessage.cpp
 
 if GLIBC_BACK_COMPAT

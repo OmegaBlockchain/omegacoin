@@ -73,6 +73,7 @@ Notes:
 
 #include <smsg/crypter.h>
 #include <smsg/db.h>
+#include <smsg/msganchor.h>
 #include <util/system.h>
 #include <thread>
 
@@ -158,6 +159,62 @@ size_t SecMsgBucket::CountActive()
 
     return nMessages;
 };
+
+static int64_t GetAnchorAutoCommitInterval()
+{
+    return Params().NetworkIDString() == "regtest" ? 30 : ANCHOR_AUTO_COMMIT_INTERVAL;
+}
+
+static void MaybeAutoCommitAnchors(const int64_t now)
+{
+#ifdef ENABLE_WALLET
+    if (!g_msgAnchor.IsLoaded() || g_msgAnchor.HasPreparedBatch()) {
+        return;
+    }
+
+    const size_t pending_count = g_msgAnchor.PendingCount();
+    if (pending_count == 0) {
+        return;
+    }
+
+    const bool reached_size = pending_count >= ANCHOR_BATCH_MIN;
+    const int64_t oldest_pending_time = g_msgAnchor.OldestPendingTime();
+    const bool reached_time = oldest_pending_time != 0
+        && oldest_pending_time + GetAnchorAutoCommitInterval() <= now;
+    if (!reached_size && !reached_time) {
+        return;
+    }
+
+    std::shared_ptr<CWallet> wallet = smsgModule.pwallet;
+    if (!wallet) {
+        LogPrint(BCLog::SMSG, "MsgAnchor: skipping auto-commit, no wallet is attached.\n");
+        return;
+    }
+    if (wallet->IsLocked()) {
+        LogPrint(BCLog::SMSG, "MsgAnchor: skipping auto-commit, wallet is locked.\n");
+        return;
+    }
+    if (!smsgModule.m_node) {
+        LogPrint(BCLog::SMSG, "MsgAnchor: skipping auto-commit, node context is unavailable.\n");
+        return;
+    }
+
+    AnchorCommitResult commit_result;
+    std::string error;
+    if (!CommitPendingAnchorBatch(wallet.get(), *smsgModule.m_node,
+                                  /* wait_callback */ false, commit_result, &error)) {
+        LogPrintf("MsgAnchor auto-commit failed: %s\n",
+                  error.empty() ? "unknown anchor auto-commit failure" : error);
+        return;
+    }
+
+    LogPrintf("MsgAnchor auto-commit submitted tx %s for root %s with %u hashes.\n",
+              commit_result.txid, commit_result.merkle_root.GetHex(),
+              static_cast<unsigned int>(commit_result.count));
+#else
+    (void)now;
+#endif
+}
 
 void ThreadSecureMsg(const CBlockIndex* pindex)
 {
@@ -270,6 +327,8 @@ void ThreadSecureMsg(const CBlockIndex* pindex)
 
             LogPrint(BCLog::SMSG, "smsg-thread: ignoring - looked peer %d, status on search %u\n", nPeerId, fExists);
         }
+
+        MaybeAutoCommitAnchors(now);
 
         try {
             boost::this_thread::sleep_for(boost::chrono::seconds(SMSG_THREAD_DELAY));
@@ -990,6 +1049,17 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
         return error("%s: Could not load purged sets, secure messaging disabled.", __func__);
     }
     LogPrintf("SMSG debug: BuildPurgedSets() done.\n");
+
+    LogPrintf("SMSG debug: loading anchor state.\n");
+    {
+        std::string anchor_error;
+        if (!g_msgAnchor.Load(GetDataDir() / "smsganchor.json", &anchor_error)) {
+            fSecMsgEnabled = false;
+            return error("%s: %s", __func__,
+                anchor_error.empty() ? "Could not load message anchor state." : anchor_error);
+        }
+    }
+    LogPrintf("SMSG debug: anchor state loaded.\n");
 
     const CBlockIndex* pindex = ::ChainActive().Tip();
     LogPrintf("SMSG debug: launching smsg threads, chain tip=%s.\n", pindex ? pindex->GetBlockHash().ToString() : "null");

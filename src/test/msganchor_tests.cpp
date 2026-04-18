@@ -1,3 +1,4 @@
+// Copyright (c) 2018-2024 The Documentchain developers
 // Copyright (c) 2026 The Omega Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.

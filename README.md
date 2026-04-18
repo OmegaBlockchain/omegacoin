@@ -337,6 +337,36 @@ omega-cli smsggetmessages "omega.listings.uk" 20
 Old nodes (version < 4 awareness): `Store()` accepts the message, `Decrypt()` returns
 `SMSG_UNKNOWN_VERSION` — old nodes relay topic messages transparently. No hard fork required.
 
+### Message Anchoring
+
+Message hashes can be committed to the blockchain via `OP_RETURN` transactions, producing
+a tamper-evident on-chain record. Up to 127 hashes are batched into a single Merkle tree;
+the root is written on-chain. Any hash in the batch can later be proven with a Merkle branch.
+
+#### RPC Commands
+
+```bash
+# Queue a message hash for anchoring (optional: link to a previous revision)
+omega-cli anchormsg "<sha256hex>"
+omega-cli anchormsg "<sha256hex>" "<prevsha256hex>"
+
+# Commit all queued hashes to the blockchain (requires unlocked, funded wallet)
+omega-cli anchorcommit
+
+# Check whether a hash has been anchored on-chain
+omega-cli verifymsg "<sha256hex>"
+
+# Retrieve the Merkle inclusion proof for an anchored hash
+omega-cli getmsgproof "<sha256hex>"
+```
+
+| Command | Returns |
+|---------|---------|
+| `anchormsg` | `queued`, `status` (`queued`/`pending`/`confirmed`/`full`), `pending` count |
+| `anchorcommit` | `txid`, `root`, `count` of hashes committed |
+| `verifymsg` | `anchored`, `pending`, `txid`, `root` |
+| `getmsgproof` | `hash`, `anchored`, `pending`, `txid`, `root`, `index`, `branch[]` |
+
 ### Wallet & GUI
 
 - **Masternode Wizard** — Step-by-step masternode setup wizard added to the Qt GUI.

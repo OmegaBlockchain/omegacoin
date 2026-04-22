@@ -101,6 +101,61 @@ boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxCh
 
 secp256k1_context *secp256k1_context_smsg = nullptr;
 
+static void ResetSmsgRuntimeState(CSMSG& module, bool stop_threads)
+{
+    fSecMsgEnabled = false;
+
+#ifdef ENABLE_WALLET
+    if (module.m_handler_unload) {
+        module.m_handler_unload->disconnect();
+        module.m_handler_unload.reset();
+    }
+    if (module.m_handler_status) {
+        module.m_handler_status->disconnect();
+        module.m_handler_status.reset();
+    }
+    if (module.m_handler_unlock_start) {
+        module.m_handler_unlock_start->disconnect();
+        module.m_handler_unlock_start.reset();
+    }
+#endif
+
+    if (g_connman) {
+        g_connman->SetLocalServices(ServiceFlags(g_connman->GetLocalServices() & ~NODE_SMSG));
+    }
+
+    if (stop_threads) {
+        threadGroupSmsg.interrupt_all();
+        threadGroupSmsg.join_all();
+    }
+
+    if (smsgDB) {
+        LOCK(cs_smsgDB);
+        delete smsgDB;
+        smsgDB = nullptr;
+    }
+
+    module.UnloadAllWallets();
+    module.pwallet.reset();
+
+    module.keyStore.Clear();
+    module.trollboxAddress = CKeyID();
+    module.nLastProcessedPurged = 0;
+
+    {
+        LOCK(module.cs_smsg);
+        module.addresses.clear();
+        module.buckets.clear();
+        module.setPurged.clear();
+        module.setPurgedTimestamps.clear();
+    }
+
+    if (secp256k1_context_smsg) {
+        secp256k1_context_destroy(secp256k1_context_smsg);
+        secp256k1_context_smsg = nullptr;
+    }
+}
+
 uint32_t SMSGGetSecondsInDay()
 {
     static bool fIsRegTest = Params().NetworkIDString() == "regtest";
@@ -928,7 +983,9 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
     try {
 
     if (pwallet) {
-        return error("%s: pwallet is already set.", __func__);
+        error("%s: pwallet is already set.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
     pwallet = pwalletIn;
     LogPrintf("SMSG debug: pwallet assigned.\n");
@@ -979,7 +1036,9 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     LogPrintf("SMSG debug: calling LoadKeyStore().\n");
     if (LoadKeyStore() != 0) {
-        return error("%s: LoadKeyStore failed.", __func__);
+        error("%s: LoadKeyStore failed.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
     LogPrintf("SMSG debug: LoadKeyStore() done.\n");
 
@@ -1014,11 +1073,15 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     LogPrintf("SMSG debug: creating secp256k1 context.\n");
     if (secp256k1_context_smsg) {
-        return error("%s: secp256k1_context_smsg already exists.", __func__);
+        error("%s: secp256k1_context_smsg already exists.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
 
     if (!(secp256k1_context_smsg = secp256k1_context_create(SECP256K1_CONTEXT_SIGN))) {
-        return error("%s: secp256k1_context_create failed.", __func__);
+        error("%s: secp256k1_context_create failed.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
 
     {
@@ -1038,15 +1101,17 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     LogPrintf("SMSG debug: calling BuildBucketSet().\n");
     if (BuildBucketSet() != 0) {
-        fSecMsgEnabled = false;
-        return error("%s: Could not load bucket sets, secure messaging disabled.", __func__);
+        error("%s: Could not load bucket sets, secure messaging disabled.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
     LogPrintf("SMSG debug: BuildBucketSet() done.\n");
 
     LogPrintf("SMSG debug: calling BuildPurgedSets().\n");
     if (BuildPurgedSets() != 0) {
-        fSecMsgEnabled = false;
-        return error("%s: Could not load purged sets, secure messaging disabled.", __func__);
+        error("%s: Could not load purged sets, secure messaging disabled.", __func__);
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+        return false;
     }
     LogPrintf("SMSG debug: BuildPurgedSets() done.\n");
 
@@ -1054,9 +1119,10 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
     {
         std::string anchor_error;
         if (!g_msgAnchor.Load(GetDataDir() / "smsganchor.json", &anchor_error)) {
-            fSecMsgEnabled = false;
-            return error("%s: %s", __func__,
-                anchor_error.empty() ? "Could not load message anchor state." : anchor_error);
+            error("%s: %s", __func__,
+                  anchor_error.empty() ? "Could not load message anchor state." : anchor_error);
+            ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
+            return false;
         }
     }
     LogPrintf("SMSG debug: anchor state loaded.\n");
@@ -1072,11 +1138,11 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
 
     } catch (const std::exception &e) {
         LogPrintf("SMSG debug: EXCEPTION in Start(): %s\n", e.what());
-        fSecMsgEnabled = false;
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
         return false;
     } catch (...) {
         LogPrintf("SMSG debug: UNKNOWN EXCEPTION in Start()\n");
-        fSecMsgEnabled = false;
+        ResetSmsgRuntimeState(*this, /*stop_threads=*/false);
         return false;
     }
 };
@@ -1133,51 +1199,20 @@ bool CSMSG::Shutdown()
         m_handler_unlock_start.reset();
     }
 
-    if (!fSecMsgEnabled) {
-        return false;
+    const bool was_enabled = fSecMsgEnabled;
+    const bool had_partial_state = pwallet || secp256k1_context_smsg || smsgDB ||
+                                   m_handler_unload || m_handler_status;
+
+    if (was_enabled) {
+        LogPrintf("Stopping secure messaging.\n");
+
+        if (WriteIni() != 0) {
+            LogPrintf("Failed to save smsg.ini\n");
+        }
     }
 
-    LogPrintf("Stopping secure messaging.\n");
-
-    if (WriteIni() != 0) {
-        LogPrintf("Failed to save smsg.ini\n");
-    }
-
-    fSecMsgEnabled = false;
-    g_connman->SetLocalServices(ServiceFlags(g_connman->GetLocalServices() & ~NODE_SMSG));
-
-    threadGroupSmsg.interrupt_all();
-    threadGroupSmsg.join_all();
-
-    if (smsgDB) {
-        LOCK(cs_smsgDB);
-        delete smsgDB;
-        smsgDB = nullptr;
-    }
-
-    keyStore.Clear();
-
-    if (secp256k1_context_smsg) {
-        secp256k1_context_destroy(secp256k1_context_smsg);
-    }
-    secp256k1_context_smsg = nullptr;
-
-#ifdef ENABLE_WALLET
-    if (m_handler_unload) {
-        m_handler_unload->disconnect();
-    }
-    if (m_handler_status) {
-        m_handler_status->disconnect();
-    }
-    if (m_handler_unlock_start) {
-        m_handler_unlock_start->disconnect();
-    }
-#endif
-    // Disconnect all per-wallet unload handlers so wallet teardown during
-    // process shutdown cannot call Disable() on an already-stopped module.
-    UnloadAllWallets();
-    pwallet.reset();
-    return true;
+    ResetSmsgRuntimeState(*this, /*stop_threads=*/true);
+    return was_enabled || had_partial_state;
 };
 
 bool CSMSG::Enable(std::shared_ptr<CWallet> pwallet)

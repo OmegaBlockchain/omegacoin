@@ -3,13 +3,19 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bls/bls.h>
+#include <chain.h>
+#include <chainparams.h>
+#include <coins.h>
 #include <consensus/validation.h>
+#include <evo/smsgroomtx.h>
 #include <evo/mnhftx.h>
 #include <evo/specialtx.h>
+#include <evo/specialtxman.h>
 #include <primitives/transaction.h>
 #include <uint256.h>
 #include <util/string.h>
 #include <util/strencodings.h>
+#include <validation.h>
 
 #include <boost/test/unit_test.hpp>
 #include <test/util/setup_common.h>
@@ -48,6 +54,26 @@ static CMutableTransaction CreateMNHFTx(const uint256& mnhfTxHash, const CBLSSig
     return tx;
 }
 
+static CMutableTransaction CreateSmsgRoomTx()
+{
+    CKey key;
+    key.MakeNewKey(true);
+
+    CSmsgRoomTx roomTx;
+    const CPubKey pubkey = key.GetPubKey();
+    roomTx.nFlags = SMSG_ROOM_OPEN;
+    roomTx.vchRoomPubKey.assign(pubkey.begin(), pubkey.end());
+    roomTx.nRetentionDays = 7;
+    roomTx.nMaxMembers = 32;
+
+    CMutableTransaction tx;
+    tx.nVersion = 3;
+    tx.nType = TRANSACTION_SMSG_ROOM;
+    SetTxPayload(tx, roomTx);
+
+    return tx;
+}
+
 BOOST_FIXTURE_TEST_SUITE(specialtx_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(verify_mnhf_specialtx_tests)
@@ -80,6 +106,38 @@ BOOST_AUTO_TEST_CASE(verify_mnhf_specialtx_tests)
     const CMutableTransaction tx = CreateMNHFTx(hash, sig, ver);
     CValidationState state;
     BOOST_CHECK(VerifyMNHFTx(CTransaction(tx), state));
+}
+
+BOOST_AUTO_TEST_CASE(smsg_room_activation_boundary_tests)
+{
+    const auto& consensus = Params().GetConsensus();
+    BOOST_CHECK_EQUAL(consensus.nForkEnforcementHeight, 3190000);
+    BOOST_CHECK_EQUAL(consensus.nSmsgRoomHeight, 3200000);
+
+    const CTransaction tx{CreateSmsgRoomTx()};
+    CCoinsView view_dummy;
+    CCoinsViewCache view(&view_dummy);
+
+    CBlockIndex prev_before_activation;
+    prev_before_activation.nHeight = consensus.nSmsgRoomHeight - 2;
+
+    CValidationState state_before;
+    {
+        LOCK(cs_main);
+        BOOST_CHECK(!CheckSpecialTx(tx, &prev_before_activation, state_before, view, false));
+    }
+    BOOST_CHECK(state_before.IsInvalid());
+    BOOST_CHECK_EQUAL(state_before.GetRejectReason(), "bad-tx-smsgroom-not-active");
+
+    CBlockIndex prev_at_activation;
+    prev_at_activation.nHeight = consensus.nSmsgRoomHeight - 1;
+
+    CValidationState state_at;
+    {
+        LOCK(cs_main);
+        BOOST_CHECK(CheckSpecialTx(tx, &prev_at_activation, state_at, view, false));
+    }
+    BOOST_CHECK(state_at.IsValid());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

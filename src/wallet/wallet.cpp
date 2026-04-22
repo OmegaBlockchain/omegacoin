@@ -71,6 +71,12 @@ static CCriticalSection cs_wallets;
 static std::vector<std::shared_ptr<CWallet>> vpwallets GUARDED_BY(cs_wallets);
 static std::list<LoadWalletFn> g_load_wallet_fns GUARDED_BY(cs_wallets);
 
+static void LogWalletDbException(const CWallet& wallet, const char* context, const std::exception& e)
+{
+    LogPrintf("%s: wallet database operation failed for %s: %s\n", context, wallet.GetName(), e.what());
+    wallet.WalletLogPrintf("%s: database operation failed: %s\n", context, e.what());
+}
+
 bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name)
 {
     util::SettingsValue setting_value = chain.getRwSetting("wallet");
@@ -425,8 +431,12 @@ bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase,
 
 void CWallet::ChainStateFlushed(const CBlockLocator& loc)
 {
-    WalletBatch batch(*database);
-    batch.WriteBestBlock(loc);
+    try {
+        WalletBatch batch(*database);
+        batch.WriteBestBlock(loc);
+    } catch (const std::exception& e) {
+        LogWalletDbException(*this, __func__, e);
+    }
 }
 
 void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in, bool fExplicit)
@@ -490,12 +500,20 @@ std::set<uint256> CWallet::GetConflicts(const uint256& txid) const
 
 void CWallet::Flush()
 {
-    database->Flush();
+    try {
+        database->Flush();
+    } catch (const std::exception& e) {
+        LogWalletDbException(*this, __func__, e);
+    }
 }
 
 void CWallet::Close()
 {
-    database->Close();
+    try {
+        database->Close();
+    } catch (const std::exception& e) {
+        LogWalletDbException(*this, __func__, e);
+    }
 }
 
 void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> range)
@@ -1182,16 +1200,20 @@ void CWallet::MarkConflicted(const uint256& hashBlock, int conflicting_height, c
 
 void CWallet::SyncTransaction(const CTransactionRef& ptx, CWalletTx::Confirmation confirm, bool update_tx)
 {
-    if (!AddToWalletIfInvolvingMe(ptx, confirm, update_tx))
-        return; // Not one of ours
+    try {
+        if (!AddToWalletIfInvolvingMe(ptx, confirm, update_tx))
+            return; // Not one of ours
 
-    // If a transaction changes 'conflicted' state, that changes the balance
-    // available of the outputs it spends. So force those to be
-    // recomputed, also:
-    MarkInputsDirty(ptx);
+        // If a transaction changes 'conflicted' state, that changes the balance
+        // available of the outputs it spends. So force those to be
+        // recomputed, also:
+        MarkInputsDirty(ptx);
 
-    fAnonymizableTallyCached = false;
-    fAnonymizableTallyCachedNonDenom = false;
+        fAnonymizableTallyCached = false;
+        fAnonymizableTallyCachedNonDenom = false;
+    } catch (const std::exception& e) {
+        LogWalletDbException(*this, __func__, e);
+    }
 }
 
 void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx, int64_t nAcceptTime) {

@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 define(_CLIENT_VERSION_MAJOR, 0)
 define(_CLIENT_VERSION_MINOR, 20)
-define(_CLIENT_VERSION_BUILD, 3)
+define(_CLIENT_VERSION_BUILD, 4)
 define(_CLIENT_VERSION_RC, 0)
 define(_CLIENT_VERSION_IS_RELEASE, true)
 define(_COPYRIGHT_YEAR, 2026)
@@ -1474,15 +1474,29 @@ else
   fi
 
   if test "x$use_zmq" = "xyes"; then
+     TEMP_CPPFLAGS="$CPPFLAGS"
+     TEMP_LIBS="$LIBS"
+     ZMQ_CHECK_LIBS="-lsodium"
+     case $host in
+       *mingw*)
+         CPPFLAGS="$CPPFLAGS -DZMQ_STATIC"
+         ZMQ_CHECK_LIBS="$ZMQ_CHECK_LIBS -lpthread -liphlpapi -lws2_32"
+       ;;
+     esac
      AC_CHECK_HEADER([zmq.h],
        [AC_DEFINE([ENABLE_ZMQ],[1],[Define to 1 to enable ZMQ functions])],
        [AC_MSG_WARN([zmq.h not found, disabling zmq support])
         use_zmq=no
         AC_DEFINE([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])])
-     AC_CHECK_LIB([zmq],[zmq_ctx_shutdown],ZMQ_LIBS="-lzmq -lsodium",
-       [AC_MSG_WARN([libzmq >= 4.0 not found, disabling zmq support])
-        use_zmq=no
-        AC_DEFINE([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])])
+     if test "x$use_zmq" = "xyes"; then
+       LIBS="$LIBS $ZMQ_CHECK_LIBS"
+       AC_CHECK_LIB([zmq],[zmq_ctx_shutdown], [ZMQ_LIBS="-lzmq $ZMQ_CHECK_LIBS"],
+         [AC_MSG_WARN([libzmq >= 4.0 not found, disabling zmq support])
+          use_zmq=no
+          AC_DEFINE([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])])
+     fi
+     CPPFLAGS="$TEMP_CPPFLAGS"
+     LIBS="$TEMP_LIBS"
   else
     AC_DEFINE_UNQUOTED([ENABLE_ZMQ],[0],[Define to 1 to enable ZMQ functions])
   fi

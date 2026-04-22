@@ -14,10 +14,41 @@
 #include <util/string.h>
 #include <util/system.h>
 #include <util/translation.h>
+#include <wallet/salvage.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
 
 #include <univalue.h>
+
+namespace {
+bool IsRecoverableWalletLoadError(const bilingual_str& error)
+{
+    const std::string& message = error.original;
+    return message.find("Wallet corrupted") != std::string::npos ||
+           message.find("can't open database") != std::string::npos ||
+           message.find("BerkeleyDatabase: Error") != std::string::npos ||
+           message.find("Failed to open database") != std::string::npos;
+}
+
+bool AutoRecoverWallet(const fs::path& wallet_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
+{
+    bilingual_str salvage_error;
+    std::vector<bilingual_str> salvage_warnings;
+    if (!RecoverDatabaseFile(wallet_path, salvage_error, salvage_warnings)) {
+        if (!salvage_error.empty()) {
+            error = salvage_error;
+        }
+        return false;
+    }
+
+    warnings.insert(warnings.end(), salvage_warnings.begin(), salvage_warnings.end());
+    warnings.push_back(Untranslated(strprintf(
+        "Automatically salvaged wallet '%s'. The original file was backed up and a full rescan has been scheduled.",
+        wallet_path.string())));
+    gArgs.ForceSetArg("-rescan", "2");
+    return true;
+}
+} // namespace
 
 bool VerifyWallets(interfaces::Chain& chain)
 {
@@ -80,6 +111,20 @@ bool VerifyWallets(interfaces::Chain& chain)
         if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
             if (status == DatabaseStatus::FAILED_NOT_FOUND) {
                 chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s\n", error_string.original)));
+            } else if (status == DatabaseStatus::FAILED_VERIFY) {
+                std::vector<bilingual_str> warnings;
+                if (!AutoRecoverWallet(path, error_string, warnings)) {
+                    chain.initError(error_string);
+                    return false;
+                }
+                chain.initWarning(Join(warnings, Untranslated("\n")));
+
+                DatabaseStatus retry_status;
+                bilingual_str retry_error;
+                if (!MakeWalletDatabase(wallet_file, options, retry_status, retry_error)) {
+                    chain.initError(retry_error);
+                    return false;
+                }
             } else {
                 chain.initError(error_string);
                 return false;
@@ -104,11 +149,34 @@ bool LoadWallets(interfaces::Chain& chain)
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
             bilingual_str error_string;
             std::vector<bilingual_str> warnings;
+            bool recovered_wallet = false;
             std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error_string);
+            const fs::path wallet_path = fs::absolute(name, GetWalletDir());
             if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
                 continue;
             }
+            if (!database && status == DatabaseStatus::FAILED_VERIFY) {
+                if (!AutoRecoverWallet(wallet_path, error_string, warnings)) {
+                    chain.initError(error_string);
+                    return false;
+                }
+                recovered_wallet = true;
+                database = MakeWalletDatabase(name, options, status, error_string);
+            }
             std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error_string, warnings) : nullptr;
+            if (!pwallet && !warnings.empty()) {
+                chain.initWarning(Join(warnings, Untranslated("\n")));
+                warnings.clear();
+            }
+            if (!pwallet && !recovered_wallet && IsRecoverableWalletLoadError(error_string)) {
+                if (!AutoRecoverWallet(wallet_path, error_string, warnings)) {
+                    chain.initError(error_string);
+                    return false;
+                }
+                recovered_wallet = true;
+                database = MakeWalletDatabase(name, options, status, error_string);
+                pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error_string, warnings) : nullptr;
+            }
             if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
             if (!pwallet) {
                 chain.initError(error_string);

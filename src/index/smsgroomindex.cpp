@@ -4,6 +4,7 @@
 
 #include <index/smsgroomindex.h>
 
+#include <chainparams.h>
 #include <evo/smsgroomtx.h>
 #include <evo/specialtx.h>
 #include <primitives/transaction.h>
@@ -89,6 +90,35 @@ bool SmsgRoomIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
         }
     }
     return true;
+}
+
+bool SmsgRoomIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip)
+{
+    assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
+
+    CDBBatch batch(*m_db);
+    const auto& consensus = Params().GetConsensus();
+
+    for (const CBlockIndex* pindex = current_tip; pindex && pindex != new_tip; pindex = pindex->pprev) {
+        CBlock block;
+        if (!ReadBlockFromDisk(block, pindex, consensus)) {
+            return error("%s: Failed to read block %s from disk", __func__,
+                         pindex->GetBlockHash().ToString());
+        }
+
+        for (const auto& tx : block.vtx) {
+            if (tx->nVersion != 3 || tx->nType != TRANSACTION_SMSG_ROOM) {
+                continue;
+            }
+            batch.Erase(std::make_pair(DB_SMSGROOM, tx->GetHash()));
+        }
+    }
+
+    if (!m_db->WriteBatch(batch)) {
+        return false;
+    }
+
+    return BaseIndex::Rewind(current_tip, new_tip);
 }
 
 BaseIndex::DB& SmsgRoomIndex::GetDB() const { return *m_db; }

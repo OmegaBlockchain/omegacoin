@@ -103,6 +103,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <fstream>
 #include <memory>
 #include <set>
 #include <thread>
@@ -118,6 +119,200 @@
 #endif
 
 #include <boost/signals2/signal.hpp>
+
+namespace {
+constexpr int AUTO_BLOCK_RECOVERY_DEPTH{20};
+constexpr char STARTUP_RECOVERY_MARKER_FILENAME[] = ".startup-incomplete";
+
+fs::path GetStartupRecoveryMarkerPath()
+{
+    return GetDataDir() / STARTUP_RECOVERY_MARKER_FILENAME;
+}
+
+bool StartupRecoveryMarkerExists()
+{
+    try {
+        return fs::exists(GetStartupRecoveryMarkerPath());
+    } catch (const std::exception& e) {
+        LogPrintf("%s: failed to inspect startup recovery marker: %s\n", __func__, e.what());
+        return false;
+    }
+}
+
+void WriteStartupRecoveryMarker()
+{
+    try {
+        std::ofstream marker_file(GetStartupRecoveryMarkerPath());
+        if (!marker_file.is_open()) {
+            LogPrintf("%s: failed to create startup recovery marker at %s\n", __func__, GetStartupRecoveryMarkerPath().string());
+            return;
+        }
+        marker_file << GetTime() << '\n';
+    } catch (const std::exception& e) {
+        LogPrintf("%s: failed to create startup recovery marker: %s\n", __func__, e.what());
+    }
+}
+
+void ClearStartupRecoveryMarker()
+{
+    try {
+        const fs::path marker_path = GetStartupRecoveryMarkerPath();
+        if (fs::exists(marker_path)) {
+            fs::remove(marker_path);
+        }
+    } catch (const std::exception& e) {
+        LogPrintf("%s: failed to clear startup recovery marker: %s\n", __func__, e.what());
+    }
+}
+
+bool IsAutomaticBlockRecoveryError(const bilingual_str& error)
+{
+    const std::string& message = error.original;
+    return message.find("Corrupted block database detected") != std::string::npos ||
+           message.find("Error initializing block database") != std::string::npos ||
+           message.find("Error loading block database") != std::string::npos ||
+           message.find("Error opening block database") != std::string::npos ||
+           message.find("Unable to replay blocks") != std::string::npos;
+}
+
+bool CanAutoRecoverBlockDatabase(const NodeContext& node)
+{
+    if (!node.mempool || !node.chainman) {
+        return false;
+    }
+
+    LOCK(cs_main);
+    const CChainState& chainstate = ::ChainstateActive();
+    return chainstate.m_chain.Tip() != nullptr && chainstate.m_chain.Height() > 0;
+}
+
+bool RewindBlockDatabase(NodeContext& node, const CChainParams& chainparams, int blocks, const std::string& reason, bilingual_str& warning)
+{
+    if (!node.mempool || !node.chainman) {
+        warning = Untranslated("Automatic block database recovery is unavailable because the chainstate is not initialized.");
+        return false;
+    }
+
+    CChainState& chainstate = ::ChainstateActive();
+    int start_height = 0;
+    int rewound = 0;
+    {
+        LOCK(cs_main);
+        if (chainstate.m_chain.Tip() == nullptr || chainstate.m_chain.Height() <= 0) {
+            warning = Untranslated("Automatic block database recovery skipped because there is no active tip to rewind.");
+            return false;
+        }
+        start_height = chainstate.m_chain.Height();
+    }
+
+    LogPrintf("%s: rewinding up to %d blocks from height %d due to %s\n", __func__, blocks, start_height, reason);
+    uiInterface.InitMessage(_("Recovering block database...").translated);
+
+    {
+        LOCK(cs_main);
+        LOCK(node.mempool->cs);
+        CValidationState state;
+        while (rewound < blocks && chainstate.m_chain.Tip() != nullptr && chainstate.m_chain.Height() > 0) {
+            if (!chainstate.DisconnectTip(state, chainparams, nullptr)) {
+                warning = Untranslated(strprintf(
+                    "Automatic block database recovery failed while disconnecting block %s at height %d (%s).",
+                    chainstate.m_chain.Tip()->GetBlockHash().ToString(),
+                    chainstate.m_chain.Height(),
+                    FormatStateMessage(state)));
+                return false;
+            }
+            ++rewound;
+        }
+    }
+
+    if (rewound == 0) {
+        warning = Untranslated("Automatic block database recovery did not rewind any blocks.");
+        return false;
+    }
+
+    warning = Untranslated(strprintf(
+        "Recovered from an unsafe or inconsistent shutdown by rewinding %d block(s) from height %d to %d. Synchronization will continue from the recovered tip.",
+        rewound, start_height, start_height - rewound));
+    LogPrintf("%s\n", warning.original);
+    return true;
+}
+
+bool StartTxIndexWithRecovery(const ArgsManager& args, size_t cache_size, bool f_reindex, bilingual_str& warning, bilingual_str& error)
+{
+    if (!args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
+        return true;
+    }
+
+    auto start_txindex = [&](bool wipe) {
+        g_txindex = std::make_unique<TxIndex>(cache_size, false, wipe);
+        g_txindex->Start();
+    };
+
+    try {
+        start_txindex(f_reindex);
+        return true;
+    } catch (const std::exception& e) {
+        LogPrintf("%s: txindex startup failed: %s\n", __func__, e.what());
+        g_txindex.reset();
+        warning = Untranslated(strprintf(
+            "Transaction index startup failed (%s). Omega Core will wipe and rebuild txindex automatically.",
+            e.what()));
+    }
+
+    try {
+        start_txindex(true);
+        return true;
+    } catch (const std::exception& e) {
+        LogPrintf("%s: automatic txindex recovery failed: %s\n", __func__, e.what());
+        g_txindex.reset();
+        error = Untranslated(strprintf("Failed to rebuild the transaction index automatically: %s", e.what()));
+        return false;
+    }
+}
+
+bool StartSmsgRoomIndexWithRecovery(bool f_reindex, bilingual_str& warning)
+{
+    const size_t cache_size = 1 << 20;
+    std::string startup_error;
+
+    auto start_smsgroomindex = [&](bool wipe) {
+        auto smsgroomindex = std::make_unique<SmsgRoomIndex>(cache_size, false, wipe);
+        smsgroomindex->Start();
+        g_smsgroomindex = std::move(smsgroomindex);
+    };
+
+    try {
+        start_smsgroomindex(f_reindex);
+        return true;
+    } catch (const std::exception& e) {
+        startup_error = e.what();
+        LogPrintf("%s: smsg room index startup failed: %s\n", __func__, startup_error);
+        g_smsgroomindex.reset();
+    }
+
+    if (f_reindex) {
+        warning = Untranslated(strprintf(
+            "SMSG room index startup failed during rebuild (%s). Omega Core will continue with the room index disabled.",
+            startup_error));
+        return true;
+    }
+
+    try {
+        start_smsgroomindex(true);
+        warning = Untranslated(strprintf(
+            "SMSG room index startup failed (%s). Omega Core wiped and rebuilt the room index automatically.",
+            startup_error));
+        return true;
+    } catch (const std::exception& e) {
+        LogPrintf("%s: automatic smsg room index recovery failed: %s\n", __func__, e.what());
+        g_smsgroomindex.reset();
+        warning = Untranslated(strprintf(
+            "SMSG room index startup failed (%s) and automatic rebuild also failed (%s). Omega Core will continue with the room index disabled.",
+            startup_error, e.what()));
+        return true;
+    }
+}
+} // namespace
 
 #if ENABLE_ZMQ
 #include <zmq/zmqabstractnotifier.h>
@@ -252,7 +447,11 @@ void PrepareShutdown(NodeContext& node)
     bool fRPCInWarmup = RPCIsInWarmup(&statusmessage);
 
     for (const auto& client : node.chain_clients) {
-        client->flush();
+        try {
+            client->flush();
+        } catch (const std::exception& e) {
+            LogPrintf("%s: wallet flush failed during shutdown: %s\n", __func__, e.what());
+        }
     }
     StopMapPort();
 
@@ -368,7 +567,11 @@ void PrepareShutdown(NodeContext& node)
         node.evodb.reset();
     }
     for (const auto& client : node.chain_clients) {
-        client->stop();
+        try {
+            client->stop();
+        } catch (const std::exception& e) {
+            LogPrintf("%s: wallet stop failed during shutdown: %s\n", __func__, e.what());
+        }
     }
 
 #if ENABLE_ZMQ
@@ -399,6 +602,7 @@ void PrepareShutdown(NodeContext& node)
     node.chain_clients.clear();
     UnregisterAllValidationInterfaces();
     GetMainSignals().UnregisterBackgroundSignalScheduler();
+    ClearStartupRecoveryMarker();
 }
 
 /**
@@ -1992,6 +2196,15 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
 
     fReindex = args.GetBoolArg("-reindex", false);
     bool fReindexChainState = args.GetBoolArg("-reindex-chainstate", false);
+    bool recover_from_unclean_shutdown = StartupRecoveryMarkerExists();
+    bool attempted_block_database_recovery = false;
+
+    if (recover_from_unclean_shutdown) {
+        InitWarning(Untranslated(strprintf(
+            "Omega Core detected that the previous run did not shut down cleanly. The active chain will be rewound by up to %d blocks before synchronization resumes.",
+            AUTO_BLOCK_RECOVERY_DEPTH)));
+    }
+    WriteStartupRecoveryMarker();
 
     // cache size calculations
     int64_t nTotalCache = (args.GetArg("-dbcache", nDefaultDbCache) << 20);
@@ -2030,6 +2243,7 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
 
     while (!fLoaded && !ShutdownRequested()) {
         const bool fReset = fReindex;
+        bool retry_load_with_recovery = false;
         auto is_coinsview_empty = [&](CChainState* chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
             return fReset || fReindexChainState || chainstate->CoinsTip().GetBestBlock().IsNull();
         };
@@ -2213,6 +2427,20 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
                     break;
                 }
 
+                if (recover_from_unclean_shutdown && !attempted_block_database_recovery && CanAutoRecoverBlockDatabase(node)) {
+                    bilingual_str recovery_warning;
+                    if (!RewindBlockDatabase(node, chainparams, AUTO_BLOCK_RECOVERY_DEPTH, "previous unsafe shutdown", recovery_warning)) {
+                        strLoadError = recovery_warning;
+                        failed_verification = true;
+                        break;
+                    }
+                    InitWarning(recovery_warning);
+                    attempted_block_database_recovery = true;
+                    recover_from_unclean_shutdown = false;
+                    retry_load_with_recovery = true;
+                    break;
+                }
+
                 for (CChainState* chainstate : chainman.GetAll()) {
                     if (!is_coinsview_empty(chainstate)) {
                         uiInterface.InitMessage(_("Verifying blocks...").translated);
@@ -2286,7 +2514,24 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
             }
         } while(false);
 
+        if (retry_load_with_recovery && !ShutdownRequested()) {
+            continue;
+        }
+
         if (!fLoaded && !ShutdownRequested()) {
+            if (!attempted_block_database_recovery && IsAutomaticBlockRecoveryError(strLoadError) && CanAutoRecoverBlockDatabase(node)) {
+                bilingual_str recovery_warning;
+                if (RewindBlockDatabase(node, chainparams, AUTO_BLOCK_RECOVERY_DEPTH, strLoadError.original, recovery_warning)) {
+                    InitWarning(recovery_warning);
+                    attempted_block_database_recovery = true;
+                    recover_from_unclean_shutdown = false;
+                    continue;
+                }
+                if (!recovery_warning.empty()) {
+                    LogPrintf("%s\n", recovery_warning.original);
+                }
+            }
+
             // first suggest a reindex
             if (!fReset) {
                 bool fRet = uiInterface.ThreadSafeQuestion(
@@ -2322,14 +2567,24 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
-    if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);
-        g_txindex->Start();
+    {
+        bilingual_str txindex_warning;
+        bilingual_str txindex_error;
+        if (!StartTxIndexWithRecovery(args, nTxIndexCache, fReindex, txindex_warning, txindex_error)) {
+            return InitError(txindex_error);
+        }
+        if (!txindex_warning.empty()) {
+            InitWarning(txindex_warning);
+        }
     }
 
-    // SMSG room index — always enabled, lightweight (only indexes type 8 txs)
-    g_smsgroomindex = std::make_unique<SmsgRoomIndex>(1 << 20 /* 1 MiB cache */, false, fReindex);
-    g_smsgroomindex->Start();
+    {
+        bilingual_str smsgroomindex_warning;
+        StartSmsgRoomIndexWithRecovery(fReindex, smsgroomindex_warning);
+        if (!smsgroomindex_warning.empty()) {
+            InitWarning(smsgroomindex_warning);
+        }
+    }
 
     for (const auto& filter_type : g_enabled_filter_types) {
         InitBlockFilterIndex(filter_type, filter_index_cache, false, fReindex);
@@ -2545,10 +2800,14 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
             smsgModule.StartOnUnlock(smsg_wallet, fScanChain, 5);
         } else {
             // Unencrypted wallet (or already unlocked): start immediately
-            smsgModule.Start(smsg_wallet, false, fScanChain);
+            if (!smsgModule.Start(smsg_wallet, false, fScanChain)) {
+                LogPrintf("SMSG startup failed, continuing with secure messaging disabled.\n");
+            }
         }
 #else
-        smsgModule.Start(nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false));
+        if (!smsgModule.Start(nullptr, false, gArgs.GetBoolArg("-smsgscanchain", false))) {
+            LogPrintf("SMSG startup failed, continuing with secure messaging disabled.\n");
+        }
 #endif
     }
 
@@ -2586,7 +2845,7 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     // smsgModule.Start() calls SetLocalServices() but connman->Start() below
     // overwrites it from this local nLocalServices variable, so we must
     // add NODE_SMSG here before building connOptions.
-    if (args.GetBoolArg("-smsg", true)) {
+    if (smsg::fSecMsgEnabled) {
         nLocalServices = ServiceFlags(nLocalServices | NODE_SMSG);
     }
     connOptions.nLocalServices = nLocalServices;

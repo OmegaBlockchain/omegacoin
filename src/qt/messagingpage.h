@@ -6,6 +6,8 @@
 #ifndef OMEGA_QT_MESSAGINGPAGE_H
 #define OMEGA_QT_MESSAGINGPAGE_H
 
+#include <amount.h>
+
 #include <QWidget>
 #include <QMenu>
 #include <QTimer>

@@ -457,6 +457,42 @@ void ThreadSecureMsgPow(const CBlockIndex* pindex)
                     continue;
                 }
 
+                // Zero txid: crashed after qm* write but before funding tx was committed — recover.
+                if (txid.IsNull()) {
+                    txid = smsgModule.FindFundingTx(msgId);
+                    if (txid.IsNull()) {
+                        // No wallet tx found for this msgId — re-fund the message.
+                        SecureMessage smsgFund;
+                        memcpy(smsgFund.data(), pHeader, SMSG_HDR_LEN);
+                        smsgFund.pPayload = new uint8_t[psmsg->nPayload];
+                        memcpy(smsgFund.pPayload, pPayload, psmsg->nPayload);
+                        smsgFund.nPayload = psmsg->nPayload;
+
+                        std::string sFundErr;
+                        if (smsgModule.FundMsg(smsgFund, sFundErr, false, nullptr, &msgId) != SMSG_NO_ERROR) {
+                            LogPrintf("%s: recovery re-fund failed for msgId %s: %s\n", __func__, msgId.ToString(), sFundErr);
+                            if (now > psmsg->timestamp + FUND_TXN_TIMEOUT) {
+                                LogPrintf("%s: Timeout, dropping unfunded msgId %s.\n", __func__, msgId.ToString());
+                                LOCK(cs_smsgDB);
+                                dbOutbox.EraseSmesg(chKey);
+                            }
+                            continue;
+                        }
+                        GetFundingTxid(smsgFund.pPayload, smsgFund.nPayload, txid);
+                        // Copy full funded payload (txid + blinding key for blinded) into stored record.
+                        memcpy(pPayload, smsgFund.pPayload, psmsg->nPayload);
+                    } else {
+                        // Wallet tx exists — stamp recovered txid into the stored record tail.
+                        memcpy(pPayload + psmsg->nPayload - 32, txid.begin(), 32);
+                    }
+                    {
+                        LOCK(cs_smsgDB);
+                        dbOutbox.WriteSmesg(chKey, smsgStored);
+                    }
+                    LogPrintf("%s: recovery: stamped funding txid %s for msgId %s.\n", __func__, txid.ToString(), msgId.ToString());
+                    continue;
+                }
+
                 CTransactionRef txOut;
                 uint256 hashBlock;
                 {
@@ -4539,7 +4575,8 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         }
     }
 
-    smsg = SecureMessage(fPaid, nDaysRetention, fBlinded);
+    smsg.~SecureMessage();
+    new (&smsg) SecureMessage(fPaid, nDaysRetention, fBlinded);
     if ((rv = Encrypt(smsg, addressFrom, addressTo, sData, topic, parentMsgId, nTopicRetentionDays)) != 0) {
         sError = GetString(rv);
         return errorN(rv, "%s: %s.", __func__, sError);
@@ -4553,11 +4590,11 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         if (0 != HashMsg(smsg, smsg.pPayload, smsg.nPayload - smsg.GetPaidTailSize(), msgId)) {
             return errorN(SMSG_GENERAL_ERROR, sError, __func__, "HashMsg failed.");
         }
-        if (0 != FundMsg(smsg, sError, fTestFee, nFee, &msgId)) {
-            return errorN(SMSG_FUND_FAILED, "%s: SecureMsgFund failed %s.", __func__, sError);
-        }
-
         if (fTestFee) {
+            // Fee estimation only: do not commit tx or persist queue record.
+            if (0 != FundMsg(smsg, sError, true, nFee, &msgId)) {
+                return errorN(SMSG_FUND_FAILED, "%s: SecureMsgFund failed %s.", __func__, sError);
+            }
             return SMSG_NO_ERROR;
         }
     } else {
@@ -4588,15 +4625,48 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
 
     memcpy(&smsgSQ.vchMessage[0], smsg.data(), SMSG_HDR_LEN);
     memcpy(&smsgSQ.vchMessage[SMSG_HDR_LEN], smsg.pPayload, smsg.nPayload);
+    // For paid messages payload tail is zeroed here; txid is unknown until FundMsg completes.
 
-    {
+    if (fPaid) {
+        // Persist qm* record before committing the funding tx. Zero txid in tail acts as a sentinel:
+        // the PoW thread detects it on restart and re-funds, closing the crash-between-commit-and-persist window.
+        {
+            LOCK(cs_smsgDB);
+            SecMsgDB dbSendQueue;
+            if (!dbSendQueue.Open("cw") || !dbSendQueue.WriteSmesg(chKey, smsgSQ)) {
+                return errorN(SMSG_GENERAL_ERROR, sError, __func__, "Failed to write pre-fund queue record.");
+            }
+        }
+
+        if (0 != FundMsg(smsg, sError, false, nFee, &msgId)) {
+            // Fund failed: remove the unfunded record so the PoW thread does not attempt recovery.
+            {
+                LOCK(cs_smsgDB);
+                SecMsgDB dbRollback;
+                if (dbRollback.Open("cw")) {
+                    dbRollback.EraseSmesg(chKey);
+                }
+            }
+            return errorN(SMSG_FUND_FAILED, "%s: SecureMsgFund failed %s.", __func__, sError);
+        }
+
+        // Overwrite record with funded payload (tail now contains txid, and blinding key if blinded).
+        memcpy(&smsgSQ.vchMessage[SMSG_HDR_LEN], smsg.pPayload, smsg.nPayload);
+        {
+            LOCK(cs_smsgDB);
+            SecMsgDB dbSendQueue;
+            if (dbSendQueue.Open("cw")) {
+                dbSendQueue.WriteSmesg(chKey, smsgSQ);
+            }
+        }
+    } else {
         LOCK(cs_smsgDB);
         SecMsgDB dbSendQueue;
         if (dbSendQueue.Open("cw")) {
             dbSendQueue.WriteSmesg(chKey, smsgSQ);
             //NotifySecMsgSendQueueChanged(smsgOutbox);
         }
-    } // cs_smsgDB
+    }
 
     //  For outbox create a copy encrypted for owned address
     //   if the wallet is encrypted private key needed to decrypt will be unavailable
@@ -4836,6 +4906,23 @@ int CSMSG::FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmo
     return SMSG_WALLET_UNSET;
 #endif
     return SMSG_NO_ERROR;
+};
+
+uint256 CSMSG::FindFundingTx(const uint160 &msgId) const
+{
+#ifdef ENABLE_WALLET
+    auto w = pwallet;
+    if (!w) return uint256();
+    LOCK(w->cs_wallet);
+    const std::string sFind = HexStr(msgId);
+    for (const auto &entry : w->mapWallet) {
+        const auto it = entry.second.mapValue.find("smsg_msgid");
+        if (it != entry.second.mapValue.end() && it->second == sFind) {
+            return entry.first;
+        }
+    }
+#endif
+    return uint256();
 };
 
 std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage *psmsg, const uint8_t *pPayload)

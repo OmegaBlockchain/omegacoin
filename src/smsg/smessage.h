@@ -196,6 +196,11 @@ public:
         pPayload = nullptr;
     };
 
+    SecureMessage(const SecureMessage&) = delete;
+    SecureMessage& operator=(const SecureMessage&) = delete;
+    SecureMessage(SecureMessage&&) = delete;
+    SecureMessage& operator=(SecureMessage&&) = delete;
+
     void SetNull()
     {
         memset(iv, 0, 16);
@@ -326,14 +331,14 @@ public:
     void Serialize(Stream &s) const
     {
         s << timestamp;
-        s.write((char*)&sample[0], 33);
+        s.write((char*)&sample[0], 8);
         s << timepurged;
     };
     template <typename Stream>
     void Unserialize(Stream& s)
     {
         s >> timestamp;
-        s.read((char*)&sample[0], 33);
+        s.read((char*)&sample[0], 8);
         s >> timepurged;
     };
 
@@ -458,7 +463,7 @@ public:
 void AddOptions();
 const char *GetString(size_t errorCode);
 
-extern bool fSecMsgEnabled;
+extern std::atomic<bool> fSecMsgEnabled;
 class CSMSG
 {
 public:
@@ -541,7 +546,7 @@ public:
 
 
     int HashMsg(const SecureMessage &smsg, const uint8_t *pPayload, uint32_t nPayload, uint160 &hash);
-    int FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmount *nFee);
+    int FundMsg(SecureMessage &smsg, std::string &sError, bool fTestFee, CAmount *nFee, const uint160 *pPrecomputedMsgId = nullptr);
 
     std::vector<uint8_t> GetMsgID(const SecureMessage *psmsg, const uint8_t *pPayload);
     std::vector<uint8_t> GetMsgID(const SecureMessage &smsg);
@@ -595,6 +600,7 @@ public:
     int64_t nLastProcessedPurged = 0;
     int64_t nLastTrollboxSend = 0;
     CKeyID trollboxAddress;
+    CKeyID m_cachedOutboxAddr;
 
     NodeContext *m_node = nullptr;
 };

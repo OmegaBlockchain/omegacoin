@@ -104,9 +104,9 @@ private:
 
     QTimer* updateTimer;
     QTimer* trollboxCooldownTimer;
-    bool fInboxChanged;
-    bool fOutboxChanged;
-    bool fTrollboxChanged;
+    std::atomic<bool> fInboxChanged{false};
+    std::atomic<bool> fOutboxChanged{false};
+    std::atomic<bool> fTrollboxChanged{false};
 
     int nTrollboxCooldown;
     std::set<std::string> trollboxMuteList;
@@ -134,6 +134,10 @@ private:
 
     std::thread m_scanThread;
     std::atomic<bool> m_fScanning{false};
+    CAmount m_lastFeeEstimate{0};
+
+    int64_t m_trollboxLastTimestamp{0};
+    size_t  m_trollboxLastCount{0};
 };
 
 #endif // OMEGA_QT_MESSAGINGPAGE_H

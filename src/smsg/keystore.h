@@ -43,10 +43,9 @@ public:
 
 class SecMsgKeyStore
 {
-protected:
+public:
     mutable CCriticalSection cs_KeyStore;
 
-public:
     std::map<CKeyID, SecMsgKey> mapKeys;
 
     bool AddKey(const CKeyID &idk, SecMsgKey &key);

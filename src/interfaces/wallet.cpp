@@ -60,8 +60,14 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
             fOutputDenomFound = true;
         }
     }
-    result.credit = wtx.GetCredit(ISMINE_ALL);
-    result.debit = wtx.GetDebit(ISMINE_ALL);
+    try {
+        result.credit = wtx.GetCredit(ISMINE_ALL);
+        result.debit = wtx.GetDebit(ISMINE_ALL);
+    } catch (const std::exception &e) {
+        LogPrintf("%s: GetCredit/GetDebit threw for tx %s: %s\n", __func__, wtx.GetHash().ToString(), e.what());
+        result.credit = 0;
+        result.debit = 0;
+    }
     result.change = wtx.GetChange();
     result.time = wtx.GetTxTime();
     result.value_map = wtx.mapValue;

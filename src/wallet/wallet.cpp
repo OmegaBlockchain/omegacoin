@@ -3613,7 +3613,7 @@ bool CWallet::CreateTransaction(const std::vector<CRecipient>& vecSend, CTransac
     return true;
 }
 
-void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm)
+bool CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm)
 {
     LOCK(cs_wallet);
 
@@ -3626,7 +3626,10 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
     WalletLogPrintf("CommitTransaction:\n%s", wtxNew.tx->ToString()); /* Continued */
     // Add tx to wallet, because if it has change it's also ours,
     // otherwise just for transaction history.
-    AddToWallet(wtxNew);
+    if (!AddToWallet(wtxNew)) {
+        WalletLogPrintf("CommitTransaction(): AddToWallet failed, transaction not persisted.\n");
+        return false;
+    }
 
     // Notify that old coins are spent
     std::set<uint256> updated_hahes;
@@ -3645,7 +3648,7 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
 
     if (!fBroadcastTransactions) {
         // Don't submit tx to the mempool
-        return;
+        return true;
     }
 
     std::string err_string;
@@ -3653,6 +3656,7 @@ void CWallet::CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::ve
         WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", err_string);
         // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
     }
+    return true;
 }
 
 DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
@@ -3853,7 +3857,10 @@ bool CWallet::GetNewDestination(const std::string label, CTxDestination& dest, s
         result = spk_man->GetNewDestination(dest, error);
     }
     if (result) {
-        SetAddressBook(dest, label, "receive");
+        if (!SetAddressBook(dest, label, "receive")) {
+            error = "Failed to write address metadata to wallet database";
+            return false;
+        }
     }
 
     return result;

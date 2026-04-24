@@ -923,6 +923,8 @@ static UniValue smsginbox(const JSONRPCRequest &request)
                 if (fCheckReadStatus
                     && !(smsgStored.status & SMSG_MASK_UNREAD))
                     continue;
+                if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                    continue;
                 uint8_t *pHeader = &smsgStored.vchMessage[0];
                 const smsg::SecureMessage *psmsg = (smsg::SecureMessage*) pHeader;
 
@@ -1058,6 +1060,8 @@ static UniValue smsgoutbox(const JSONRPCRequest &request)
 
             while (dbOutbox.NextSmesg(it, sPrefix, chKey, smsgStored))
             {
+                if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                    continue;
                 uint8_t *pHeader = &smsgStored.vchMessage[0];
                 const smsg::SecureMessage *psmsg = (smsg::SecureMessage*) pHeader;
 
@@ -1460,6 +1464,8 @@ static UniValue smsgview(const JSONRPCRequest &request)
                     continue;
                 };
 
+                if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                    continue;
                 uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                 int rv;
                 if ((rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
@@ -1671,6 +1677,8 @@ static UniValue smsgone(const JSONRPCRequest &request)
         };
     }
 
+    if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Message record too short.");
     const smsg::SecureMessage *psmsg = (smsg::SecureMessage*) &smsgStored.vchMessage[0];
 
     result.pushKV("msgid", sMsgId);
@@ -2077,6 +2085,7 @@ static UniValue smsgfund(const JSONRPCRequest &request)
     // Point pPayload into smsgStored's buffer — must null before secMsg destructor runs
     secMsg.pPayload = &smsgStored.vchMessage[smsg::SMSG_HDR_LEN];
     secMsg.nPayload = nPayload;
+    struct PayloadGuard { smsg::SecureMessage *p; ~PayloadGuard() { if (p) p->pPayload = nullptr; } } guard{&secMsg};
 
     std::string sError;
     CAmount nFee = 0;
@@ -2418,6 +2427,8 @@ static UniValue trollboxlist(const JSONRPCRequest &request)
         leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
         while (db.NextSmesg(it, sPrefix, chKey, smsgStored))
         {
+            if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                continue;
             uint8_t* pHeader = &smsgStored.vchMessage[0];
             const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
             uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;

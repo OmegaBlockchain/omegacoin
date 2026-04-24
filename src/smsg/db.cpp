@@ -289,7 +289,11 @@ bool SecMsgDB::ExistsPK(const CKeyID &addr)
     };
 
     leveldb::Status s = pdb->Get(leveldb::ReadOptions(), ssKey.str(), &unused);
-    return s.IsNotFound() == false;
+    if (s.ok())
+        return true;
+    if (!s.IsNotFound())
+        error("ExistsPK: LevelDB read failure: %s\n", s.ToString());
+    return false;
 };
 
 bool SecMsgDB::ReadKey(const CKeyID &idk, SecMsgKey &key)
@@ -422,27 +426,28 @@ bool SecMsgDB::NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8
     if (!pdb)
         return false;
 
-    if (!it->Valid()) // First run
+    if (!it->Valid())
         it->Seek(prefix);
     else
         it->Next();
 
-    if (!(it->Valid()
-        && it->key().size() == 30
-        && memcmp(it->key().data(), prefix.data(), 2) == 0))
-        return false;
+    for (;;) {
+        if (!(it->Valid()
+            && it->key().size() == 30
+            && memcmp(it->key().data(), prefix.data(), 2) == 0))
+            return false;
 
-    memcpy(chKey, it->key().data(), 30);
+        memcpy(chKey, it->key().data(), 30);
 
-    try {
-        CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
-        ssValue >> smsgStored;
-    } catch (std::exception &e) {
-        LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
-        return false;
-    };
-
-    return true;
+        try {
+            CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> smsgStored;
+            return true;
+        } catch (std::exception &e) {
+            LogPrintf("%s: Skipping corrupt record: %s.\n", __func__, e.what());
+        }
+        it->Next();
+    }
 };
 
 bool SecMsgDB::NextSmesgKey(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey)
@@ -548,8 +553,11 @@ bool SecMsgDB::ExistsSmesg(const uint8_t *chKey)
     };
 
     leveldb::Status s = pdb->Get(leveldb::ReadOptions(), ssKey.str(), &unused);
-    return s.IsNotFound() == false;
-    return true;
+    if (s.ok())
+        return true;
+    if (!s.IsNotFound())
+        error("ExistsSmesg: LevelDB read failure: %s\n", s.ToString());
+    return false;
 };
 
 bool SecMsgDB::EraseSmesg(const uint8_t *chKey)
@@ -649,27 +657,28 @@ bool SecMsgDB::NextPurged(leveldb::Iterator *it, const std::string &prefix, uint
     if (!pdb)
         return false;
 
-    if (!it->Valid()) // First run
+    if (!it->Valid())
         it->Seek(prefix);
     else
         it->Next();
 
-    if (!(it->Valid()
-        && it->key().size() == 30
-        && memcmp(it->key().data(), prefix.data(), 2) == 0))
-        return false;
+    for (;;) {
+        if (!(it->Valid()
+            && it->key().size() == 30
+            && memcmp(it->key().data(), prefix.data(), 2) == 0))
+            return false;
 
-    memcpy(chKey, it->key().data(), 30);
+        memcpy(chKey, it->key().data(), 30);
 
-    try {
-        CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
-        ssValue >> smsgPurged;
-    } catch (std::exception &e) {
-        LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
-        return false;
-    };
-
-    return true;
+        try {
+            CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> smsgPurged;
+            return true;
+        } catch (std::exception &e) {
+            LogPrintf("%s: Skipping corrupt record: %s.\n", __func__, e.what());
+        }
+        it->Next();
+    }
 };
 
 bool SecMsgDB::NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKeyID &idk, SecMsgKey &key)
@@ -677,27 +686,28 @@ bool SecMsgDB::NextPrivKey(leveldb::Iterator *it, const std::string &prefix, CKe
     if (!pdb)
         return false;
 
-    if (!it->Valid()) // First run
+    if (!it->Valid())
         it->Seek(prefix);
     else
         it->Next();
 
-    if (!(it->Valid()
-        && it->key().size() == 22
-        && memcmp(it->key().data(), prefix.data(), 2) == 0))
-        return false;
+    for (;;) {
+        if (!(it->Valid()
+            && it->key().size() == 22
+            && memcmp(it->key().data(), prefix.data(), 2) == 0))
+            return false;
 
-    memcpy(idk.begin(), it->key().data()+2, 20);
+        memcpy(idk.begin(), it->key().data()+2, 20);
 
-    try {
-        CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
-        ssValue >> key;
-    } catch (std::exception &e) {
-        LogPrintf("%s unserialize threw: %s.\n", __func__, e.what());
-        return false;
-    };
-
-    return true;
+        try {
+            CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> key;
+            return true;
+        } catch (std::exception &e) {
+            LogPrintf("%s: Skipping corrupt record: %s.\n", __func__, e.what());
+        }
+        it->Next();
+    }
 };
 
 // Build the LevelDB key for a topic index entry.

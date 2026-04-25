@@ -15,6 +15,7 @@
 #include <smsg/keystore.h>
 #include <interfaces/handler.h>
 #include <validationinterface.h>
+#include <secp256k1.h>
 
 #include <boost/signals2/signal.hpp>
 
@@ -566,6 +567,11 @@ public:
     int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
     int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
 
+    // Internal: skip secp256k1_ec_pubkey_parse when R is already parsed.
+    int DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &address,
+                     const secp256k1_pubkey &R,
+                     const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
+
     // Topic channel subscriptions
     bool SubscribeTopic(const std::string &topic, std::string &sError);
     bool UnsubscribeTopic(const std::string &topic, std::string &sError);
@@ -578,9 +584,10 @@ public:
     static CKey GetTopicSharedKey(const std::string &topic);
     CKeyID ImportTopicKey(const std::string &topic);
 
-    mutable CCriticalSection cs_smsgSubs; // guards m_subscribed_topics and m_subscribed_topic_hashes
-    std::set<std::string> m_subscribed_topics;       // full topic strings
-    std::set<uint32_t>    m_subscribed_topic_hashes; // FNV-1a hashes for fast cleartext routing
+    mutable CCriticalSection cs_smsgSubs; // guards m_subscribed_topics, m_subscribed_topic_hashes, m_topicHashToKeyID
+    std::set<std::string> m_subscribed_topics;              // full topic strings
+    std::set<uint32_t>    m_subscribed_topic_hashes;        // FNV-1a hashes for fast cleartext routing
+    std::map<uint32_t, CKeyID> m_topicHashToKeyID;          // topic hash → keystore CKeyID for O(1) ScanMessage routing
 
     CCriticalSection cs_smsg; // all except inbox and outbox
 

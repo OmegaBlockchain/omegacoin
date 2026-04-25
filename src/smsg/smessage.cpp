@@ -3007,40 +3007,71 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
     */
 
     bool fOwnMessage = false;
-    MessageData msg; // placeholder
+    MessageData msg;
     CKeyID addressTo;
     const SecureMessage* psmsg_scan = (const SecureMessage*)pHeader;
     bool fIsTopic = (psmsg_scan->version[0] == SMSG_VERSION_TOPIC);
-    LOCK(smsgModule.keyStore.cs_KeyStore);
-    for (auto &p : smsgModule.keyStore.mapKeys) {
-        auto &address = p.first;
-        auto &key = p.second;
 
-        if (!(key.nFlags & SMK_RECEIVE_ON)) {
-            continue;
+    // Pre-parse ephemeral pubkey R once — avoids re-parsing inside every Decrypt attempt
+    secp256k1_pubkey R;
+    if (!secp256k1_ec_pubkey_parse(secp256k1_context_smsg, &R, psmsg_scan->cpkR, 33)) {
+        return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ec_pubkey_parse failed.", __func__);
+    }
+
+    if (fIsTopic) {
+        // Topic routing: resolve hash → single key — O(1) instead of O(K)
+        uint32_t topicHash;
+        memcpy(&topicHash, psmsg_scan->nonce, 4);
+        CKeyID topicKeyID;
+        {
+            LOCK(cs_smsgSubs);
+            auto it = m_topicHashToKeyID.find(topicHash);
+            if (it != m_topicHashToKeyID.end()) topicKeyID = it->second;
         }
-
-        if (!(key.nFlags & SMK_RECEIVE_ANON)) {
-            // Have to do full decrypt to see address from
-            if (Decrypt(false, key.key, address, pHeader, pPayload, nPayload, msg) == 0) {
-                if (LogAcceptCategory(BCLog::SMSG)) {
-                    LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(addressTo)));
+        if (!topicKeyID.IsNull()) {
+            LOCK(smsgModule.keyStore.cs_KeyStore);
+            auto kit = smsgModule.keyStore.mapKeys.find(topicKeyID);
+            if (kit != smsgModule.keyStore.mapKeys.end()) {
+                const auto &key = kit->second;
+                if ((key.nFlags & SMK_RECEIVE_ON) && key.key.IsValid()) {
+                    // Full decrypt: sTopic populated in single pass
+                    if (DecryptWithR(false, key.key, topicKeyID, R, pHeader, pPayload, nPayload, msg) == 0) {
+                        if (LogAcceptCategory(BCLog::SMSG)) {
+                            LogPrintf("Decrypted topic message with %s.\n", EncodeDestination(PKHash(topicKeyID)));
+                        }
+                        fOwnMessage = true;
+                        addressTo = topicKeyID;
+                    }
                 }
-                if (msg.sFromAddress.compare("anon") != 0) {
-                    fOwnMessage = true;
-                }
-                addressTo = address;
-                break;
             }
-        } else {
-            // For topic messages use full decrypt so sTopic is populated in one pass
-            if (Decrypt(!fIsTopic, key.key, address, pHeader, pPayload, nPayload, msg) == 0) {
-                if (LogAcceptCategory(BCLog::SMSG)) {
-                    LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(addressTo)));
+        }
+    } else {
+        LOCK(smsgModule.keyStore.cs_KeyStore);
+        for (auto &p : smsgModule.keyStore.mapKeys) {
+            auto &address = p.first;
+            auto &key = p.second;
+            if (!(key.nFlags & SMK_RECEIVE_ON)) continue;
+            if (!(key.nFlags & SMK_RECEIVE_ANON)) {
+                if (DecryptWithR(false, key.key, address, R, pHeader, pPayload, nPayload, msg) == 0) {
+                    if (LogAcceptCategory(BCLog::SMSG)) {
+                        LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(address)));
+                    }
+                    if (msg.sFromAddress.compare("anon") != 0) {
+                        fOwnMessage = true;
+                    }
+                    addressTo = address;
+                    break;
                 }
-                fOwnMessage = true;
-                addressTo = address;
-                break;
+            } else {
+                // Non-topic anon: test-only (MAC verify only, no plaintext needed)
+                if (DecryptWithR(true, key.key, address, R, pHeader, pPayload, nPayload, msg) == 0) {
+                    if (LogAcceptCategory(BCLog::SMSG)) {
+                        LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(address)));
+                    }
+                    fOwnMessage = true;
+                    addressTo = address;
+                    break;
+                }
             }
         }
     }
@@ -3086,8 +3117,7 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
             }
 
             if (!addr.fReceiveAnon) {
-                // Have to do full decrypt to see address from
-                if (Decrypt(false, keyDest, addressTo, pHeader, pPayload, nPayload, msg) == 0) {
+                if (DecryptWithR(false, keyDest, addressTo, R, pHeader, pPayload, nPayload, msg) == 0) {
                     if (LogAcceptCategory(BCLog::SMSG)) {
                         LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(addressTo)));
                     }
@@ -3097,8 +3127,8 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
                     break;
                 }
             } else {
-                // For topic messages use full decrypt so sTopic is populated in one pass
-                if (Decrypt(!fIsTopic, keyDest, addressTo, pHeader, pPayload, nPayload, msg) == 0) {
+                // Non-topic anon wallet addr: test-only
+                if (DecryptWithR(true, keyDest, addressTo, R, pHeader, pPayload, nPayload, msg) == 0) {
                     if (LogAcceptCategory(BCLog::SMSG)) {
                         LogPrintf("Decrypted message with %s.\n", EncodeDestination(PKHash(addressTo)));
                     }
@@ -5105,21 +5135,30 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
 
 int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
 {
-    /* Decrypt secure message
+    if (!pHeader || !pPayload) {
+        return errorN(SMSG_GENERAL_ERROR, "%s: null pointer to header or payload.", __func__);
+    }
+    const SecureMessage *psmsg_hdr = (const SecureMessage*) pHeader;
+    secp256k1_pubkey R;
+    if (!secp256k1_ec_pubkey_parse(secp256k1_context_smsg, &R, psmsg_hdr->cpkR, 33)) {
+        return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ec_pubkey_parse failed: %s.", __func__, HexStr(Span<const uint8_t>(psmsg_hdr->cpkR, 33)));
+    }
+    return DecryptWithR(fTestOnly, keyDest, address, R, pHeader, pPayload, nPayload, msg);
+}
 
-        address is the owned address to decrypt with.
-
-        validate first in SecureMsgValidate
-
-        returns SecureMessageErrors
-    */
+int CSMSG::DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &address,
+                        const secp256k1_pubkey &R,
+                        const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+{
+    /* Decrypt secure message with a pre-parsed ephemeral pubkey R.
+       Called in hot-path loops to avoid re-parsing cpkR on every key attempt.
+       Returns SecureMessageCodes. */
 
     if (LogAcceptCategory(BCLog::SMSG)) {
         LogPrintf("%s: using %s, testonly %d.\n", __func__, EncodeDestination(PKHash(address)), fTestOnly);
     }
 
-    if (!pHeader
-        || !pPayload) {
+    if (!pHeader || !pPayload) {
         return errorN(SMSG_GENERAL_ERROR, "%s: null pointer to header or payload.", __func__);
     }
 
@@ -5131,14 +5170,7 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
         return errorN(SMSG_UNKNOWN_VERSION, "%s: Unknown version number.", __func__);
     }
 
-    // Do an EC point multiply with private key k and public key R. This gives you public key P.
-    //CPubKey R(psmsg->cpkR, psmsg->cpkR+33);
-    //uint256 P = keyDest.ECDH(R);
-    secp256k1_pubkey R;
-    if (!secp256k1_ec_pubkey_parse(secp256k1_context_smsg, &R, psmsg->cpkR, 33)) {
-        return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ec_pubkey_parse failed: %s.", __func__, HexStr(Span<const uint8_t>(psmsg->cpkR, 33)));
-    }
-
+    // EC point multiply: private key k × public key R → shared secret P
     uint256 P;
     if (!secp256k1_ecdh(secp256k1_context_smsg, P.begin(), &R, keyDest.begin(), nullptr, nullptr)) {
         return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ecdh failed.", __func__);
@@ -5391,12 +5423,15 @@ bool CSMSG::SubscribeTopic(const std::string &topic, std::string &sError)
         sError = "Invalid topic string.";
         return false;
     }
-    // Import the topic's shared key so this node can decrypt broadcast messages
-    ImportTopicKey(topic);
+    CKeyID topicKeyID = ImportTopicKey(topic);
     {
         LOCK(cs_smsgSubs);
         m_subscribed_topics.insert(topic);
-        m_subscribed_topic_hashes.insert(SMSGTopicHash(topic));
+        uint32_t h = SMSGTopicHash(topic);
+        m_subscribed_topic_hashes.insert(h);
+        if (!topicKeyID.IsNull()) {
+            m_topicHashToKeyID[h] = topicKeyID;
+        }
     }
     return SaveTopicSubs();
 };
@@ -5410,10 +5445,14 @@ bool CSMSG::UnsubscribeTopic(const std::string &topic, std::string &sError)
     {
         LOCK(cs_smsgSubs);
         m_subscribed_topics.erase(topic);
-        // Rebuild the hash set from remaining subscriptions
+        // Rebuild the hash set and routing map from remaining subscriptions
         m_subscribed_topic_hashes.clear();
+        m_topicHashToKeyID.clear();
         for (const auto &t : m_subscribed_topics) {
-            m_subscribed_topic_hashes.insert(SMSGTopicHash(t));
+            uint32_t h = SMSGTopicHash(t);
+            m_subscribed_topic_hashes.insert(h);
+            CKey k = GetTopicSharedKey(t);
+            if (k.IsValid()) m_topicHashToKeyID[h] = k.GetPubKey().GetID();
         }
     }
     return SaveTopicSubs();
@@ -5424,6 +5463,7 @@ bool CSMSG::LoadTopicSubs()
     LOCK(cs_smsgSubs);
     m_subscribed_topics.clear();
     m_subscribed_topic_hashes.clear();
+    m_topicHashToKeyID.clear();
 
     fs::path fpath = GetDataDir() / "smsgstore" / "topic_subs.dat";
     if (!fs::exists(fpath)) {
@@ -5446,8 +5486,10 @@ bool CSMSG::LoadTopicSubs()
         if (line.empty() || line[0] == '#') continue;
         if (IsValidTopic(line)) {
             m_subscribed_topics.insert(line);
-            m_subscribed_topic_hashes.insert(SMSGTopicHash(line));
-            ImportTopicKey(line);
+            uint32_t h = SMSGTopicHash(line);
+            m_subscribed_topic_hashes.insert(h);
+            CKeyID topicKeyID = ImportTopicKey(line);
+            if (!topicKeyID.IsNull()) m_topicHashToKeyID[h] = topicKeyID;
         }
     }
 

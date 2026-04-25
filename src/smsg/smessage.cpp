@@ -5232,7 +5232,7 @@ std::vector<uint8_t> CSMSG::GetMsgID(const SecureMessage &smsg)
     return rv;
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey)
 {
     if (!pHeader || !pPayload) {
         return errorN(SMSG_GENERAL_ERROR, "%s: null pointer to header or payload.", __func__);
@@ -5242,12 +5242,12 @@ int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, c
     if (!secp256k1_ec_pubkey_parse(secp256k1_context_smsg, &R, psmsg_hdr->cpkR, 33)) {
         return errorN(SMSG_GENERAL_ERROR, "%s: secp256k1_ec_pubkey_parse failed: %s.", __func__, HexStr(Span<const uint8_t>(psmsg_hdr->cpkR, 33)));
     }
-    return DecryptWithR(fTestOnly, keyDest, address, R, pHeader, pPayload, nPayload, msg);
+    return DecryptWithR(fTestOnly, keyDest, address, R, pHeader, pPayload, nPayload, msg, fUpdatePubkey);
 }
 
 int CSMSG::DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &address,
                         const secp256k1_pubkey &R,
-                        const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+                        const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey)
 {
     /* Decrypt secure message with a pre-parsed ephemeral pubkey R.
        Called in hot-path loops to avoid re-parsing cpkR on every key attempt.
@@ -5416,19 +5416,20 @@ int CSMSG::DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &addre
             return errorN(SMSG_GENERAL_ERROR, "%s: Signature validation failed.", __func__);
         }
 
-        int rv = SMSG_GENERAL_ERROR;
-        try {
-            rv = InsertAddress(ckidFrom, cpkFromSig);
-        } catch (std::exception &e) {
-            LogPrintf("%s, exception: %s.\n", __func__, e.what());
-            //return 1;
-        }
+        if (fUpdatePubkey) {
+            int rv = SMSG_GENERAL_ERROR;
+            try {
+                rv = InsertAddress(ckidFrom, cpkFromSig);
+            } catch (std::exception &e) {
+                LogPrintf("%s, exception: %s.\n", __func__, e.what());
+            }
 
-        if (rv != SMSG_NO_ERROR) {
-            if (rv == SMSG_PUBKEY_EXISTS) {
-                LogPrint(BCLog::SMSG, "%s: Sender public key not added to db, %s.\n", __func__, GetString(rv));
-            } else {
-                LogPrintf("%s: Sender public key not added to db, %s.\n", __func__, GetString(rv));
+            if (rv != SMSG_NO_ERROR) {
+                if (rv == SMSG_PUBKEY_EXISTS) {
+                    LogPrint(BCLog::SMSG, "%s: Sender public key not added to db, %s.\n", __func__, GetString(rv));
+                } else {
+                    LogPrintf("%s: Sender public key not added to db, %s.\n", __func__, GetString(rv));
+                }
             }
         }
 
@@ -5442,12 +5443,12 @@ int CSMSG::DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &addre
     return SMSG_NO_ERROR;
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg, bool fUpdatePubkey)
 {
-    return CSMSG::Decrypt(fTestOnly, keyDest, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg);
+    return CSMSG::Decrypt(fTestOnly, keyDest, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg, fUpdatePubkey);
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey)
 {
     // Fetch private key k, used to decrypt
     CKey keyDest;
@@ -5467,12 +5468,12 @@ int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader
         return errorN(SMSG_UNKNOWN_KEY, "%s: Could not get private key for addressDest.", __func__);
     }
 
-    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg);
+    return CSMSG::Decrypt(fTestOnly, keyDest, address, pHeader, pPayload, nPayload, msg, fUpdatePubkey);
 };
 
-int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)
+int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg, bool fUpdatePubkey)
 {
-    return CSMSG::Decrypt(fTestOnly, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg);
+    return CSMSG::Decrypt(fTestOnly, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg, fUpdatePubkey);
 };
 
 int CSMSG::DecryptOutboxStored(const SecMsgStored &stored, MessageData &msg)

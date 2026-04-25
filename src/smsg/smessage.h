@@ -592,16 +592,16 @@ public:
     int Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID &addressTo, const std::string &message,
         const std::string &topic="", const uint160 &parentMsgId=uint160(), uint16_t nTopicRetentionDays=0);
 
-    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
-    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
+    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey = true);
+    int Decrypt(bool fTestOnly, const CKey &keyDest, const CKeyID &address, const SecureMessage &smsg, MessageData &msg, bool fUpdatePubkey = true);
 
-    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
-    int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg);
+    int Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey = true);
+    int Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg, bool fUpdatePubkey = true);
 
     // Internal: skip secp256k1_ec_pubkey_parse when R is already parsed.
     int DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &address,
                      const secp256k1_pubkey &R,
-                     const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
+                     const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg, bool fUpdatePubkey = true);
 
     /** Decrypt an outbox stored record.
      *  Dispatches to the old SMSG-encrypted path or the new wallet-encrypted local path

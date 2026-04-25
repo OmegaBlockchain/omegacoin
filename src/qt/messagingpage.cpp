@@ -458,7 +458,7 @@ void MessagingPage::updateInboxList()
         }
 
         smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, false);
         if (rv == 0) {
             r.sFrom          = QString::fromStdString(msg.sFromAddress);
             r.sTo            = QString::fromLatin1(EncodeDestination(PKHash(e.stored.addrTo)).c_str());
@@ -629,7 +629,7 @@ void MessagingPage::updateOutboxList()
         }
 
         smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, false);
         if (rv == 0) {
             r.sFrom          = QString::fromStdString(msg.sFromAddress);
             r.sTo            = QString::fromLatin1(EncodeDestination(PKHash(e.stored.addrTo)).c_str());
@@ -1770,7 +1770,7 @@ void MessagingPage::updateTrollboxList()
         tc.fPaid = psmsg->IsPaidVersion();
 
         smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, false);
         if (rv == 0) {
             tc.time          = msg.timestamp;
             tc.from          = QString::fromStdString(msg.sFromAddress);

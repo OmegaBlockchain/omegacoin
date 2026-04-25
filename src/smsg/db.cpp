@@ -59,6 +59,36 @@ bool SecMsgDB::Open(const char *pszMode)
 
     pdb = smsgDB;
 
+    // Version stamp — executed once per daemon lifetime when smsgDB is first opened.
+    const bool fWritable = strchr(pszMode, 'w') != nullptr || strchr(pszMode, '+') != nullptr;
+    const std::string sVerKey("ver");
+    std::string strVerVal;
+    leveldb::Status sv = pdb->Get(leveldb::ReadOptions(), sVerKey, &strVerVal);
+    if (sv.IsNotFound()) {
+        if (fWritable) {
+            CDataStream ssVer(SER_DISK, CLIENT_VERSION);
+            ssVer << SMSG_DB_VERSION;
+            leveldb::WriteOptions wo;
+            wo.sync = true;
+            pdb->Put(wo, sVerKey, ssVer.str());
+            LogPrintf("smsgdb: stamped schema version %u.\n", SMSG_DB_VERSION);
+        }
+    } else if (sv.ok()) {
+        try {
+            CDataStream ssVer(strVerVal.data(), strVerVal.data() + strVerVal.size(), SER_DISK, CLIENT_VERSION);
+            uint32_t nVersion = 0;
+            ssVer >> nVersion;
+            if (nVersion != SMSG_DB_VERSION) {
+                LogPrintf("smsgdb: schema version %u found, expected %u.\n", nVersion, SMSG_DB_VERSION);
+                // Migration stub: add per-version upgrade steps here.
+            }
+        } catch (std::exception &e) {
+            LogPrintf("smsgdb: failed to read schema version: %s.\n", e.what());
+        }
+    } else {
+        LogPrintf("smsgdb: version key read error: %s.\n", sv.ToString());
+    }
+
     return true;
 };
 

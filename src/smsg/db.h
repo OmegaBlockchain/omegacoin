@@ -16,6 +16,8 @@ class CDataStream;
 
 namespace smsg {
 
+static constexpr uint32_t SMSG_DB_VERSION = 1;
+
 class SecMsgStored;
 
 class SecMsgPurged;

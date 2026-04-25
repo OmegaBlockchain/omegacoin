@@ -1196,6 +1196,9 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
     const CBlockIndex* pindex = ::ChainActive().Tip();
     LogPrintf("SMSG debug: launching smsg threads, chain tip=%s.\n", pindex ? pindex->GetBlockHash().ToString() : "null");
 
+    RegisterValidationInterface(this);
+    LogPrintf("SMSG debug: registered validation interface for reorg tracking.\n");
+
     fSecMsgEnabled = true;
     threadGroupSmsg.create_thread([pindex]() { TraceThread("smsg", [pindex]() { ThreadSecureMsg(pindex); }); });
     threadGroupSmsg.create_thread([pindex]() { TraceThread("smsg-pow", [pindex]() { ThreadSecureMsgPow(pindex); }); });
@@ -1258,6 +1261,8 @@ bool CSMSG::StartOnUnlock(std::shared_ptr<CWallet> pwalletIn, bool fScanChain, i
 
 bool CSMSG::Shutdown()
 {
+    UnregisterValidationInterface(this);
+
     // Clean up unlock listener even if SMSG never fully started
     if (m_handler_unlock_start) {
         m_handler_unlock_start->disconnect();
@@ -2171,14 +2176,16 @@ static int InsertAddress(CKeyID &hashKey, CPubKey &pubKey, SecMsgDB &addrpkdb)
     */
 
     if (addrpkdb.ExistsPK(hashKey)) {
-        //LogPrintf("DB already contains public key for address.\n");
         CPubKey cpkCheck;
         if (!addrpkdb.ReadPK(hashKey, cpkCheck)) {
-            LogPrintf("addrpkdb.Read failed.\n");
-        } else {
-            if (cpkCheck != pubKey) {
-                LogPrintf("DB already contains existing public key that does not match .\n");
+            LogPrintf("%s: Read failed for %s.\n", __func__, EncodeDestination(PKHash(hashKey)));
+        } else if (cpkCheck != pubKey) {
+            // Stale entry from reorged branch — overwrite with confirmed key.
+            LogPrintf("%s: Overwriting mismatched pubkey for %s.\n", __func__, EncodeDestination(PKHash(hashKey)));
+            if (!addrpkdb.WritePK(hashKey, pubKey)) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: Overwrite failed.", __func__);
             }
+            return SMSG_NO_ERROR;
         }
         return SMSG_PUBKEY_EXISTS;
     }
@@ -2201,6 +2208,27 @@ static int InsertAddress(CKeyID &hashKey, CPubKey &pubKey)
 
     return InsertAddress(hashKey, pubKey, addrpkdb);
 };
+
+void CSMSG::UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex * /*pindexFork*/, bool fInitialDownload)
+{
+    if (!pindexNew || fInitialDownload) {
+        return;
+    }
+
+    LOCK(cs_smsgDB);
+    SecMsgDB db;
+    if (!db.Open("cw")) {
+        return;
+    }
+    int nStoredHeight = -1;
+    if (!db.ReadScanHeight(nStoredHeight) || nStoredHeight < 0) {
+        return;
+    }
+    if (pindexNew->nHeight < nStoredHeight) {
+        LogPrintf("SMSG: Reorg detected, rewinding scan height from %d to %d.\n", nStoredHeight, pindexNew->nHeight);
+        db.WriteScanHeight(pindexNew->nHeight);
+    }
+}
 
 static bool ScanBlock(CSMSG &smsg, const CBlock &block, SecMsgDB &addrpkdb,
     uint32_t &nTransactions, uint32_t &nElements, uint32_t &nPubkeys, uint32_t &nDuplicates)

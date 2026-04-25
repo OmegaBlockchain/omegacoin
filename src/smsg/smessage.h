@@ -14,6 +14,7 @@
 #include <lz4/lz4.h>
 #include <smsg/keystore.h>
 #include <interfaces/handler.h>
+#include <validationinterface.h>
 
 #include <boost/signals2/signal.hpp>
 
@@ -464,7 +465,7 @@ void AddOptions();
 const char *GetString(size_t errorCode);
 
 extern std::atomic<bool> fSecMsgEnabled;
-class CSMSG
+class CSMSG : public CValidationInterface
 {
 public:
     int BuildBucketSet();
@@ -605,6 +606,9 @@ public:
     CKeyID m_cachedOutboxAddr;
 
     NodeContext *m_node = nullptr;
+
+protected:
+    void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;
 };
 
 } // namespace smsg

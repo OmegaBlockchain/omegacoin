@@ -374,9 +374,12 @@ void MessagingPage::updateInboxList()
             r.timeReceived   = row.timeReceived;
             r.timeSent       = row.timeSent;
             r.sFrom          = QString::fromStdString(row.sFrom);
-            r.sTo            = QString::fromStdString(row.sTo);
+            r.sTo            = QString::fromLatin1(row.sTo.c_str());
             r.sText          = QString::fromStdString(row.sText);
-            r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&row.chKey[2], &row.chKey[2] + 28)));
+            {
+                std::string hexId = HexStr(Span<uint8_t>(&row.chKey[2], &row.chKey[2] + 28));
+                r.sMsgId = QString::fromLatin1(hexId.data(), (int)hexId.size());
+            }
             r.status         = row.status;
             r.nDaysRetention = row.nDaysRetention;
             r.fPaid          = row.fPaid;
@@ -449,18 +452,22 @@ void MessagingPage::updateInboxList()
         r.fUnread        = (e.stored.status & SMSG_MASK_UNREAD) != 0;
         r.fPaid          = psmsg->IsPaidVersion();
         r.nDaysRetention = r.fPaid ? psmsg->nonce[0] : 2;
-        r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
+        {
+            std::string hexId = HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28));
+            r.sMsgId = QString::fromLatin1(hexId.data(), (int)hexId.size());
+        }
 
         smsg::MessageData msg;
         int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
         if (rv == 0) {
             r.sFrom          = QString::fromStdString(msg.sFromAddress);
-            r.sTo            = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
+            r.sTo            = QString::fromLatin1(EncodeDestination(PKHash(e.stored.addrTo)).c_str());
             r.sText          = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
             r.timeSent       = msg.timestamp;
             r.fDecryptFailed = false;
         } else {
-            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
+            std::string errStr = smsg::GetString(rv);
+            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromLatin1(errStr.c_str()));
             r.timeSent       = 0;
             r.fDecryptFailed = true;
         }
@@ -468,6 +475,9 @@ void MessagingPage::updateInboxList()
     }
 
     // Phase 4: rebuild table from cache.
+    const QString sYes = tr("Yes");
+    const QString sNo  = tr("No");
+
     QTableWidget* table = ui->inboxTable;
     table->setSortingEnabled(false);
     table->setUpdatesEnabled(false);
@@ -510,7 +520,7 @@ void MessagingPage::updateInboxList()
 
         table->setItem(row, INBOX_COL_FROM,      new QTableWidgetItem(r.sFrom));
         table->setItem(row, INBOX_COL_TO,         new QTableWidgetItem(r.sTo));
-        table->setItem(row, INBOX_COL_PAID,       new QTableWidgetItem(r.fPaid ? tr("Yes") : tr("No")));
+        table->setItem(row, INBOX_COL_PAID,       new QTableWidgetItem(r.fPaid ? sYes : sNo));
 
         QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(r.nDaysRetention));
         retItem->setTextAlignment(Qt::AlignCenter);
@@ -613,18 +623,22 @@ void MessagingPage::updateOutboxList()
         r.status         = e.stored.status;
         r.fPaid          = psmsg->IsPaidVersion();
         r.nDaysRetention = r.fPaid ? psmsg->nonce[0] : 2;
-        r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
+        {
+            std::string hexId = HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28));
+            r.sMsgId = QString::fromLatin1(hexId.data(), (int)hexId.size());
+        }
 
         smsg::MessageData msg;
         int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
         if (rv == 0) {
             r.sFrom          = QString::fromStdString(msg.sFromAddress);
-            r.sTo            = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
+            r.sTo            = QString::fromLatin1(EncodeDestination(PKHash(e.stored.addrTo)).c_str());
             r.sText          = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
             r.timeSent       = msg.timestamp;
             r.fDecryptFailed = false;
         } else {
-            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
+            std::string errStr = smsg::GetString(rv);
+            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromLatin1(errStr.c_str()));
             r.timeSent       = 0;
             r.fDecryptFailed = true;
         }
@@ -632,6 +646,9 @@ void MessagingPage::updateOutboxList()
     }
 
     // Phase 4: rebuild table from cache.
+    const QString sYes = tr("Yes");
+    const QString sNo  = tr("No");
+
     QTableWidget* table = ui->outboxTable;
     table->setSortingEnabled(false);
     table->setUpdatesEnabled(false);
@@ -664,7 +681,7 @@ void MessagingPage::updateOutboxList()
 
         table->setItem(row, OUTBOX_COL_FROM, new QTableWidgetItem(r.sFrom));
         table->setItem(row, OUTBOX_COL_TO,   new QTableWidgetItem(r.sTo));
-        table->setItem(row, OUTBOX_COL_PAID, new QTableWidgetItem(r.fPaid ? tr("Yes") : tr("No")));
+        table->setItem(row, OUTBOX_COL_PAID, new QTableWidgetItem(r.fPaid ? sYes : sNo));
 
         QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(r.nDaysRetention));
         retItem->setTextAlignment(Qt::AlignCenter);
@@ -738,15 +755,17 @@ void MessagingPage::buildKeystoreSnapshot()
             vm.fIsWalletAddr = true;
             vm.fRecv  = e.fRecv;
             vm.fAnon  = e.fAnon;
-            vm.sAddr  = QString::fromStdString(EncodeDestination(PKHash(e.address)));
+            vm.sAddr  = QString::fromLatin1(EncodeDestination(PKHash(e.address)).c_str());
             PKHash pkh(e.address);
             vm.sLabel = QString::fromStdString(smsgModule.LookupLabel(pkh));
             if (spk_man) {
                 LOCK(smsgModule.pwallet->cs_wallet);
                 CPubKey pubKey;
                 vm.fHasPrivKey = spk_man->HaveKey(e.address);
-                if (vm.fHasPrivKey && spk_man->GetPubKey(CKeyID(e.address), pubKey) && pubKey.IsValid())
-                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
+                if (vm.fHasPrivKey && spk_man->GetPubKey(CKeyID(e.address), pubKey) && pubKey.IsValid()) {
+                    std::string hexPk = HexStr(pubKey);
+                    vm.sPubKey = QString::fromLatin1(hexPk.data(), (int)hexPk.size());
+                }
             }
             m_keystoreSnapshot.push_back(std::move(vm));
         }
@@ -765,16 +784,20 @@ void MessagingPage::buildKeystoreSnapshot()
             vm.fRecv         = ks.fRecv;
             vm.fAnon         = ks.fAnon;
             vm.fHasPrivKey   = ks.fHasKey;
-            vm.sAddr         = QString::fromStdString(EncodeDestination(PKHash(ks.address)));
+            vm.sAddr         = QString::fromLatin1(EncodeDestination(PKHash(ks.address)).c_str());
             vm.sLabel        = QString::fromStdString(ks.sLabel);
             if (ks.fContact && dbOpen) {
                 CPubKey pubKey;
-                if (db.ReadPK(ks.address, pubKey) && pubKey.IsValid())
-                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
+                if (db.ReadPK(ks.address, pubKey) && pubKey.IsValid()) {
+                    std::string hexPk = HexStr(pubKey);
+                    vm.sPubKey = QString::fromLatin1(hexPk.data(), (int)hexPk.size());
+                }
             } else if (ks.fHasKey) {
                 CPubKey pubKey = ks.key.GetPubKey();
-                if (pubKey.IsValid())
-                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
+                if (pubKey.IsValid()) {
+                    std::string hexPk = HexStr(pubKey);
+                    vm.sPubKey = QString::fromLatin1(hexPk.data(), (int)hexPk.size());
+                }
             }
             m_keystoreSnapshot.push_back(std::move(vm));
         }
@@ -787,6 +810,12 @@ void MessagingPage::updateKeysList()
         return;
 
     buildKeystoreSnapshot();
+
+    const QString sOn      = tr("On");
+    const QString sOff     = tr("Off");
+    const QString sNA      = tr("N/A");
+    const QString sMyKey   = tr("My Key");
+    const QString sContact = tr("Contact");
 
     QTableWidget* table = ui->keysTable;
     table->setRowCount(0);
@@ -806,21 +835,21 @@ void MessagingPage::updateKeysList()
         table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(vm.sLabel));
 
         if (vm.fIsWalletAddr) {
-            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("My Key")));
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? sOn : sOff));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? sOn : sOff));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(sMyKey));
             QColor ownKeyColor(210, 240, 210);
             for (int col = 0; col < KEYS_COL_COUNT; ++col)
                 if (table->item(row, col))
                     table->item(row, col)->setBackground(QBrush(ownKeyColor));
         } else if (vm.fContact) {
-            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(tr("N/A")));
-            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(tr("N/A")));
-            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("Contact")));
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(sNA));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(sNA));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(sContact));
         } else {
-            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("My Key")));
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? sOn : sOff));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? sOn : sOff));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(sMyKey));
         }
     }
 }

@@ -259,6 +259,7 @@ void MessagingPage::connectSignals()
             fInboxChanged = true;
             fOutboxChanged = true;
             fTrollboxChanged = true;
+            m_keystoreDirty = true;
         });
 
     m_smsg_trollbox_conn = smsg::NotifySecMsgTrollboxChanged.connect(
@@ -287,6 +288,7 @@ void MessagingPage::updateSmsgEnabledState()
     ui->enableSmsgButton->setVisible(!fEnabled);
 
     if (fEnabled) {
+        invalidateKeystoreSnapshot();
         updateFromAddresses();
         updateTrollboxFromAddresses();
         onTabChanged(ui->tabWidget->currentIndex());
@@ -682,28 +684,25 @@ void MessagingPage::updateOutboxList()
     ui->outboxCountLabel->setText(QString::number(nMessages) + tr(" messages"));
 }
 
-void MessagingPage::updateKeysList()
+void MessagingPage::buildKeystoreSnapshot()
 {
-    if (!smsg::fSecMsgEnabled)
+    if (!m_keystoreDirty.exchange(false))
         return;
 
-    QTableWidget* table = ui->keysTable;
-    table->setRowCount(0);
-
-    QString filterText = ui->keysFilterLineEdit->text();
+    m_keystoreSnapshot.clear();
 
     struct OwnAddrSnap { CKeyID address; bool fRecv; bool fAnon; };
     struct KeySnap {
-        CKeyID address;
+        CKeyID      address;
         std::string sLabel;
-        bool fContact;
-        bool fRecv;
-        bool fAnon;
-        bool fHasKey;
-        CKey key;
+        bool        fContact;
+        bool        fRecv;
+        bool        fAnon;
+        bool        fHasKey;
+        CKey        key;
     };
     std::vector<OwnAddrSnap> ownSnap;
-    std::vector<KeySnap> keySnap;
+    std::vector<KeySnap>     keySnap;
     bool havePwallet = false;
 
     {
@@ -735,38 +734,21 @@ void MessagingPage::updateKeysList()
     if (havePwallet && smsgModule.pwallet) {
         auto* spk_man = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
         for (const auto& e : ownSnap) {
-            QString sAddr = QString::fromStdString(EncodeDestination(PKHash(e.address)));
-            PKHash pkh = PKHash(e.address);
-            QString sLabel = QString::fromStdString(smsgModule.LookupLabel(pkh));
-
-            if (!filterText.isEmpty()) {
-                if (!sAddr.contains(filterText, Qt::CaseInsensitive) &&
-                    !sLabel.contains(filterText, Qt::CaseInsensitive))
-                    continue;
-            }
-
-            QString sPubKey;
+            KeyRowVM vm;
+            vm.fIsWalletAddr = true;
+            vm.fRecv  = e.fRecv;
+            vm.fAnon  = e.fAnon;
+            vm.sAddr  = QString::fromStdString(EncodeDestination(PKHash(e.address)));
+            PKHash pkh(e.address);
+            vm.sLabel = QString::fromStdString(smsgModule.LookupLabel(pkh));
             if (spk_man) {
                 LOCK(smsgModule.pwallet->cs_wallet);
                 CPubKey pubKey;
-                if (spk_man->GetPubKey(CKeyID(e.address), pubKey) && pubKey.IsValid())
-                    sPubKey = QString::fromStdString(HexStr(pubKey));
+                vm.fHasPrivKey = spk_man->HaveKey(e.address);
+                if (vm.fHasPrivKey && spk_man->GetPubKey(CKeyID(e.address), pubKey) && pubKey.IsValid())
+                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
             }
-
-            int row = table->rowCount();
-            table->insertRow(row);
-            QTableWidgetItem* addrItem = new QTableWidgetItem(sAddr);
-            addrItem->setData(Qt::UserRole, sPubKey);
-            table->setItem(row, KEYS_COL_ADDRESS, addrItem);
-            table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
-            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(e.fRecv ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(e.fAnon ? tr("On") : tr("Off")));
-            table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("My Key")));
-            QColor ownKeyColor(210, 240, 210);
-            for (int col = 0; col < KEYS_COL_COUNT; ++col) {
-                if (table->item(row, col))
-                    table->item(row, col)->setBackground(QBrush(ownKeyColor));
-            }
+            m_keystoreSnapshot.push_back(std::move(vm));
         }
     }
 #endif
@@ -777,43 +759,70 @@ void MessagingPage::updateKeysList()
         bool dbOpen = db.Open("cr+");
 
         for (const auto& ks : keySnap) {
-            QString sAddr = QString::fromStdString(EncodeDestination(PKHash(ks.address)));
-            QString sLabel = QString::fromStdString(ks.sLabel);
-
-            if (!filterText.isEmpty()) {
-                if (!sAddr.contains(filterText, Qt::CaseInsensitive) &&
-                    !sLabel.contains(filterText, Qt::CaseInsensitive))
-                    continue;
-            }
-
-            QString sPubKey;
+            KeyRowVM vm;
+            vm.fIsWalletAddr = false;
+            vm.fContact      = ks.fContact;
+            vm.fRecv         = ks.fRecv;
+            vm.fAnon         = ks.fAnon;
+            vm.fHasPrivKey   = ks.fHasKey;
+            vm.sAddr         = QString::fromStdString(EncodeDestination(PKHash(ks.address)));
+            vm.sLabel        = QString::fromStdString(ks.sLabel);
             if (ks.fContact && dbOpen) {
                 CPubKey pubKey;
                 if (db.ReadPK(ks.address, pubKey) && pubKey.IsValid())
-                    sPubKey = QString::fromStdString(HexStr(pubKey));
+                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
             } else if (ks.fHasKey) {
                 CPubKey pubKey = ks.key.GetPubKey();
                 if (pubKey.IsValid())
-                    sPubKey = QString::fromStdString(HexStr(pubKey));
+                    vm.sPubKey = QString::fromStdString(HexStr(pubKey));
             }
-
-            int row = table->rowCount();
-            table->insertRow(row);
-            QTableWidgetItem* addrItem = new QTableWidgetItem(sAddr);
-            addrItem->setData(Qt::UserRole, sPubKey);
-            table->setItem(row, KEYS_COL_ADDRESS, addrItem);
-            table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(sLabel));
-            if (ks.fContact) {
-                table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(tr("N/A")));
-                table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(tr("N/A")));
-                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("Contact")));
-            } else {
-                table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(ks.fRecv ? tr("On") : tr("Off")));
-                table->setItem(row, KEYS_COL_ANON, new QTableWidgetItem(ks.fAnon ? tr("On") : tr("Off")));
-                table->setItem(row, KEYS_COL_SOURCE, new QTableWidgetItem(tr("My Key")));
-            }
+            m_keystoreSnapshot.push_back(std::move(vm));
         }
     } // cs_smsgDB
+}
+
+void MessagingPage::updateKeysList()
+{
+    if (!smsg::fSecMsgEnabled)
+        return;
+
+    buildKeystoreSnapshot();
+
+    QTableWidget* table = ui->keysTable;
+    table->setRowCount(0);
+    QString filterText = ui->keysFilterLineEdit->text();
+
+    for (const auto& vm : m_keystoreSnapshot) {
+        if (!filterText.isEmpty() &&
+            !vm.sAddr.contains(filterText, Qt::CaseInsensitive) &&
+            !vm.sLabel.contains(filterText, Qt::CaseInsensitive))
+            continue;
+
+        int row = table->rowCount();
+        table->insertRow(row);
+        QTableWidgetItem* addrItem = new QTableWidgetItem(vm.sAddr);
+        addrItem->setData(Qt::UserRole, vm.sPubKey);
+        table->setItem(row, KEYS_COL_ADDRESS, addrItem);
+        table->setItem(row, KEYS_COL_LABEL, new QTableWidgetItem(vm.sLabel));
+
+        if (vm.fIsWalletAddr) {
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? tr("On") : tr("Off")));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? tr("On") : tr("Off")));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("My Key")));
+            QColor ownKeyColor(210, 240, 210);
+            for (int col = 0; col < KEYS_COL_COUNT; ++col)
+                if (table->item(row, col))
+                    table->item(row, col)->setBackground(QBrush(ownKeyColor));
+        } else if (vm.fContact) {
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(tr("N/A")));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(tr("N/A")));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("Contact")));
+        } else {
+            table->setItem(row, KEYS_COL_RECEIVE, new QTableWidgetItem(vm.fRecv ? tr("On") : tr("Off")));
+            table->setItem(row, KEYS_COL_ANON,    new QTableWidgetItem(vm.fAnon ? tr("On") : tr("Off")));
+            table->setItem(row, KEYS_COL_SOURCE,  new QTableWidgetItem(tr("My Key")));
+        }
+    }
 }
 
 void MessagingPage::updateFromAddresses()
@@ -821,44 +830,19 @@ void MessagingPage::updateFromAddresses()
     if (!smsg::fSecMsgEnabled)
         return;
 
+    buildKeystoreSnapshot();
+
     m_lastFeeEstimate = 0;
     QString current = ui->fromAddressCombo->currentText();
     ui->fromAddressCombo->clear();
 
     QSet<QString> seen;
-    {
-        LOCK(smsgModule.cs_smsg);
-
-#ifdef ENABLE_WALLET
-        if (smsgModule.pwallet) {
-            auto* spk_man = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
-            for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it) {
-                if (!it->fReceiveEnabled)
-                    continue;
-                if (!spk_man || !spk_man->HaveKey(it->address))
-                    continue;
-                QString qAddr = QString::fromStdString(EncodeDestination(PKHash(it->address)));
-                seen.insert(qAddr);
-                ui->fromAddressCombo->addItem(qAddr);
-            }
-        }
-#endif
-
-        for (auto& p : smsgModule.keyStore.mapKeys) {
-            if (p.first == smsgModule.trollboxAddress)
-                continue;
-            auto& key = p.second;
-            if (key.nFlags & smsg::SMK_CONTACT_ONLY)
-                continue;
-            if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
-                continue;
-            if (!key.key.IsValid())
-                continue;
-            QString qAddr = QString::fromStdString(EncodeDestination(PKHash(p.first)));
-            if (!seen.contains(qAddr)) {
-                seen.insert(qAddr);
-                ui->fromAddressCombo->addItem(qAddr);
-            }
+    for (const auto& vm : m_keystoreSnapshot) {
+        if (!vm.fRecv || vm.fContact || !vm.fHasPrivKey)
+            continue;
+        if (!seen.contains(vm.sAddr)) {
+            seen.insert(vm.sAddr);
+            ui->fromAddressCombo->addItem(vm.sAddr);
         }
     }
 
@@ -1316,6 +1300,7 @@ void MessagingPage::toggleReceive()
         return;
     }
 
+    invalidateKeystoreSnapshot();
     updateKeysList();
 }
 
@@ -1343,6 +1328,7 @@ void MessagingPage::toggleAnon()
         return;
     }
 
+    invalidateKeystoreSnapshot();
     updateKeysList();
 }
 
@@ -1420,6 +1406,7 @@ void MessagingPage::deleteContact()
         smsgModule.keyStore.mapKeys.erase(idk);
     }
 
+    invalidateKeystoreSnapshot();
     updateKeysList();
 }
 
@@ -1462,6 +1449,7 @@ void MessagingPage::onScanChainClicked()
                 QMessageBox::warning(this, tr("Scan Failed"), tr("Blockchain scan failed."));
             }
 
+            invalidateKeystoreSnapshot();
             updateKeysList();
         }, Qt::QueuedConnection);
     });
@@ -1517,6 +1505,7 @@ void MessagingPage::onAddAddressClicked()
     }
 
     QMessageBox::information(this, tr("Success"), tr("Contact added successfully."));
+    invalidateKeystoreSnapshot();
     updateKeysList();
 }
 
@@ -1586,6 +1575,7 @@ void MessagingPage::onGenerateKeyClicked()
                "The private key is stored in your wallet and protected by your wallet backup.")
             .arg(QString::fromStdString(sAddr)));
 
+        invalidateKeystoreSnapshot();
         updateKeysList();
         updateFromAddresses();
         return;
@@ -1618,6 +1608,7 @@ void MessagingPage::onGenerateKeyClicked()
     msgBox.setStandardButtons(QMessageBox::Ok);
     msgBox.exec();
 
+    invalidateKeystoreSnapshot();
     updateKeysList();
     updateFromAddresses();
 }
@@ -1647,45 +1638,18 @@ void MessagingPage::updateTrollboxFromAddresses()
     if (!smsg::fSecMsgEnabled)
         return;
 
+    buildKeystoreSnapshot();
+
     QString current = ui->trollboxFromCombo->currentText();
     ui->trollboxFromCombo->clear();
 
     QSet<QString> seen;
-    {
-        LOCK(smsgModule.cs_smsg);
-
-#ifdef ENABLE_WALLET
-        if (smsgModule.pwallet) {
-            auto* spk_man = smsgModule.pwallet->GetLegacyScriptPubKeyMan();
-            for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it) {
-                if (!it->fReceiveEnabled)
-                    continue;
-                if (it->address == smsgModule.trollboxAddress)
-                    continue;
-                if (!spk_man || !spk_man->HaveKey(it->address))
-                    continue;
-                QString qAddr = QString::fromStdString(EncodeDestination(PKHash(it->address)));
-                seen.insert(qAddr);
-                ui->trollboxFromCombo->addItem(qAddr);
-            }
-        }
-#endif
-
-        for (auto& p : smsgModule.keyStore.mapKeys) {
-            if (p.first == smsgModule.trollboxAddress)
-                continue;
-            auto& key = p.second;
-            if (key.nFlags & smsg::SMK_CONTACT_ONLY)
-                continue;
-            if (!(key.nFlags & smsg::SMK_RECEIVE_ON))
-                continue;
-            if (!key.key.IsValid())
-                continue;
-            QString qAddr = QString::fromStdString(EncodeDestination(PKHash(p.first)));
-            if (!seen.contains(qAddr)) {
-                seen.insert(qAddr);
-                ui->trollboxFromCombo->addItem(qAddr);
-            }
+    for (const auto& vm : m_keystoreSnapshot) {
+        if (!vm.fRecv || vm.fContact || !vm.fHasPrivKey)
+            continue;
+        if (!seen.contains(vm.sAddr)) {
+            seen.insert(vm.sAddr);
+            ui->trollboxFromCombo->addItem(vm.sAddr);
         }
     }
 

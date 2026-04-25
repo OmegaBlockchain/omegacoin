@@ -178,6 +178,24 @@ private:
     std::vector<smsg::SmsgGuiRow>    m_pendingInbox;
     std::mutex                       m_pendingTrollboxMutex;
     std::vector<smsg::SmsgGuiRow>    m_pendingTrollbox;
+
+    // Keystore snapshot — rebuilt once per keystore mutation, consumed by all three
+    // address-list builders to avoid repeated EncodeDestination / HexStr passes.
+    struct KeyRowVM {
+        QString sAddr;
+        QString sLabel;
+        QString sPubKey;
+        bool    fContact{false};
+        bool    fRecv{false};
+        bool    fAnon{false};
+        bool    fHasPrivKey{false};
+        bool    fIsWalletAddr{false};
+    };
+    std::vector<KeyRowVM>  m_keystoreSnapshot;
+    std::atomic<bool>      m_keystoreDirty{true};
+
+    void buildKeystoreSnapshot();
+    void invalidateKeystoreSnapshot() { m_keystoreDirty = true; }
 };
 
 #endif // OMEGA_QT_MESSAGINGPAGE_H

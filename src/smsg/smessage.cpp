@@ -1035,7 +1035,7 @@ int CSMSG::WriteIni()
         }
     }
 
-    if (fflush(fp) != 0 || fsync(fileno(fp)) != 0) {
+    if (!FileCommit(fp)) {
         LogPrintf("%s: flush/sync error: %s\n", __func__, strerror(errno));
         fclose(fp);
         return SMSG_GENERAL_ERROR;

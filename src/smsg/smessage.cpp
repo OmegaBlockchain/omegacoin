@@ -388,6 +388,22 @@ void ThreadSecureMsg(const CBlockIndex* pindex)
 
         MaybeAutoCommitAnchors(now);
 
+        if (smsgModule.m_fIniDirty.exchange(false, std::memory_order_relaxed)) {
+            LogPrint(BCLog::SMSG, "ThreadSecureMsg: flushing smsg.ini\n");
+            if (smsgModule.WriteIni() != SMSG_NO_ERROR) {
+                LogPrintf("ThreadSecureMsg: WriteIni failed\n");
+                smsgModule.m_fIniDirty.store(true, std::memory_order_relaxed);
+            }
+        }
+
+        if (smsgModule.m_fSubsDirty.exchange(false, std::memory_order_relaxed)) {
+            LogPrint(BCLog::SMSG, "ThreadSecureMsg: flushing topic_subs.dat\n");
+            if (!smsgModule.SaveTopicSubs()) {
+                LogPrintf("ThreadSecureMsg: SaveTopicSubs failed\n");
+                smsgModule.m_fSubsDirty.store(true, std::memory_order_relaxed);
+            }
+        }
+
         try {
             boost::this_thread::sleep_for(boost::chrono::seconds(SMSG_THREAD_DELAY));
         } catch (const boost::thread_interrupted &) {
@@ -1276,8 +1292,15 @@ bool CSMSG::Shutdown()
     if (was_enabled) {
         LogPrintf("Stopping secure messaging.\n");
 
+        // Force-flush any pending dirty state; thread is already stopped by ResetSmsgRuntimeState.
+        m_fIniDirty.store(false, std::memory_order_relaxed);
         if (WriteIni() != 0) {
             LogPrintf("Failed to save smsg.ini\n");
+        }
+        if (m_fSubsDirty.exchange(false, std::memory_order_relaxed)) {
+            if (!SaveTopicSubs()) {
+                LogPrintf("Failed to save topic_subs.dat\n");
+            }
         }
     }
 
@@ -2760,12 +2783,7 @@ int CSMSG::ManageLocalKey(CKeyID &keyId, ChangeType mode)
         };
     } // cs_smsg
 
-    // Persist immediately so keys survive disable/enable cycles and crashes.
-    int iniRv = WriteIni();
-    if (iniRv != SMSG_NO_ERROR) {
-        return iniRv;
-    }
-
+    m_fIniDirty.store(true, std::memory_order_relaxed);
     return SMSG_NO_ERROR;
 };
 
@@ -5610,7 +5628,8 @@ bool CSMSG::SubscribeTopic(const std::string &topic, std::string &sError)
             m_topicHashToKeyID[h] = topicKeyID;
         }
     }
-    return SaveTopicSubs();
+    m_fSubsDirty.store(true, std::memory_order_relaxed);
+    return true;
 };
 
 bool CSMSG::UnsubscribeTopic(const std::string &topic, std::string &sError)
@@ -5632,7 +5651,8 @@ bool CSMSG::UnsubscribeTopic(const std::string &topic, std::string &sError)
             if (k.IsValid()) m_topicHashToKeyID[h] = k.GetPubKey().GetID();
         }
     }
-    return SaveTopicSubs();
+    m_fSubsDirty.store(true, std::memory_order_relaxed);
+    return true;
 };
 
 bool CSMSG::LoadTopicSubs()

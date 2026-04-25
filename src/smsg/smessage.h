@@ -642,6 +642,8 @@ public:
     std::map<CWallet*, std::unique_ptr<interfaces::Handler>> m_wallet_unload_handlers;
 
     std::atomic<bool> m_fScanAbort{false};
+    std::atomic<bool> m_fIniDirty{false};
+    std::atomic<bool> m_fSubsDirty{false};
 
     int64_t nLastProcessedPurged = 0;
     int64_t nLastTrollboxSend = 0;

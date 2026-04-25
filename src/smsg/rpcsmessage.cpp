@@ -1069,8 +1069,7 @@ static UniValue smsgoutbox(const JSONRPCRequest &request)
                 objM.pushKV("msgid", HexStr(Span<uint8_t>(&chKey[2], &chKey[2] + 28))); // timestamp+hash
                 objM.pushKV("version", strprintf("%02x%02x", psmsg->version[0], psmsg->version[1]));
 
-                uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-                int rv = smsgModule.Decrypt(false, smsgStored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+                int rv = smsgModule.DecryptOutboxStored(smsgStored, msg);
                 if (rv == 0) {
                     std::string sAddrTo = EncodeDestination(PKHash(smsgStored.addrTo));
                     std::string sText = std::string((char*)msg.vchMessage.data());
@@ -1081,9 +1080,10 @@ static UniValue smsgoutbox(const JSONRPCRequest &request)
                         continue;
 
                     PushTime(objM, "sent", msg.timestamp);
-                    objM.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
+                    bool fIsPaid = smsg::OutboxHdrIsPaid(*psmsg);
+                    objM.pushKV("paid", UniValue(fIsPaid));
 
-                    uint32_t nDaysRetention = psmsg->IsPaidVersion() ? psmsg->nonce[0] : 2;
+                    uint32_t nDaysRetention = fIsPaid ? psmsg->nonce[0] : 2;
                     int64_t ttl = smsg::SMSGGetSecondsInDay() * nDaysRetention;
                     objM.pushKV("daysretention", (int)nDaysRetention);
                     PushTime(objM, "expiration", psmsg->timestamp + ttl);
@@ -1466,10 +1466,15 @@ static UniValue smsgview(const JSONRPCRequest &request)
 
                 if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
                     continue;
-                uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
                 int rv;
-                if ((rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
-                    &smsgStored.vchMessage[0], &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg)) == 0)
+                if (fInbox) {
+                    uint32_t nPayload = smsgStored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+                    rv = smsgModule.Decrypt(false, smsgStored.addrTo,
+                        &smsgStored.vchMessage[0], &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg);
+                } else {
+                    rv = smsgModule.DecryptOutboxStored(smsgStored, msg);
+                }
+                if (rv == 0)
                 {
                     if ((tFrom > 0 && msg.timestamp < tFrom)
                         || (tTo > 0 && msg.timestamp > tTo))
@@ -1690,9 +1695,10 @@ static UniValue smsgone(const JSONRPCRequest &request)
     result.pushKV("read", UniValue(bool(!(smsgStored.status & SMSG_MASK_UNREAD))));
 
     PushTime(result, "sent", psmsg->timestamp);
-    result.pushKV("paid", UniValue(psmsg->IsPaidVersion()));
+    bool fIsPaid = smsg::OutboxHdrIsPaid(*psmsg);
+    result.pushKV("paid", UniValue(fIsPaid));
 
-    uint32_t nDaysRetention = psmsg->IsPaidVersion() ? psmsg->nonce[0] : 2;
+    uint32_t nDaysRetention = fIsPaid ? psmsg->nonce[0] : 2;
     int64_t ttl = smsg::SMSGGetSecondsInDay() * nDaysRetention;
     result.pushKV("daysretention", (int)nDaysRetention);
     PushTime(result, "expiration", psmsg->timestamp + ttl);
@@ -1708,8 +1714,13 @@ static UniValue smsgone(const JSONRPCRequest &request)
         sEnc = options["encoding"].get_str();
 
     int rv;
-    if ((rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
-        &smsgStored.vchMessage[0], &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg)) == 0)
+    if (!fInbox && psmsg->version[0] == smsg::SMSG_OUTBOX_LOCAL_FMT) {
+        rv = smsgModule.DecryptOutboxStored(smsgStored, msg);
+    } else {
+        rv = smsgModule.Decrypt(false, fInbox ? smsgStored.addrTo : smsgStored.addrOutbox,
+            &smsgStored.vchMessage[0], &smsgStored.vchMessage[smsg::SMSG_HDR_LEN], nPayload, msg);
+    }
+    if (rv == 0)
     {
         result.pushKV("from", msg.sFromAddress);
 

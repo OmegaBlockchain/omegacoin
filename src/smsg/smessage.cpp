@@ -4908,10 +4908,11 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         }
     }
 
-    //  For outbox create a copy encrypted for owned address
-    //   if the wallet is encrypted private key needed to decrypt will be unavailable
+    //  For outbox: store plaintext encrypted with the wallet master key (one AES pass, no ECDH).
+    //  Layout: SMSG_HDR(104) | fEncrypted(1) | nIV(32) | addrFrom(20) | ciphertext_or_plaintext | [paid_tail]
+    //  version[0]=SMSG_OUTBOX_LOCAL_FMT in the header marks local-only storage — never transmitted.
 
-    LogPrint(BCLog::SMSG, "Encrypting message for outbox.\n");
+    LogPrint(BCLog::SMSG, "Saving outbox copy.\n");
 
     CKeyID addressOutbox;
 
@@ -4932,74 +4933,105 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
         }
     }
 
-    // Fallback: use the sender's own address for outbox encryption
     if (addressOutbox.IsNull()) {
         addressOutbox = addressFrom;
     }
 
     if (addressOutbox.IsNull()) {
-        LogPrintf("%s: Warning, could not find an address to encrypt outbox message with.\n", __func__);
+        LogPrintf("%s: Warning, no outbox address found; outbox skipped.\n", __func__);
     } else {
-        if (LogAcceptCategory(BCLog::SMSG)) {
-            LogPrintf("Encrypting a copy for outbox, using address %s\n", EncodeDestination(PKHash(addressOutbox)));
+        // Build 104-byte synthetic header (zeroed, then key fields set).
+        // Packed field offsets: hash[0..3], version[4..5], flags[6], timestamp[7..14],
+        //   iv[15..30], cpkR[31..63], mac[64..95], nonce[96..99], nPayload[100..103]
+        uint8_t aHdr[SMSG_HDR_LEN];
+        memset(aHdr, 0, SMSG_HDR_LEN);
+        aHdr[4] = SMSG_OUTBOX_LOCAL_FMT;
+        aHdr[5] = static_cast<uint8_t>((fPaid ? 0x01u : 0x00u) | (fBlinded ? 0x02u : 0x00u));
+        {
+            int64_t ts = smsg.timestamp;
+            memcpy(&aHdr[7], &ts, sizeof(ts));
+        }
+        if (fPaid) {
+            aHdr[96] = static_cast<uint8_t>(nDaysRetention);
         }
 
-        SecureMessage smsgForOutbox(fPaid, nDaysRetention, fBlinded);
-        smsgForOutbox.timestamp = smsg.timestamp;
-        if ((rv = Encrypt(smsgForOutbox, addressFrom, addressOutbox, sData)) != 0) {
-            LogPrintf("%s: Encrypt for outbox failed, %d.\n", __func__, rv);
-        } else {
-            if (fPaid) {
-                uint256 txfundId;
-                if (!smsg.GetFundingTxid(txfundId)) {
-                    return errorN(SMSG_GENERAL_ERROR, "%s: GetFundingTxid failed.\n");
-                }
-                // Copy funding txid to outbox message tail
-                memcpy(smsgForOutbox.pPayload + smsgForOutbox.nPayload - 32, txfundId.begin(), 32);
-                if (fBlinded) {
-                    // Copy blinding key to outbox message tail
-                    memcpy(smsgForOutbox.pPayload + smsgForOutbox.nPayload - 64,
-                           smsg.pPayload + smsg.nPayload - 64, SMSG_BLIND_KEY_LEN);
-                }
-            }
+        // Encrypt sData with wallet master key; fall back to plaintext if wallet has no encryption.
+        uint8_t fEncrypted = 0;
+        uint256 nIV;
+        GetStrongRandBytes(nIV.begin(), 32);
+        std::vector<uint8_t> vchEncData;
 
-            // Save sent message to db
-            std::string sPrefix("sm");
-            uint8_t chKey[30];
-            int64_t timestamp_be = bswap_64(smsgForOutbox.timestamp);
-            memcpy(&chKey[0], sPrefix.data(), 2);
-            memcpy(&chKey[2], &timestamp_be, 8);
-            memcpy(&chKey[10], msgId.begin(), 20);
-
-            SecMsgStored smsgOutbox;
-
-            smsgOutbox.timeReceived  = GetTime();
-            smsgOutbox.addrTo        = addressTo;
-            smsgOutbox.addrOutbox    = addressOutbox;
-
-            try {
-                smsgOutbox.vchMessage.resize(SMSG_HDR_LEN + smsgForOutbox.nPayload);
-            } catch (std::exception &e) {
-                LogPrintf("smsgOutbox.vchMessage.resize %u threw: %s.\n", SMSG_HDR_LEN + smsgForOutbox.nPayload, e.what());
-                sError = "Could not allocate memory.";
-                return SMSG_ALLOCATE_FAILED;
-            }
-            memcpy(&smsgOutbox.vchMessage[0], &smsgForOutbox.hash[0], SMSG_HDR_LEN);
-            memcpy(&smsgOutbox.vchMessage[SMSG_HDR_LEN], smsgForOutbox.pPayload, smsgForOutbox.nPayload);
-
-            bool fNotifyOutbox = false;
+        if (pwallet && pwallet->HasEncryptionKeys() && !pwallet->IsLocked()) {
+            CKeyingMaterial vMasterKey;
             {
-                LOCK(cs_smsgDB);
-                SecMsgDB dbSent;
-
-                if (dbSent.Open("cw")) {
-                    dbSent.WriteSmesg(chKey, smsgOutbox);
-                    fNotifyOutbox = true;
-                }
-            } // cs_smsgDB
-            if (fNotifyOutbox) {
-                NotifySecMsgOutboxChanged(smsgOutbox);
+                LOCK(pwallet->cs_wallet);
+                vMasterKey = pwallet->GetEncryptionKey();
             }
+            if (!vMasterKey.empty()) {
+                CKeyingMaterial kmPlain;
+                kmPlain.assign(sData.begin(), sData.end());
+                if (EncryptSecret(vMasterKey, kmPlain, nIV, vchEncData)) {
+                    fEncrypted = 1;
+                }
+            }
+        }
+        if (fEncrypted == 0) {
+            vchEncData.assign(sData.begin(), sData.end());
+        }
+
+        // Append paid tail (blinding key then txfundId), mirroring GetPaidTailSize() order.
+        if (fPaid) {
+            uint256 txfundId;
+            if (!smsg.GetFundingTxid(txfundId)) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: GetFundingTxid failed.\n");
+            }
+            if (fBlinded) {
+                vchEncData.insert(vchEncData.end(),
+                    smsg.pPayload + smsg.nPayload - 64,
+                    smsg.pPayload + smsg.nPayload - 64 + SMSG_BLIND_KEY_LEN);
+            }
+            vchEncData.insert(vchEncData.end(), txfundId.begin(), txfundId.end());
+        }
+
+        // Total: aHdr(104) | fEncrypted(1) | nIV(32) | addrFrom(20) | vchEncData
+        size_t nTotal = SMSG_HDR_LEN + 1 + 32 + 20 + vchEncData.size();
+
+        std::string sPrefix("sm");
+        uint8_t chKey[30];
+        int64_t timestamp_be = bswap_64(smsg.timestamp);
+        memcpy(&chKey[0], sPrefix.data(), 2);
+        memcpy(&chKey[2], &timestamp_be, 8);
+        memcpy(&chKey[10], msgId.begin(), 20);
+
+        SecMsgStored smsgOutbox;
+        smsgOutbox.timeReceived = GetTime();
+        smsgOutbox.addrTo       = addressTo;
+        smsgOutbox.addrOutbox   = addressOutbox; // kept non-null for existing RPC null-guards
+
+        try {
+            smsgOutbox.vchMessage.resize(nTotal);
+        } catch (std::exception &e) {
+            LogPrintf("smsgOutbox.vchMessage.resize %zu threw: %s.\n", nTotal, e.what());
+            sError = "Could not allocate memory.";
+            return SMSG_ALLOCATE_FAILED;
+        }
+        memcpy(&smsgOutbox.vchMessage[0],             aHdr,             SMSG_HDR_LEN);
+        smsgOutbox.vchMessage[SMSG_HDR_LEN]         = fEncrypted;
+        memcpy(&smsgOutbox.vchMessage[SMSG_HDR_LEN + 1],  nIV.begin(),        32);
+        memcpy(&smsgOutbox.vchMessage[SMSG_HDR_LEN + 33], addressFrom.begin(), 20);
+        memcpy(&smsgOutbox.vchMessage[SMSG_HDR_LEN + 53], vchEncData.data(),   vchEncData.size());
+
+        bool fNotifyOutbox = false;
+        {
+            LOCK(cs_smsgDB);
+            SecMsgDB dbSent;
+            if (dbSent.Open("cw")) {
+                dbSent.WriteSmesg(chKey, smsgOutbox);
+                fNotifyOutbox = true;
+            }
+        }
+        if (fNotifyOutbox) {
+            NotifySecMsgOutboxChanged(smsgOutbox);
         }
     }
 
@@ -5428,6 +5460,83 @@ int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const uint8_t *pHeader
 int CSMSG::Decrypt(bool fTestOnly, const CKeyID &address, const SecureMessage &smsg, MessageData &msg)
 {
     return CSMSG::Decrypt(fTestOnly, address, smsg.data(), smsg.pPayload, smsg.nPayload, msg);
+};
+
+int CSMSG::DecryptOutboxStored(const SecMsgStored &stored, MessageData &msg)
+{
+    if (stored.vchMessage.size() < SMSG_HDR_LEN)
+        return errorN(SMSG_GENERAL_ERROR, "%s: Record too short.", __func__);
+
+    const SecureMessage *psmsgHdr = reinterpret_cast<const SecureMessage*>(stored.vchMessage.data());
+
+    if (psmsgHdr->version[0] != SMSG_OUTBOX_LOCAL_FMT) {
+        // Old SMSG-encrypted format: delegate to normal Decrypt path.
+        uint32_t nPayload = stored.vchMessage.size() - SMSG_HDR_LEN;
+        return Decrypt(false, stored.addrOutbox,
+            stored.vchMessage.data(), stored.vchMessage.data() + SMSG_HDR_LEN,
+            nPayload, msg);
+    }
+
+    // Local wallet-encrypted format.
+    // Layout: SMSG_HDR(104) | fEncrypted(1) | nIV(32) | addrFrom(20) | plaintext_or_ciphertext | [paid_tail]
+    const size_t kHdrPfx = SMSG_HDR_LEN + 1 + 32 + 20; // 157
+    if (stored.vchMessage.size() < kHdrPfx)
+        return errorN(SMSG_GENERAL_ERROR, "%s: Record too short for local format.", __func__);
+
+    bool fPaid    = (psmsgHdr->version[1] & 0x01) != 0;
+    bool fBlinded = (psmsgHdr->version[1] & 0x02) != 0;
+    uint32_t nTailSize = fPaid ? (fBlinded ? 64u : 32u) : 0u;
+
+    if (stored.vchMessage.size() < kHdrPfx + nTailSize)
+        return errorN(SMSG_GENERAL_ERROR, "%s: Record too short for paid tail.", __func__);
+
+    uint8_t fEncrypted = stored.vchMessage[SMSG_HDR_LEN];
+    uint256 nIV;
+    memcpy(nIV.begin(), stored.vchMessage.data() + SMSG_HDR_LEN + 1, 32);
+
+    CKeyID addrFrom;
+    memcpy(addrFrom.begin(), stored.vchMessage.data() + SMSG_HDR_LEN + 33, 20);
+
+    const uint8_t *pData = stored.vchMessage.data() + kHdrPfx;
+    size_t         nData = stored.vchMessage.size() - kHdrPfx - nTailSize;
+
+    std::string sPlaintext;
+    if (fEncrypted) {
+#ifdef ENABLE_WALLET
+        if (!pwallet || pwallet->IsLocked())
+            return errorN(SMSG_WALLET_LOCKED, "%s: Wallet locked, cannot decrypt outbox.", __func__);
+        CKeyingMaterial vMasterKey;
+        {
+            LOCK(pwallet->cs_wallet);
+            vMasterKey = pwallet->GetEncryptionKey();
+        }
+        if (vMasterKey.empty())
+            return errorN(SMSG_GENERAL_ERROR, "%s: Empty master key.", __func__);
+        std::vector<uint8_t> vchCipher(pData, pData + nData);
+        CKeyingMaterial kmPlain;
+        if (!DecryptSecret(vMasterKey, vchCipher, nIV, kmPlain))
+            return errorN(SMSG_GENERAL_ERROR, "%s: DecryptSecret failed.", __func__);
+        sPlaintext.assign(reinterpret_cast<const char*>(kmPlain.data()), kmPlain.size());
+#else
+        return errorN(SMSG_GENERAL_ERROR, "%s: Wallet support not compiled.", __func__);
+#endif
+    } else {
+        sPlaintext.assign(reinterpret_cast<const char*>(pData), nData);
+    }
+
+    msg.timestamp = psmsgHdr->timestamp;
+    try {
+        msg.vchMessage.resize(sPlaintext.size() + 1);
+    } catch (std::exception &e) {
+        return errorN(SMSG_ALLOCATE_FAILED, "%s: resize threw: %s.", __func__, e.what());
+    }
+    memcpy(msg.vchMessage.data(), sPlaintext.data(), sPlaintext.size());
+    msg.vchMessage.back() = '\0';
+
+    msg.sFromAddress = addrFrom.IsNull() ? "anon" : EncodeDestination(PKHash(addrFrom));
+
+    LogPrint(BCLog::SMSG, "%s: Decrypted local outbox record.\n", __func__);
+    return SMSG_NO_ERROR;
 };
 
 bool CSMSG::IsSubscribedTopicHash(uint32_t hash) const

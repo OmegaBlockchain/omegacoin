@@ -96,6 +96,9 @@ const unsigned int SMSG_BLIND_KEY_LEN = 32;   // blinding key length for confide
 // Topic channel message version
 static const uint8_t SMSG_VERSION_TOPIC = 4;
 
+/** version[0] marker for local-only wallet-encrypted outbox records.  Never transmitted. */
+static const uint8_t SMSG_OUTBOX_LOCAL_FMT = 0xFF;
+
 // Maximum topic string length (must fit in 1 byte length prefix)
 static const uint8_t SMSG_MAX_TOPIC_LEN = 64;
 
@@ -263,6 +266,17 @@ public:
     uint8_t *pPayload = nullptr;
 };
 #pragma pack(pop)
+
+/** Decode paid/blinded flags from an outbox record header.
+ *  Handles both old (SMSG-encrypted, version[0]==3) and new (local, version[0]==SMSG_OUTBOX_LOCAL_FMT) formats. */
+inline bool OutboxHdrIsPaid(const SecureMessage &hdr) {
+    if (hdr.version[0] == SMSG_OUTBOX_LOCAL_FMT) return (hdr.version[1] & 0x01) != 0;
+    return hdr.IsPaidVersion();
+}
+inline bool OutboxHdrIsBlinded(const SecureMessage &hdr) {
+    if (hdr.version[0] == SMSG_OUTBOX_LOCAL_FMT) return (hdr.version[1] & 0x02) != 0;
+    return hdr.IsBlindedPaid();
+}
 
 class MessageData
 {
@@ -572,6 +586,11 @@ public:
     int DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &address,
                      const secp256k1_pubkey &R,
                      const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, MessageData &msg);
+
+    /** Decrypt an outbox stored record.
+     *  Dispatches to the old SMSG-encrypted path or the new wallet-encrypted local path
+     *  based on version[0] in the stored header. */
+    int DecryptOutboxStored(const SecMsgStored &stored, MessageData &msg);
 
     // Topic channel subscriptions
     bool SubscribeTopic(const std::string &topic, std::string &sError);

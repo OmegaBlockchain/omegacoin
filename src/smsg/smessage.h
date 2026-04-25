@@ -143,17 +143,33 @@ const int TROLLBOX_MAX_DISPLAY            = 200;                  // max message
 
 class SecMsgStored;
 
+// Pre-decoded message row carried by inbox/trollbox/outbox notify signals.
+// Avoids re-decrypt on the GUI thread for messages that were fully decrypted
+// during ScanMessage.  fHasPlaintext is false for anon/test-only decrypt paths.
+struct SmsgGuiRow {
+    uint8_t     chKey[30]{};      // DB key: prefix(2) + timestamp_be(8) + hash160(20)
+    int64_t     timeReceived{0};
+    int64_t     timeSent{0};
+    std::string sFrom;
+    std::string sTo;
+    std::string sText;
+    uint8_t     status{0};
+    uint8_t     nDaysRetention{2};
+    bool        fPaid{false};
+    bool        fHasPlaintext{false};
+};
+
 // Inbox db changed, called with lock cs_smsgDB held.
-extern boost::signals2::signal<void (SecMsgStored &inboxHdr)> NotifySecMsgInboxChanged;
+extern boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgInboxChanged;
 
 // Outbox db changed, called with lock cs_smsgDB held.
-extern boost::signals2::signal<void (SecMsgStored &outboxHdr)> NotifySecMsgOutboxChanged;
+extern boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgOutboxChanged;
 
 // Wallet unlocked, called after all messages received while locked have been processed.
 extern boost::signals2::signal<void ()> NotifySecMsgWalletUnlocked;
 
 // Trollbox message received, called with lock cs_smsgDB held.
-extern boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxChanged;
+extern boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgTrollboxChanged;
 
 
 uint32_t SMSGGetSecondsInDay();

@@ -94,10 +94,10 @@ std::atomic<bool> fSecMsgEnabled{false};
 
 boost::thread_group threadGroupSmsg;
 
-boost::signals2::signal<void (SecMsgStored &inboxHdr)> NotifySecMsgInboxChanged;
-boost::signals2::signal<void (SecMsgStored &outboxHdr)> NotifySecMsgOutboxChanged;
+boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgInboxChanged;
+boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgOutboxChanged;
 boost::signals2::signal<void ()> NotifySecMsgWalletUnlocked;
-boost::signals2::signal<void (SecMsgStored &trollboxHdr)> NotifySecMsgTrollboxChanged;
+boost::signals2::signal<void (SmsgGuiRow)> NotifySecMsgTrollboxChanged;
 
 
 secp256k1_context *secp256k1_context_smsg = nullptr;
@@ -3210,10 +3210,23 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
         } // cs_smsgDB
 
         if (fNotifyGui) {
+            SmsgGuiRow guiRow;
+            memcpy(guiRow.chKey, chKey, 30);
+            guiRow.timeReceived   = smsgInbox.timeReceived;
+            guiRow.timeSent       = psmsg->timestamp;
+            guiRow.sFrom          = msg.sFromAddress;
+            guiRow.sTo            = EncodeDestination(PKHash(addressTo));
+            guiRow.status         = smsgInbox.status;
+            guiRow.fPaid          = psmsg->IsPaidVersion();
+            guiRow.nDaysRetention = guiRow.fPaid ? psmsg->nonce[0] : 2;
+            if (!msg.vchMessage.empty()) {
+                guiRow.sText         = std::string(reinterpret_cast<const char*>(msg.vchMessage.data()));
+                guiRow.fHasPlaintext = true;
+            }
             if (fTrollbox) {
-                NotifySecMsgTrollboxChanged(smsgInbox);
+                NotifySecMsgTrollboxChanged(std::move(guiRow));
             } else {
-                NotifySecMsgInboxChanged(smsgInbox);
+                NotifySecMsgInboxChanged(std::move(guiRow));
             }
         }
 #if ENABLE_ZMQ
@@ -5031,7 +5044,7 @@ int CSMSG::Send(CKeyID &addressFrom, CKeyID &addressTo, std::string &message,
             }
         }
         if (fNotifyOutbox) {
-            NotifySecMsgOutboxChanged(smsgOutbox);
+            NotifySecMsgOutboxChanged(SmsgGuiRow{});
         }
     }
 

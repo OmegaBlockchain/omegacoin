@@ -241,12 +241,16 @@ void MessagingPage::setClientModel(ClientModel* model)
 void MessagingPage::connectSignals()
 {
     m_smsg_inbox_conn = smsg::NotifySecMsgInboxChanged.connect(
-        [this](smsg::SecMsgStored& /*inboxHdr*/) {
+        [this](smsg::SmsgGuiRow row) {
+            {
+                std::lock_guard<std::mutex> lock(m_pendingInboxMutex);
+                m_pendingInbox.push_back(std::move(row));
+            }
             fInboxChanged = true;
         });
 
     m_smsg_outbox_conn = smsg::NotifySecMsgOutboxChanged.connect(
-        [this](smsg::SecMsgStored& /*outboxHdr*/) {
+        [this](smsg::SmsgGuiRow /*row*/) {
             fOutboxChanged = true;
         });
 
@@ -258,7 +262,11 @@ void MessagingPage::connectSignals()
         });
 
     m_smsg_trollbox_conn = smsg::NotifySecMsgTrollboxChanged.connect(
-        [this](smsg::SecMsgStored& /*trollboxHdr*/) {
+        [this](smsg::SmsgGuiRow row) {
+            {
+                std::lock_guard<std::mutex> lock(m_pendingTrollboxMutex);
+                m_pendingTrollbox.push_back(std::move(row));
+            }
             fTrollboxChanged = true;
         });
 }
@@ -352,6 +360,30 @@ void MessagingPage::updateInboxList()
 {
     if (!smsg::fSecMsgEnabled)
         return;
+
+    // Drain pre-decrypted rows delivered via signal, bypassing DB read + decrypt.
+    {
+        std::lock_guard<std::mutex> lock(m_pendingInboxMutex);
+        for (auto& row : m_pendingInbox) {
+            if (!row.fHasPlaintext) continue;
+            std::string ks(reinterpret_cast<const char*>(row.chKey), 30);
+            DecryptedRow r;
+            memcpy(r.chKey.data(), row.chKey, 30);
+            r.timeReceived   = row.timeReceived;
+            r.timeSent       = row.timeSent;
+            r.sFrom          = QString::fromStdString(row.sFrom);
+            r.sTo            = QString::fromStdString(row.sTo);
+            r.sText          = QString::fromStdString(row.sText);
+            r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&row.chKey[2], &row.chKey[2] + 28)));
+            r.status         = row.status;
+            r.nDaysRetention = row.nDaysRetention;
+            r.fPaid          = row.fPaid;
+            r.fUnread        = (row.status & SMSG_MASK_UNREAD) != 0;
+            r.fDecryptFailed = false;
+            m_inboxCache[ks] = std::move(r);
+        }
+        m_pendingInbox.clear();
+    }
 
     // Phase 1: key-only scan; read full stored only for cache misses / prior failures.
     struct ToDecrypt {
@@ -1666,6 +1698,24 @@ void MessagingPage::updateTrollboxList()
 {
     if (!smsg::fSecMsgEnabled)
         return;
+
+    // Drain pre-decrypted rows delivered via signal, bypassing DB read + decrypt.
+    {
+        std::lock_guard<std::mutex> lock(m_pendingTrollboxMutex);
+        for (auto& row : m_pendingTrollbox) {
+            if (!row.fHasPlaintext) continue;
+            std::string ks(reinterpret_cast<const char*>(row.chKey), 30);
+            TrollboxCached tc;
+            memcpy(tc.chKey.data(), row.chKey, 30);
+            tc.time           = row.timeSent;
+            tc.from           = QString::fromStdString(row.sFrom);
+            tc.text           = QString::fromStdString(row.sText);
+            tc.fPaid          = row.fPaid;
+            tc.fDecryptFailed = false;
+            m_trollboxCache[ks] = std::move(tc);
+        }
+        m_pendingTrollbox.clear();
+    }
 
     // Phase 1: key-only scan; decrypt only cache misses / prior failures.
     struct ToDecrypt {

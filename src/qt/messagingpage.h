@@ -7,6 +7,7 @@
 #define OMEGA_QT_MESSAGINGPAGE_H
 
 #include <amount.h>
+#include <smsg/smessage.h>
 
 #include <QWidget>
 #include <QMenu>
@@ -14,11 +15,13 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <boost/signals2/signal.hpp>
 
@@ -170,6 +173,11 @@ private:
     std::unordered_map<std::string, DecryptedRow>   m_inboxCache;
     std::unordered_map<std::string, DecryptedRow>   m_outboxCache;
     std::unordered_map<std::string, TrollboxCached> m_trollboxCache;
+
+    std::mutex                       m_pendingInboxMutex;
+    std::vector<smsg::SmsgGuiRow>    m_pendingInbox;
+    std::mutex                       m_pendingTrollboxMutex;
+    std::vector<smsg::SmsgGuiRow>    m_pendingTrollbox;
 };
 
 #endif // OMEGA_QT_MESSAGINGPAGE_H

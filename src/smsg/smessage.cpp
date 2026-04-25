@@ -3173,11 +3173,18 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
         smsgInbox.status        = (SMSG_MASK_UNREAD) & 0xFF;
         smsgInbox.addrTo        = addressTo;
 
-        try { smsgInbox.vchMessage.resize(SMSG_HDR_LEN + nPayload); } catch (std::exception &e) {
+        try {
+            if (pPayload == pHeader + SMSG_HDR_LEN) {
+                // Header and payload are contiguous: single allocation + copy.
+                smsgInbox.vchMessage.assign(pHeader, pHeader + SMSG_HDR_LEN + nPayload);
+            } else {
+                smsgInbox.vchMessage.resize(SMSG_HDR_LEN + nPayload);
+                memcpy(&smsgInbox.vchMessage[0], pHeader, SMSG_HDR_LEN);
+                memcpy(&smsgInbox.vchMessage[SMSG_HDR_LEN], pPayload, nPayload);
+            }
+        } catch (std::exception &e) {
             return errorN(SMSG_ALLOCATE_FAILED, "%s: Could not resize vchData, %u, %s.", __func__, SMSG_HDR_LEN + nPayload, e.what());
         }
-        memcpy(&smsgInbox.vchMessage[0], pHeader, SMSG_HDR_LEN);
-        memcpy(&smsgInbox.vchMessage[SMSG_HDR_LEN], pPayload, nPayload);
 
         bool fExisted = false;
         bool fNotifyGui = false;

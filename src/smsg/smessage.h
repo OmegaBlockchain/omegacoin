@@ -503,6 +503,7 @@ public:
 
     int ManageLocalKey(CKeyID &keyId, ChangeType mode);
     int WalletUnlocked();
+    int EncryptSmsgKeys();
     int WalletKeyChanged(CKeyID &keyId, const std::string &sLabel, ChangeType mode);
 
     int ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, bool reportToGui);

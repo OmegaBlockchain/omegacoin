@@ -1115,7 +1115,7 @@ bool CSMSG::Start(std::shared_ptr<CWallet> pwalletIn, bool fDontStart, bool fSca
                 SecMsgKey smsgKey;
                 smsgKey.key = trollboxKey;
                 smsgKey.sLabel = "Trollbox";
-                smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
+                smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON | SMK_SHARED;
                 keyStore.AddKey(trollboxAddress, smsgKey);
                 LogPrintf("SMSG debug: writing Trollbox key to DB.\n");
                 LOCK(cs_smsgDB);
@@ -2728,6 +2728,72 @@ int CSMSG::ManageLocalKey(CKeyID &keyId, ChangeType mode)
     return SMSG_NO_ERROR;
 };
 
+int CSMSG::EncryptSmsgKeys()
+{
+#ifdef ENABLE_WALLET
+    if (!pwallet || !pwallet->HasEncryptionKeys() || pwallet->IsLocked()) {
+        return SMSG_NO_ERROR;
+    }
+
+    // Copy master key outside DB lock to avoid lock-order inversion.
+    CKeyingMaterial vMasterKey;
+    {
+        LOCK(pwallet->cs_KeyStore);
+        vMasterKey = pwallet->GetEncryptionKey();
+    }
+    if (vMasterKey.empty()) {
+        return SMSG_WALLET_LOCKED;
+    }
+
+    std::vector<std::pair<CKeyID, SecMsgKey>> toRewrite;
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+
+        std::string sPrefix("sk");
+        CKeyID idk;
+        SecMsgKey key;
+        leveldb::Iterator *it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextPrivKey(it, sPrefix, idk, key)) {
+            if (key.nFlags & (SMK_ENCRYPTED | SMK_SHARED | SMK_CONTACT_ONLY)) {
+                continue;
+            }
+            if (!key.key.IsValid()) {
+                continue;
+            }
+            key.pubkey = key.key.GetPubKey();
+            CKeyingMaterial vchSecret(key.key.begin(), key.key.end());
+            if (!EncryptSecret(vMasterKey, vchSecret, key.pubkey.GetHash(), key.vchCryptedKey)) {
+                LogPrintf("%s: EncryptSecret failed for %s\n", __func__, EncodeDestination(PKHash(idk)));
+                continue;
+            }
+            key.key = CKey();
+            key.nFlags |= SMK_ENCRYPTED;
+            toRewrite.emplace_back(idk, key);
+        }
+        delete it;
+
+        for (auto &[id, k] : toRewrite) {
+            if (!db.WriteKey(id, k)) {
+                LogPrintf("%s: WriteKey failed for %s\n", __func__, EncodeDestination(PKHash(id)));
+            }
+        }
+    }
+
+    for (auto &[id, k] : toRewrite) {
+        keyStore.AddKey(id, k);
+    }
+
+    if (!toRewrite.empty()) {
+        LogPrintf("SMSG: Encrypted %zu standalone key(s) on wallet unlock.\n", toRewrite.size());
+    }
+#endif
+    return SMSG_NO_ERROR;
+};
+
 int CSMSG::WalletUnlocked()
 {
 #ifdef ENABLE_WALLET
@@ -2743,6 +2809,8 @@ int CSMSG::WalletUnlocked()
     if (pwallet->IsLocked()) {
         return errorN(SMSG_WALLET_LOCKED, "%s: Wallet is locked.", __func__);
     }
+
+    EncryptSmsgKeys();
 
     int64_t  now            = GetTime();
     uint32_t nFiles         = 0;
@@ -3323,10 +3391,31 @@ int CSMSG::ImportPrivkey(const CKey &vchSecret, const std::string &sLabel)
 {
     SecMsgKey key;
     key.key = vchSecret;
+    key.pubkey = vchSecret.GetPubKey();
     key.sLabel = sLabel;
-    CKeyID idk = key.key.GetPubKey().GetID();
+    CKeyID idk = key.pubkey.GetID();
     key.nFlags |= SMK_RECEIVE_ON;
     key.nFlags |= SMK_RECEIVE_ANON;
+
+    if (pwallet && pwallet->HasEncryptionKeys()) {
+        if (pwallet->IsLocked()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        CKeyingMaterial vMasterKey;
+        {
+            LOCK(pwallet->cs_KeyStore);
+            vMasterKey = pwallet->GetEncryptionKey();
+        }
+        if (vMasterKey.empty()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        CKeyingMaterial vchSecretKM(vchSecret.begin(), vchSecret.end());
+        if (!EncryptSecret(vMasterKey, vchSecretKM, key.pubkey.GetHash(), key.vchCryptedKey)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: EncryptSecret failed.", __func__);
+        }
+        key.key = CKey(); // clear plaintext
+        key.nFlags |= SMK_ENCRYPTED;
+    }
 
     LOCK(cs_smsgDB);
 
@@ -3416,38 +3505,66 @@ bool CSMSG::SetSmsgAddressOption(const CKeyID &idk, std::string sOption, bool fV
 
 int CSMSG::ReadSmsgKey(const CKeyID &idk, CKey &key)
 {
-    LOCK(cs_smsgDB);
-
-    SecMsgDB db;
-    if (!db.Open("cr+")) {
-        return SMSG_GENERAL_ERROR;
-    }
-
     SecMsgKey smk;
-    if (!db.ReadKey(idk, smk)) {
-        return SMSG_KEY_NOT_EXISTS;
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        if (!db.ReadKey(idk, smk)) {
+            return SMSG_KEY_NOT_EXISTS;
+        }
     }
 
-    key = smk.key;
+    if (smk.nFlags & SMK_ENCRYPTED) {
+        if (!pwallet || pwallet->IsLocked()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        LOCK(pwallet->cs_KeyStore);
+        const CKeyingMaterial& vMasterKey = pwallet->GetEncryptionKey();
+        if (vMasterKey.empty()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        if (!DecryptKey(vMasterKey, smk.vchCryptedKey, smk.pubkey, key)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: DecryptKey failed.", __func__);
+        }
+    } else {
+        key = smk.key;
+    }
 
     return SMSG_NO_ERROR;
 };
 
 int CSMSG::DumpPrivkey(const CKeyID &idk, CKey &key_out)
 {
-    LOCK(cs_smsgDB);
-
-    SecMsgDB db;
-    if (!db.Open("cr+")) {
-        return SMSG_GENERAL_ERROR;
-    }
-
     SecMsgKey smk;
-    if (!db.ReadKey(idk, smk)) {
-        return SMSG_KEY_NOT_EXISTS;
+    {
+        LOCK(cs_smsgDB);
+        SecMsgDB db;
+        if (!db.Open("cr+")) {
+            return SMSG_GENERAL_ERROR;
+        }
+        if (!db.ReadKey(idk, smk)) {
+            return SMSG_KEY_NOT_EXISTS;
+        }
     }
 
-    key_out = smk.key;
+    if (smk.nFlags & SMK_ENCRYPTED) {
+        if (!pwallet || pwallet->IsLocked()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        LOCK(pwallet->cs_KeyStore);
+        const CKeyingMaterial& vMasterKey = pwallet->GetEncryptionKey();
+        if (vMasterKey.empty()) {
+            return SMSG_WALLET_LOCKED;
+        }
+        if (!DecryptKey(vMasterKey, smk.vchCryptedKey, smk.pubkey, key_out)) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: DecryptKey failed.", __func__);
+        }
+    } else {
+        key_out = smk.key;
+    }
     return SMSG_NO_ERROR;
 };
 
@@ -5217,7 +5334,7 @@ CKeyID CSMSG::ImportTopicKey(const std::string &topic)
         SecMsgKey smsgKey;
         smsgKey.key = topicKey;
         smsgKey.sLabel = "topic:" + topic;
-        smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON;
+        smsgKey.nFlags = SMK_RECEIVE_ON | SMK_RECEIVE_ANON | SMK_SHARED;
         keyStore.AddKey(addr, smsgKey);
         LOCK(cs_smsgDB);
         SecMsgDB db;

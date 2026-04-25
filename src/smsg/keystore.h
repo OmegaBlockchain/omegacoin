@@ -17,6 +17,8 @@ enum SMSGKeyFlagTypes
     SMK_RECEIVE_ON       = (1 << 1),
     SMK_RECEIVE_ANON     = (1 << 2),
     SMK_CONTACT_ONLY     = (1 << 3), // pubkey-only contact, no private key
+    SMK_SHARED           = (1 << 4), // shared/public key (Trollbox, topic) — never encrypt
+    SMK_ENCRYPTED        = (1 << 5), // vchCryptedKey holds AES-256-CBC ciphertext
 };
 
 class SecMsgKey
@@ -29,6 +31,7 @@ public:
     CPubKey pubkey;
     std::string hdKeypath; //optional HD/bip32 keypath
     CKeyID hdMasterKeyID; //id of the HD masterkey used to derive this key
+    std::vector<uint8_t> vchCryptedKey; // AES-256-CBC(vMasterKey, privkey); valid iff SMK_ENCRYPTED
 
     SERIALIZE_METHODS(SecMsgKey, obj)
     {
@@ -38,6 +41,10 @@ public:
         READWRITE(obj.key);
         READWRITE(obj.hdKeypath);
         READWRITE(obj.hdMasterKeyID);
+        if (obj.nFlags & SMK_ENCRYPTED) {
+            READWRITE(obj.pubkey);
+            READWRITE(obj.vchCryptedKey);
+        }
     }
 };
 

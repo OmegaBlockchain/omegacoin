@@ -3389,33 +3389,44 @@ int CSMSG::AddLocalAddress(const std::string &sAddress)
 
 int CSMSG::ImportPrivkey(const CKey &vchSecret, const std::string &sLabel)
 {
+    CKeyID idk = vchSecret.GetPubKey().GetID();
+
+#ifdef ENABLE_WALLET
+    if (pwallet) {
+        // Route through the wallet so the private key is covered by backupwallet/dumpwallet.
+        if (pwallet->HasEncryptionKeys() && pwallet->IsLocked()) {
+            return SMSG_WALLET_LOCKED;
+        }
+
+        auto *spk = pwallet->GetLegacyScriptPubKeyMan();
+        if (!spk) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: No LegacyScriptPubKeyMan.", __func__);
+        }
+        {
+            LOCK(pwallet->cs_wallet);
+            if (!spk->ImportPrivKeys({{idk, vchSecret}}, GetTime())) {
+                return errorN(SMSG_GENERAL_ERROR, "%s: ImportPrivKeys failed.", __func__);
+            }
+        }
+        pwallet->SetAddressBook(PKHash(idk), sLabel, "smsg");
+
+        int rv = ManageLocalKey(idk, CT_NEW);
+        if (rv != SMSG_NO_ERROR && rv != SMSG_KEY_EXISTS) {
+            return rv;
+        }
+
+        LogPrint(BCLog::SMSG, "%s: Key %s stored in wallet.\n", __func__, EncodeDestination(PKHash(idk)));
+        return SMSG_NO_ERROR;
+    }
+#endif
+
+    // No wallet: persist in SecMsgDB only.
     SecMsgKey key;
     key.key = vchSecret;
     key.pubkey = vchSecret.GetPubKey();
     key.sLabel = sLabel;
-    CKeyID idk = key.pubkey.GetID();
     key.nFlags |= SMK_RECEIVE_ON;
     key.nFlags |= SMK_RECEIVE_ANON;
-
-    if (pwallet && pwallet->HasEncryptionKeys()) {
-        if (pwallet->IsLocked()) {
-            return SMSG_WALLET_LOCKED;
-        }
-        CKeyingMaterial vMasterKey;
-        {
-            LOCK(pwallet->cs_KeyStore);
-            vMasterKey = pwallet->GetEncryptionKey();
-        }
-        if (vMasterKey.empty()) {
-            return SMSG_WALLET_LOCKED;
-        }
-        CKeyingMaterial vchSecretKM(vchSecret.begin(), vchSecret.end());
-        if (!EncryptSecret(vMasterKey, vchSecretKM, key.pubkey.GetHash(), key.vchCryptedKey)) {
-            return errorN(SMSG_GENERAL_ERROR, "%s: EncryptSecret failed.", __func__);
-        }
-        key.key = CKey(); // clear plaintext
-        key.nFlags |= SMK_ENCRYPTED;
-    }
 
     LOCK(cs_smsgDB);
 

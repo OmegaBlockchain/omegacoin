@@ -17,6 +17,8 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <boost/signals2/signal.hpp>
 
@@ -140,6 +142,34 @@ private:
 
     int64_t m_trollboxLastTimestamp{0};
     size_t  m_trollboxLastCount{0};
+
+    // Decrypt cache — keyed by raw 30-byte DB key string.
+    // Avoids re-running ECDH on every 3 s timer tick.
+    struct DecryptedRow {
+        std::array<uint8_t, 30> chKey{};
+        int64_t  timeReceived{0};
+        int64_t  timeSent{0};
+        QString  sFrom;
+        QString  sTo;
+        QString  sText;
+        QString  sMsgId;
+        uint8_t  status{0};
+        uint32_t nDaysRetention{2};
+        bool     fPaid{false};
+        bool     fUnread{false};
+        bool     fDecryptFailed{false};
+    };
+    struct TrollboxCached {
+        std::array<uint8_t, 30> chKey{};
+        int64_t time{0};
+        QString from;
+        QString text;
+        bool    fPaid{false};
+        bool    fDecryptFailed{false};
+    };
+    std::unordered_map<std::string, DecryptedRow>   m_inboxCache;
+    std::unordered_map<std::string, DecryptedRow>   m_outboxCache;
+    std::unordered_map<std::string, TrollboxCached> m_trollboxCache;
 };
 
 #endif // OMEGA_QT_MESSAGINGPAGE_H

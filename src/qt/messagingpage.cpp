@@ -353,6 +353,87 @@ void MessagingPage::updateInboxList()
     if (!smsg::fSecMsgEnabled)
         return;
 
+    // Phase 1: key-only scan; read full stored only for cache misses / prior failures.
+    struct ToDecrypt {
+        std::string keyStr;
+        std::array<uint8_t, 30> chKey;
+        smsg::SecMsgStored stored;
+    };
+    std::vector<ToDecrypt> toDecrypt;
+    std::unordered_set<std::string> currentKeys;
+
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            return;
+
+        uint8_t chKey[30];
+        std::string sPrefix("im");
+        leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesgKey(it, sPrefix, chKey)) {
+            std::string ks(reinterpret_cast<const char*>(chKey), 30);
+            currentKeys.insert(ks);
+
+            auto cit = m_inboxCache.find(ks);
+            if (cit != m_inboxCache.end() && !cit->second.fDecryptFailed)
+                continue; // valid cache hit — skip value deserialisation and decrypt
+
+            smsg::SecMsgStored smsgStored;
+            if (!db.ReadSmesg(chKey, smsgStored))
+                continue;
+            if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                continue;
+
+            ToDecrypt e;
+            e.keyStr = ks;
+            memcpy(e.chKey.data(), chKey, 30);
+            e.stored = std::move(smsgStored);
+            toDecrypt.push_back(std::move(e));
+        }
+        delete it;
+    } // cs_smsgDB released before decrypt
+
+    // Phase 2: evict stale cache entries.
+    for (auto it = m_inboxCache.begin(); it != m_inboxCache.end(); ) {
+        if (!currentKeys.count(it->first))
+            it = m_inboxCache.erase(it);
+        else
+            ++it;
+    }
+
+    // Phase 3: decrypt and populate cache for new / failed entries.
+    for (auto& e : toDecrypt) {
+        uint8_t* pHeader = e.stored.vchMessage.data();
+        const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
+        uint32_t nPayload = e.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+
+        DecryptedRow r;
+        memcpy(r.chKey.data(), e.chKey.data(), 30);
+        r.timeReceived   = e.stored.timeReceived;
+        r.status         = e.stored.status;
+        r.fUnread        = (e.stored.status & SMSG_MASK_UNREAD) != 0;
+        r.fPaid          = psmsg->IsPaidVersion();
+        r.nDaysRetention = r.fPaid ? psmsg->nonce[0] : 2;
+        r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
+
+        smsg::MessageData msg;
+        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        if (rv == 0) {
+            r.sFrom          = QString::fromStdString(msg.sFromAddress);
+            r.sTo            = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
+            r.sText          = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
+            r.timeSent       = msg.timestamp;
+            r.fDecryptFailed = false;
+        } else {
+            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
+            r.timeSent       = 0;
+            r.fDecryptFailed = true;
+        }
+        m_inboxCache[e.keyStr] = std::move(r);
+    }
+
+    // Phase 4: rebuild table from cache.
     QTableWidget* table = ui->inboxTable;
     table->setSortingEnabled(false);
     table->setUpdatesEnabled(false);
@@ -362,100 +443,52 @@ void MessagingPage::updateInboxList()
     int nMessages = 0;
     int nUnread = 0;
 
-    struct RawInbox {
-        std::array<uint8_t, 30> chKey;
-        smsg::SecMsgStored stored;
-    };
-    std::vector<RawInbox> rows;
-
-    {
-        LOCK(smsg::cs_smsgDB);
-        smsg::SecMsgDB dbInbox;
-        if (!dbInbox.Open("cr+"))
-            return;
-
-        std::string sPrefix("im");
-        uint8_t chKey[30];
-        smsg::SecMsgStored smsgStored;
-
-        leveldb::Iterator* it = dbInbox.pdb->NewIterator(leveldb::ReadOptions());
-        while (dbInbox.NextSmesg(it, sPrefix, chKey, smsgStored)) {
-            if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
-                continue;
-            RawInbox e;
-            memcpy(e.chKey.data(), chKey, 30);
-            e.stored = std::move(smsgStored);
-            rows.push_back(std::move(e));
-        }
-        delete it;
-    } // cs_smsgDB released before decrypt and UI alloc
-
-    for (auto& e : rows) {
-        uint8_t* pHeader = &e.stored.vchMessage[0];
-        const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
-
-        QString sMsgId = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
-        bool fUnread = (e.stored.status & SMSG_MASK_UNREAD) != 0;
-
-        uint32_t nPayload = e.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-        smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
-
-        QString sFrom, sTo, sText;
-        int64_t timeSent = 0;
-        bool fPaid = psmsg->IsPaidVersion();
-        uint32_t nDaysRetention = fPaid ? psmsg->nonce[0] : 2;
-
-        if (rv == 0) {
-            sFrom = QString::fromStdString(msg.sFromAddress);
-            sTo = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
-            sText = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
-            timeSent = msg.timestamp;
-        } else {
-            sText = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
-        }
+    for (const auto& ks : currentKeys) {
+        auto it = m_inboxCache.find(ks);
+        if (it == m_inboxCache.end())
+            continue;
+        const DecryptedRow& r = it->second;
 
         if (!filterText.isEmpty()) {
-            if (!sFrom.contains(filterText, Qt::CaseInsensitive) &&
-                !sTo.contains(filterText, Qt::CaseInsensitive) &&
-                !sText.contains(filterText, Qt::CaseInsensitive))
+            if (!r.sFrom.contains(filterText, Qt::CaseInsensitive) &&
+                !r.sTo.contains(filterText, Qt::CaseInsensitive) &&
+                !r.sText.contains(filterText, Qt::CaseInsensitive))
                 continue;
         }
 
         int row = table->rowCount();
         table->insertRow(row);
 
-        QTableWidgetItem* readItem = new QTableWidgetItem(fUnread ? tr("*") : QString());
+        QTableWidgetItem* readItem = new QTableWidgetItem(r.fUnread ? tr("*") : QString());
         readItem->setTextAlignment(Qt::AlignCenter);
-        readItem->setData(Qt::UserRole + 1, QByteArray(reinterpret_cast<const char*>(e.chKey.data()), 30));
+        readItem->setData(Qt::UserRole + 1, QByteArray(reinterpret_cast<const char*>(r.chKey.data()), 30));
         table->setItem(row, INBOX_COL_READ, readItem);
 
         QTableWidgetItem* recvItem = new QTableWidgetItem(
-            QDateTime::fromSecsSinceEpoch(e.stored.timeReceived).toString("yyyy-MM-dd hh:mm"));
-        recvItem->setData(Qt::UserRole, (qlonglong)e.stored.timeReceived);
+            QDateTime::fromSecsSinceEpoch(r.timeReceived).toString("yyyy-MM-dd hh:mm"));
+        recvItem->setData(Qt::UserRole, (qlonglong)r.timeReceived);
         table->setItem(row, INBOX_COL_DATE_RECV, recvItem);
 
         QTableWidgetItem* sentItem = new QTableWidgetItem(
-            timeSent > 0 ? QDateTime::fromSecsSinceEpoch(timeSent).toString("yyyy-MM-dd hh:mm") : QString());
-        sentItem->setData(Qt::UserRole, (qlonglong)timeSent);
+            r.timeSent > 0 ? QDateTime::fromSecsSinceEpoch(r.timeSent).toString("yyyy-MM-dd hh:mm") : QString());
+        sentItem->setData(Qt::UserRole, (qlonglong)r.timeSent);
         table->setItem(row, INBOX_COL_DATE_SENT, sentItem);
 
-        table->setItem(row, INBOX_COL_FROM, new QTableWidgetItem(sFrom));
-        table->setItem(row, INBOX_COL_TO, new QTableWidgetItem(sTo));
-        table->setItem(row, INBOX_COL_PAID, new QTableWidgetItem(fPaid ? tr("Yes") : tr("No")));
+        table->setItem(row, INBOX_COL_FROM,      new QTableWidgetItem(r.sFrom));
+        table->setItem(row, INBOX_COL_TO,         new QTableWidgetItem(r.sTo));
+        table->setItem(row, INBOX_COL_PAID,       new QTableWidgetItem(r.fPaid ? tr("Yes") : tr("No")));
 
-        QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(nDaysRetention));
+        QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(r.nDaysRetention));
         retItem->setTextAlignment(Qt::AlignCenter);
         table->setItem(row, INBOX_COL_RETENTION, retItem);
 
-        QString preview = sText.left(80).replace('\n', ' ');
+        QString preview = r.sText.left(80).replace('\n', ' ');
         QTableWidgetItem* textItem = new QTableWidgetItem(preview);
-        textItem->setData(Qt::UserRole, sText);
-        table->setItem(row, INBOX_COL_TEXT, textItem);
+        textItem->setData(Qt::UserRole, r.sText);
+        table->setItem(row, INBOX_COL_TEXT,  textItem);
+        table->setItem(row, INBOX_COL_MSGID, new QTableWidgetItem(r.sMsgId));
 
-        table->setItem(row, INBOX_COL_MSGID, new QTableWidgetItem(sMsgId));
-
-        if (fUnread) {
+        if (r.fUnread) {
             QFont font = table->font();
             font.setBold(true);
             for (int col = 0; col < INBOX_COL_COUNT; ++col) {
@@ -464,7 +497,6 @@ void MessagingPage::updateInboxList()
             }
             nUnread++;
         }
-
         nMessages++;
     }
 
@@ -479,6 +511,93 @@ void MessagingPage::updateOutboxList()
     if (!smsg::fSecMsgEnabled)
         return;
 
+    // Phase 1: key-only scan; read full stored only for cache misses / prior failures.
+    struct ToDecrypt {
+        std::string keyStr;
+        std::array<uint8_t, 30> chKey;
+        smsg::SecMsgStored stored;
+    };
+    std::vector<ToDecrypt> toDecrypt;
+    std::unordered_set<std::string> currentKeys;
+
+    {
+        LOCK(smsg::cs_smsgDB);
+        smsg::SecMsgDB db;
+        if (!db.Open("cr+"))
+            return;
+
+        uint8_t chKey[30];
+        std::string sPrefix("sm");
+        leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
+        while (db.NextSmesgKey(it, sPrefix, chKey)) {
+            std::string ks(reinterpret_cast<const char*>(chKey), 30);
+
+            auto cit = m_outboxCache.find(ks);
+            if (cit != m_outboxCache.end() && !cit->second.fDecryptFailed) {
+                // trollbox-destined copies are never shown in the outbox tab;
+                // they were never inserted into m_outboxCache, so a hit here
+                // is always a legitimate outbox entry.
+                currentKeys.insert(ks);
+                continue;
+            }
+
+            smsg::SecMsgStored smsgStored;
+            if (!db.ReadSmesg(chKey, smsgStored))
+                continue;
+            if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
+                continue;
+            if (smsgStored.addrTo == smsgModule.trollboxAddress)
+                continue;
+
+            currentKeys.insert(ks);
+            ToDecrypt e;
+            e.keyStr = ks;
+            memcpy(e.chKey.data(), chKey, 30);
+            e.stored = std::move(smsgStored);
+            toDecrypt.push_back(std::move(e));
+        }
+        delete it;
+    } // cs_smsgDB released before decrypt
+
+    // Phase 2: evict stale cache entries.
+    for (auto it = m_outboxCache.begin(); it != m_outboxCache.end(); ) {
+        if (!currentKeys.count(it->first))
+            it = m_outboxCache.erase(it);
+        else
+            ++it;
+    }
+
+    // Phase 3: decrypt and populate cache for new / failed entries.
+    for (auto& e : toDecrypt) {
+        uint8_t* pHeader = e.stored.vchMessage.data();
+        const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
+        uint32_t nPayload = e.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+
+        DecryptedRow r;
+        memcpy(r.chKey.data(), e.chKey.data(), 30);
+        r.timeReceived   = e.stored.timeReceived;
+        r.status         = e.stored.status;
+        r.fPaid          = psmsg->IsPaidVersion();
+        r.nDaysRetention = r.fPaid ? psmsg->nonce[0] : 2;
+        r.sMsgId         = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
+
+        smsg::MessageData msg;
+        int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        if (rv == 0) {
+            r.sFrom          = QString::fromStdString(msg.sFromAddress);
+            r.sTo            = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
+            r.sText          = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
+            r.timeSent       = msg.timestamp;
+            r.fDecryptFailed = false;
+        } else {
+            r.sText          = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
+            r.timeSent       = 0;
+            r.fDecryptFailed = true;
+        }
+        m_outboxCache[e.keyStr] = std::move(r);
+    }
+
+    // Phase 4: rebuild table from cache.
     QTableWidget* table = ui->outboxTable;
     table->setSortingEnabled(false);
     table->setUpdatesEnabled(false);
@@ -487,64 +606,16 @@ void MessagingPage::updateOutboxList()
     QString filterText = ui->outboxFilterLineEdit->text();
     int nMessages = 0;
 
-    struct RawOutbox {
-        std::array<uint8_t, 30> chKey;
-        smsg::SecMsgStored stored;
-    };
-    std::vector<RawOutbox> rows;
-
-    {
-        LOCK(smsg::cs_smsgDB);
-        smsg::SecMsgDB dbOutbox;
-        if (!dbOutbox.Open("cr+"))
-            return;
-
-        std::string sPrefix("sm");
-        uint8_t chKey[30];
-        smsg::SecMsgStored smsgStored;
-
-        leveldb::Iterator* it = dbOutbox.pdb->NewIterator(leveldb::ReadOptions());
-        while (dbOutbox.NextSmesg(it, sPrefix, chKey, smsgStored)) {
-            if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
-                continue;
-            if (smsgStored.addrTo == smsgModule.trollboxAddress)
-                continue;
-            RawOutbox e;
-            memcpy(e.chKey.data(), chKey, 30);
-            e.stored = std::move(smsgStored);
-            rows.push_back(std::move(e));
-        }
-        delete it;
-    } // cs_smsgDB released before decrypt and UI alloc
-
-    for (auto& e : rows) {
-        uint8_t* pHeader = &e.stored.vchMessage[0];
-        const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
-
-        QString sMsgId = QString::fromStdString(HexStr(Span<uint8_t>(&e.chKey[2], &e.chKey[2] + 28)));
-
-        uint32_t nPayload = e.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
-        smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
-
-        QString sFrom, sTo, sText;
-        int64_t timeSent = 0;
-        bool fPaid = psmsg->IsPaidVersion();
-        uint32_t nDaysRetention = fPaid ? psmsg->nonce[0] : 2;
-
-        if (rv == 0) {
-            sFrom = QString::fromStdString(msg.sFromAddress);
-            sTo = QString::fromStdString(EncodeDestination(PKHash(e.stored.addrTo)));
-            sText = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
-            timeSent = msg.timestamp;
-        } else {
-            sText = tr("[Decrypt failed: %1]").arg(QString::fromStdString(smsg::GetString(rv)));
-        }
+    for (const auto& ks : currentKeys) {
+        auto it = m_outboxCache.find(ks);
+        if (it == m_outboxCache.end())
+            continue;
+        const DecryptedRow& r = it->second;
 
         if (!filterText.isEmpty()) {
-            if (!sFrom.contains(filterText, Qt::CaseInsensitive) &&
-                !sTo.contains(filterText, Qt::CaseInsensitive) &&
-                !sText.contains(filterText, Qt::CaseInsensitive))
+            if (!r.sFrom.contains(filterText, Qt::CaseInsensitive) &&
+                !r.sTo.contains(filterText, Qt::CaseInsensitive) &&
+                !r.sText.contains(filterText, Qt::CaseInsensitive))
                 continue;
         }
 
@@ -552,25 +623,24 @@ void MessagingPage::updateOutboxList()
         table->insertRow(row);
 
         QTableWidgetItem* sentItem = new QTableWidgetItem(
-            timeSent > 0 ? QDateTime::fromSecsSinceEpoch(timeSent).toString("yyyy-MM-dd hh:mm") : QString());
-        sentItem->setData(Qt::UserRole, (qlonglong)timeSent);
-        sentItem->setData(Qt::UserRole + 1, QByteArray(reinterpret_cast<const char*>(e.chKey.data()), 30));
+            r.timeSent > 0 ? QDateTime::fromSecsSinceEpoch(r.timeSent).toString("yyyy-MM-dd hh:mm") : QString());
+        sentItem->setData(Qt::UserRole,     (qlonglong)r.timeSent);
+        sentItem->setData(Qt::UserRole + 1, QByteArray(reinterpret_cast<const char*>(r.chKey.data()), 30));
         table->setItem(row, OUTBOX_COL_DATE_SENT, sentItem);
 
-        table->setItem(row, OUTBOX_COL_FROM, new QTableWidgetItem(sFrom));
-        table->setItem(row, OUTBOX_COL_TO, new QTableWidgetItem(sTo));
-        table->setItem(row, OUTBOX_COL_PAID, new QTableWidgetItem(fPaid ? tr("Yes") : tr("No")));
+        table->setItem(row, OUTBOX_COL_FROM, new QTableWidgetItem(r.sFrom));
+        table->setItem(row, OUTBOX_COL_TO,   new QTableWidgetItem(r.sTo));
+        table->setItem(row, OUTBOX_COL_PAID, new QTableWidgetItem(r.fPaid ? tr("Yes") : tr("No")));
 
-        QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(nDaysRetention));
+        QTableWidgetItem* retItem = new QTableWidgetItem(QString::number(r.nDaysRetention));
         retItem->setTextAlignment(Qt::AlignCenter);
         table->setItem(row, OUTBOX_COL_RETENTION, retItem);
 
-        QString preview = sText.left(80).replace('\n', ' ');
+        QString preview = r.sText.left(80).replace('\n', ' ');
         QTableWidgetItem* textItem = new QTableWidgetItem(preview);
-        textItem->setData(Qt::UserRole, sText);
-        table->setItem(row, OUTBOX_COL_TEXT, textItem);
-
-        table->setItem(row, OUTBOX_COL_MSGID, new QTableWidgetItem(sMsgId));
+        textItem->setData(Qt::UserRole, r.sText);
+        table->setItem(row, OUTBOX_COL_TEXT,  textItem);
+        table->setItem(row, OUTBOX_COL_MSGID, new QTableWidgetItem(r.sMsgId));
 
         nMessages++;
     }
@@ -1020,6 +1090,14 @@ void MessagingPage::markRead()
             dbInbox.WriteSmesg(chKey, smsgStored);
         }
     }
+    {
+        std::string ks(dbKey.constData(), 30);
+        auto it = m_inboxCache.find(ks);
+        if (it != m_inboxCache.end()) {
+            it->second.status  &= ~SMSG_MASK_UNREAD;
+            it->second.fUnread  = false;
+        }
+    }
     updateInboxList();
 }
 
@@ -1046,6 +1124,14 @@ void MessagingPage::markUnread()
             dbInbox.WriteSmesg(chKey, smsgStored);
         }
     }
+    {
+        std::string ks(dbKey.constData(), 30);
+        auto it = m_inboxCache.find(ks);
+        if (it != m_inboxCache.end()) {
+            it->second.status |= SMSG_MASK_UNREAD;
+            it->second.fUnread = true;
+        }
+    }
     updateInboxList();
 }
 
@@ -1068,6 +1154,7 @@ void MessagingPage::deleteSelectedInbox()
         memcpy(chKey, dbKey.constData(), 30);
         dbInbox.EraseSmesg(chKey);
     }
+    m_inboxCache.erase(std::string(dbKey.constData(), 30));
     updateInboxList();
 }
 
@@ -1167,6 +1254,7 @@ void MessagingPage::deleteSelectedOutbox()
         memcpy(chKey, dbKey.constData(), 30);
         dbOutbox.EraseSmesg(chKey);
     }
+    m_outboxCache.erase(std::string(dbKey.constData(), 30));
     updateOutboxList();
 }
 
@@ -1579,13 +1667,14 @@ void MessagingPage::updateTrollboxList()
     if (!smsg::fSecMsgEnabled)
         return;
 
-    QTextBrowser* chat = ui->trollboxChat;
-
-    struct RawTb {
+    // Phase 1: key-only scan; decrypt only cache misses / prior failures.
+    struct ToDecrypt {
+        std::string keyStr;
+        std::array<uint8_t, 30> chKey;
         smsg::SecMsgStored stored;
-        bool fPaid;
     };
-    std::vector<RawTb> raw;
+    std::vector<ToDecrypt> toDecrypt;
+    std::unordered_set<std::string> currentKeys;
 
     {
         LOCK(smsg::cs_smsgDB);
@@ -1593,70 +1682,99 @@ void MessagingPage::updateTrollboxList()
         if (!db.Open("cr+"))
             return;
 
-        std::string sPrefix("tb");
         uint8_t chKey[30];
-        smsg::SecMsgStored smsgStored;
-
+        std::string sPrefix("tb");
         leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
-        while (db.NextSmesg(it, sPrefix, chKey, smsgStored)) {
+        while (db.NextSmesgKey(it, sPrefix, chKey)) {
+            std::string ks(reinterpret_cast<const char*>(chKey), 30);
+            currentKeys.insert(ks);
+
+            auto cit = m_trollboxCache.find(ks);
+            if (cit != m_trollboxCache.end() && !cit->second.fDecryptFailed)
+                continue; // valid cache hit
+
+            smsg::SecMsgStored smsgStored;
+            if (!db.ReadSmesg(chKey, smsgStored))
+                continue;
             if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
                 continue;
-            const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)smsgStored.vchMessage.data();
-            raw.push_back({std::move(smsgStored), psmsg->IsPaidVersion()});
+
+            ToDecrypt e;
+            e.keyStr = ks;
+            memcpy(e.chKey.data(), chKey, 30);
+            e.stored = std::move(smsgStored);
+            toDecrypt.push_back(std::move(e));
         }
         delete it;
-    } // cs_smsgDB released before decrypt
+    }
 
-    struct TrollboxMsg {
-        int64_t time;
-        QString from;
-        QString text;
-        bool paid;
-    };
-    std::vector<TrollboxMsg> msgs;
-    msgs.reserve(raw.size());
+    // Phase 2: evict stale cache entries.
+    for (auto it = m_trollboxCache.begin(); it != m_trollboxCache.end(); ) {
+        if (!currentKeys.count(it->first))
+            it = m_trollboxCache.erase(it);
+        else
+            ++it;
+    }
 
-    for (auto& r : raw) {
-        uint8_t* pHeader = r.stored.vchMessage.data();
-        uint32_t nPayload = r.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+    // Phase 3: decrypt new / failed entries.
+    for (auto& e : toDecrypt) {
+        uint8_t* pHeader = e.stored.vchMessage.data();
+        const smsg::SecureMessage* psmsg = (smsg::SecureMessage*)pHeader;
+        uint32_t nPayload = e.stored.vchMessage.size() - smsg::SMSG_HDR_LEN;
+
+        TrollboxCached tc;
+        memcpy(tc.chKey.data(), e.chKey.data(), 30);
+        tc.fPaid = psmsg->IsPaidVersion();
+
         smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, r.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
-        if (rv != 0)
-            continue;
-        if (trollboxMuteList.count(msg.sFromAddress))
-            continue;
-        TrollboxMsg tm;
-        tm.time = msg.timestamp;
-        tm.from = QString::fromStdString(msg.sFromAddress);
-        tm.text = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
-        tm.paid = r.fPaid;
-        msgs.push_back(std::move(tm));
+        int rv = smsgModule.Decrypt(false, e.stored.addrTo, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg);
+        if (rv == 0) {
+            tc.time          = msg.timestamp;
+            tc.from          = QString::fromStdString(msg.sFromAddress);
+            tc.text          = QString::fromStdString(std::string((char*)msg.vchMessage.data()));
+            tc.fDecryptFailed = false;
+        } else {
+            tc.fDecryptFailed = true;
+        }
+        m_trollboxCache[e.keyStr] = std::move(tc);
     }
 
-    // Keep only the most recent messages
-    if ((int)msgs.size() > smsg::TROLLBOX_MAX_DISPLAY) {
+    // Phase 4: collect displayable messages (sorted by timestamp).
+    struct TrollboxMsg { int64_t time; QString from; QString text; bool paid; };
+    std::vector<TrollboxMsg> msgs;
+    msgs.reserve(currentKeys.size());
+
+    for (const auto& ks : currentKeys) {
+        auto it = m_trollboxCache.find(ks);
+        if (it == m_trollboxCache.end() || it->second.fDecryptFailed)
+            continue;
+        const TrollboxCached& tc = it->second;
+        if (trollboxMuteList.count(tc.from.toStdString()))
+            continue;
+        msgs.push_back({tc.time, tc.from, tc.text, tc.fPaid});
+    }
+
+    std::sort(msgs.begin(), msgs.end(), [](const TrollboxMsg& a, const TrollboxMsg& b){
+        return a.time < b.time;
+    });
+
+    if ((int)msgs.size() > smsg::TROLLBOX_MAX_DISPLAY)
         msgs.erase(msgs.begin(), msgs.begin() + (msgs.size() - smsg::TROLLBOX_MAX_DISPLAY));
-    }
 
-    // Skip re-render if message set is unchanged
+    // Skip re-render if content unchanged.
     int64_t lastTs = msgs.empty() ? 0 : msgs.back().time;
-    if (lastTs == m_trollboxLastTimestamp && msgs.size() == m_trollboxLastCount) {
+    if (lastTs == m_trollboxLastTimestamp && msgs.size() == m_trollboxLastCount)
         return;
-    }
     m_trollboxLastTimestamp = lastTs;
     m_trollboxLastCount = msgs.size();
 
-    // Render messages as HTML
     QString html;
     for (const auto& m : msgs) {
         QString timeStr = QDateTime::fromSecsSinceEpoch(m.time).toString("hh:mm");
         QString senderShort = m.from;
         if (senderShort.length() > 12)
             senderShort = senderShort.left(6) + "..." + senderShort.right(4);
-
-        // Escape HTML in message text
         QString escapedText = m.text.toHtmlEscaped().replace('\n', ' ');
-
         if (m.paid) {
             html += QString("<p style=\"margin:2px 0;\"><span style=\"color:gray;\">[%1]</span> "
                 "<a href=\"addr:%4\" style=\"color:red;font-weight:bold;text-decoration:none;\">%2:</a> "
@@ -1669,9 +1787,8 @@ void MessagingPage::updateTrollboxList()
         }
     }
 
+    QTextBrowser* chat = ui->trollboxChat;
     chat->setHtml(html);
-
-    // Auto-scroll to bottom
     QTextCursor cursor = chat->textCursor();
     cursor.movePosition(QTextCursor::End);
     chat->setTextCursor(cursor);

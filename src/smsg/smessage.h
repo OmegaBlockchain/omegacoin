@@ -528,6 +528,7 @@ public:
     int RemoveAddress(const std::string &addr);
     int RemovePrivkey(const std::string &addr);
 
+    int RetrieveFile(FILE *fp, const SecMsgToken &token, std::vector<uint8_t> &vchData);
     int Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData);
     int Remove(const SecMsgToken &token);
 
@@ -536,7 +537,7 @@ public:
     int CheckPurged(const SecureMessage *psmsg, const uint8_t *pPayload);
 
     int StoreUnscanned(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload);
-    int Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, bool fHashBucket);
+    int Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, bool fHashBucket, FILE *fpBatch = nullptr);
     int Store(const SecureMessage &smsg, bool fHashBucket);
 
     int Purge(std::vector<uint8_t> &vMsgId, std::string &sError);

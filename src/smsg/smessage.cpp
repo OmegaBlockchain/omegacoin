@@ -1909,6 +1909,14 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 return SMSG_GENERAL_ERROR;
             }
 
+            // Open the bucket file once for all reads in this want-batch.
+            fs::path pathSmsgDir = GetDataDir() / "smsgstore";
+            std::string bktFileName = std::to_string(time) + "_01.dat";
+            FILE *fp_bkt = fopen((pathSmsgDir / bktFileName).string().c_str(), "rb");
+            if (!fp_bkt) {
+                LogPrint(BCLog::SMSG, "smsgWant - Can't open bucket file %s.\n", bktFileName);
+            }
+
             std::set<SecMsgToken> &tokenSet = itb->second.setTokens;
             std::set<SecMsgToken>::iterator it;
             SecMsgToken token;
@@ -1924,8 +1932,11 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                     //LogPrintf("Have message at %d.\n", it->offset); // DEBUG
                     token.offset = it->offset;
 
-                    // Place in vchOne so if SecureMsgRetrieve fails it won't corrupt vchBunch
-                    if (Retrieve(token, vchOne) == SMSG_NO_ERROR) {
+                    // Place in vchOne so if retrieve fails it won't corrupt vchBunch.
+                    bool bOk = fp_bkt
+                        ? (RetrieveFile(fp_bkt, token, vchOne) == SMSG_NO_ERROR)
+                        : (Retrieve(token, vchOne) == SMSG_NO_ERROR);
+                    if (bOk) {
                         nBunch++;
                         vchBunch.insert(vchBunch.end(), vchOne.begin(), vchOne.end()); // append
                     } else {
@@ -1940,6 +1951,8 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                 }
                 p += 16;
             }
+
+            if (fp_bkt) { fclose(fp_bkt); }
         } // cs_smsg
 
         if (nBunch > 0) {
@@ -3704,6 +3717,34 @@ int CSMSG::RemovePrivkey(const std::string &addr)
     return SMSG_NO_ERROR;
 };
 
+int CSMSG::RetrieveFile(FILE *fp, const SecMsgToken &token, std::vector<uint8_t> &vchData)
+{
+    AssertLockHeld(cs_smsg);
+
+    errno = 0;
+    if (fseek(fp, token.offset, SEEK_SET) != 0) {
+        return errorN(SMSG_GENERAL_ERROR, "%s - fseek, strerror: %s.", __func__, strerror(errno));
+    }
+
+    SecureMessage smsg;
+    errno = 0;
+    if (fread(smsg.data(), sizeof(uint8_t), SMSG_HDR_LEN, fp) != (size_t)SMSG_HDR_LEN) {
+        return errorN(SMSG_GENERAL_ERROR, "%s - read header failed, strerror: %s.", __func__, strerror(errno));
+    }
+
+    try { vchData.resize(SMSG_HDR_LEN + smsg.nPayload); } catch (std::exception &e) {
+        return errorN(SMSG_ALLOCATE_FAILED, "%s - Could not resize vchData, %u, %s.", __func__, SMSG_HDR_LEN + smsg.nPayload, e.what());
+    }
+
+    memcpy(vchData.data(), smsg.data(), SMSG_HDR_LEN);
+    errno = 0;
+    if (fread(&vchData[SMSG_HDR_LEN], sizeof(uint8_t), smsg.nPayload, fp) != smsg.nPayload) {
+        return errorN(SMSG_GENERAL_ERROR, "%s - fread data failed: %s. Wanted %u bytes.", __func__, strerror(errno), smsg.nPayload);
+    }
+
+    return SMSG_NO_ERROR;
+};
+
 int CSMSG::Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData)
 {
     LogPrint(BCLog::SMSG, "%s: %d.\n", __func__, token.timestamp);
@@ -3721,33 +3762,9 @@ int CSMSG::Retrieve(const SecMsgToken &token, std::vector<uint8_t> &vchData)
         return errorN(SMSG_GENERAL_ERROR, "%s - Can't open file: %s\nPath %s.", __func__, strerror(errno), fullpath.string());
     }
 
-    errno = 0;
-    if (fseek(fp, token.offset, SEEK_SET) != 0) {
-        fclose(fp);
-        return errorN(SMSG_GENERAL_ERROR, "%s - fseek, strerror: %s.", __func__, strerror(errno));
-    }
-
-    SecureMessage smsg;
-    errno = 0;
-    if (fread(smsg.data(), sizeof(uint8_t), SMSG_HDR_LEN, fp) != (size_t)SMSG_HDR_LEN) {
-        fclose(fp);
-        return errorN(SMSG_GENERAL_ERROR, "%s - read header failed, strerror: %s.", __func__, strerror(errno));
-    }
-
-    try {vchData.resize(SMSG_HDR_LEN + smsg.nPayload);} catch (std::exception &e) {
-        fclose(fp);
-        return errorN(SMSG_ALLOCATE_FAILED, "%s - Could not resize vchData, %u, %s.", __func__, SMSG_HDR_LEN + smsg.nPayload, e.what());
-    }
-
-    memcpy(vchData.data(), smsg.data(), SMSG_HDR_LEN);
-    errno = 0;
-    if (fread(&vchData[SMSG_HDR_LEN], sizeof(uint8_t), smsg.nPayload, fp) != smsg.nPayload) {
-        fclose(fp);
-        return errorN(SMSG_GENERAL_ERROR, "%s - fread data failed: %s. Wanted %u bytes.", __func__, strerror(errno), smsg.nPayload);
-    }
-
+    int rv = RetrieveFile(fp, token, vchData);
     fclose(fp);
-    return SMSG_NO_ERROR;
+    return rv;
 };
 
 int CSMSG::Remove(const SecMsgToken &token)
@@ -3856,6 +3873,25 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
 
     uint32_t n = 12;
 
+    // Open the bucket file once for all appends in this bunch.
+    FILE *fp_store = nullptr;
+    {
+        fs::path pathSmsgDir = GetDataDir() / "smsgstore";
+        try { fs::create_directory(pathSmsgDir); } catch (...) {}
+        std::string bktFileName = std::to_string(bktTime) + "_01.dat";
+        fp_store = fopen((pathSmsgDir / bktFileName).string().c_str(), "ab");
+        if (fp_store) {
+            // On Windows ftell returns 0 after fopen(ab); seek to set correctly.
+            if (fseek(fp_store, 0, SEEK_END) != 0) {
+                fclose(fp_store);
+                fp_store = nullptr;
+                LogPrint(BCLog::SMSG, "%s - fseek on batch store file failed.\n", __func__);
+            }
+        } else {
+            LogPrint(BCLog::SMSG, "%s - Can't open bucket file for batch write.\n", __func__);
+        }
+    }
+
     for (uint32_t i = 0; i < nBunch; ++i) {
         if (vchData.size() - n < SMSG_HDR_LEN) {
             LogPrintf("Error: not enough data sent, n = %u.\n", n);
@@ -3898,8 +3934,12 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
 
         {
             LOCK(cs_smsg);
-            // Store message, but don't hash bucket
-            if (Store(&vchData[n], &vchData[n + SMSG_HDR_LEN], psmsg->nPayload, false) != 0) {
+            // Store message, but don't hash bucket.
+            // Pass fp_store when message belongs to bktTime bucket (the common case);
+            // fall back to per-call open for any out-of-bucket timestamp.
+            int64_t msgBktTime = psmsg->timestamp - (psmsg->timestamp % SMSG_BUCKET_LEN);
+            FILE *fp_pass = (fp_store && msgBktTime == bktTime) ? fp_store : nullptr;
+            if (Store(&vchData[n], &vchData[n + SMSG_HDR_LEN], psmsg->nPayload, false, fp_pass) != 0) {
                 // Message dropped
                 break;
             }
@@ -3911,6 +3951,8 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
 
         n += SMSG_HDR_LEN + psmsg->nPayload;
     }
+
+    if (fp_store) { fclose(fp_store); fp_store = nullptr; }
 
     {
         LOCK(cs_smsg);
@@ -4029,7 +4071,7 @@ int CSMSG::StoreUnscanned(const uint8_t *pHeader, const uint8_t *pPayload, uint3
 };
 
 
-int CSMSG::Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, bool fHashBucket)
+int CSMSG::Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload, bool fHashBucket, FILE *fpBatch)
 {
     LogPrint(BCLog::SMSG, "%s\n", __func__);
     AssertLockHeld(cs_smsg);
@@ -4080,31 +4122,36 @@ int CSMSG::Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayl
         return SMSG_GENERAL_ERROR;
     }
 
-    std::string fileName = std::to_string(bucketTime) + "_01.dat";
-    fs::path fullpath = pathSmsgDir / fileName;
-
     FILE *fp;
-    errno = 0;
-    if (!(fp = fopen(fullpath.string().c_str(), "ab"))) {
-        return errorN(SMSG_GENERAL_ERROR, "fopen failed: %s.", strerror(errno));
-    }
+    bool bOwnFp = (fpBatch == nullptr);
+    if (bOwnFp) {
+        std::string fileName = std::to_string(bucketTime) + "_01.dat";
+        fs::path fullpath = pathSmsgDir / fileName;
 
-    // On windows ftell will always return 0 after fopen(ab), call fseek to set.
-    errno = 0;
-    if (fseek(fp, 0, SEEK_END) != 0) {
-        fclose(fp);
-        return errorN(SMSG_GENERAL_ERROR, "fseek failed: %s.", strerror(errno));
+        errno = 0;
+        if (!(fp = fopen(fullpath.string().c_str(), "ab"))) {
+            return errorN(SMSG_GENERAL_ERROR, "fopen failed: %s.", strerror(errno));
+        }
+
+        // On windows ftell will always return 0 after fopen(ab), call fseek to set.
+        errno = 0;
+        if (fseek(fp, 0, SEEK_END) != 0) {
+            fclose(fp);
+            return errorN(SMSG_GENERAL_ERROR, "fseek failed: %s.", strerror(errno));
+        }
+    } else {
+        fp = fpBatch;
     }
 
     ofs = ftell(fp);
 
     if (fwrite(pHeader,  sizeof(uint8_t), SMSG_HDR_LEN, fp) != (size_t)SMSG_HDR_LEN
         || fwrite(pPayload, sizeof(uint8_t),     nPayload, fp) != nPayload) {
-        fclose(fp);
+        if (bOwnFp) fclose(fp);
         return errorN(SMSG_GENERAL_ERROR, "fwrite failed: %s.", strerror(errno));
     }
 
-    fclose(fp);
+    if (bOwnFp) fclose(fp);
 
     token.offset = ofs;
 

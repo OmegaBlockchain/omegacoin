@@ -10,6 +10,9 @@
 #include <pubkey.h>
 #include <sync.h>
 
+#include <map>
+#include <vector>
+
 namespace smsg {
 
 enum SMSGKeyFlagTypes
@@ -59,6 +62,8 @@ public:
     bool HaveKey(const CKeyID &idk) const;
     bool EraseKey(const CKeyID &idk);
     bool GetPubKey(const CKeyID &idk, CPubKey &pk);
+    std::vector<std::pair<CKeyID, SecMsgKey>> Snapshot() const;
+    size_t Size() const;
 
     bool Clear();
 };

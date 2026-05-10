@@ -629,7 +629,7 @@ void MessagingPage::updateOutboxList()
         }
 
         smsg::MessageData msg;
-        int rv = smsgModule.Decrypt(false, e.stored.addrOutbox, pHeader, pHeader + smsg::SMSG_HDR_LEN, nPayload, msg, false);
+        int rv = smsgModule.DecryptOutboxStored(e.stored, msg);
         if (rv == 0) {
             r.sFrom          = QString::fromStdString(msg.sFromAddress);
             r.sTo            = QString::fromLatin1(EncodeDestination(PKHash(e.stored.addrTo)).c_str());
@@ -721,31 +721,34 @@ void MessagingPage::buildKeystoreSnapshot()
     std::vector<OwnAddrSnap> ownSnap;
     std::vector<KeySnap>     keySnap;
     bool havePwallet = false;
+    CKeyID trollboxAddress;
 
     {
         LOCK(smsgModule.cs_smsg);
         havePwallet = (smsgModule.pwallet != nullptr);
+        trollboxAddress = smsgModule.trollboxAddress;
 #ifdef ENABLE_WALLET
         if (smsgModule.pwallet) {
             for (const auto& it : smsgModule.addresses)
                 ownSnap.push_back({it.address, it.fReceiveEnabled, it.fReceiveAnon});
         }
 #endif
-        for (const auto& p : smsgModule.keyStore.mapKeys) {
-            if (p.first == smsgModule.trollboxAddress)
-                continue;
-            const auto& key = p.second;
-            KeySnap ks;
-            ks.address  = p.first;
-            ks.sLabel   = key.sLabel;
-            ks.fContact = (key.nFlags & smsg::SMK_CONTACT_ONLY) != 0;
-            ks.fRecv    = (key.nFlags & smsg::SMK_RECEIVE_ON) != 0;
-            ks.fAnon    = (key.nFlags & smsg::SMK_RECEIVE_ANON) != 0;
-            ks.fHasKey  = key.key.IsValid();
-            ks.key      = key.key;
-            keySnap.push_back(std::move(ks));
-        }
     } // cs_smsg released
+
+    for (const auto& p : smsgModule.keyStore.Snapshot()) {
+        if (p.first == trollboxAddress)
+            continue;
+        const auto& key = p.second;
+        KeySnap ks;
+        ks.address  = p.first;
+        ks.sLabel   = key.sLabel;
+        ks.fContact = (key.nFlags & smsg::SMK_CONTACT_ONLY) != 0;
+        ks.fRecv    = (key.nFlags & smsg::SMK_RECEIVE_ON) != 0;
+        ks.fAnon    = (key.nFlags & smsg::SMK_RECEIVE_ANON) != 0;
+        ks.fHasKey  = key.key.IsValid();
+        ks.key      = key.key;
+        keySnap.push_back(std::move(ks));
+    }
 
 #ifdef ENABLE_WALLET
     if (havePwallet && smsgModule.pwallet) {
@@ -1430,10 +1433,7 @@ void MessagingPage::deleteContact()
         }
     }
 
-    {
-        LOCK(smsgModule.cs_smsg);
-        smsgModule.keyStore.mapKeys.erase(idk);
-    }
+    smsgModule.keyStore.EraseKey(idk);
 
     invalidateKeystoreSnapshot();
     updateKeysList();

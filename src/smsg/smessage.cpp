@@ -2358,7 +2358,7 @@ bool CSMSG::ScanBlock(const CBlock &block)
 
 /** Extract pubkeys from a single block's scriptSig inputs (no DB access). */
 static void ExtractPubkeysFromBlock(const CBlock &block,
-    std::vector<std::pair<CKeyID, CPubKey>> &vResults)
+    std::map<CKeyID, CPubKey> &mapResults, uint32_t &nDedupedOut)
 {
     for (const auto &tx : block.vtx) {
         if (tx->IsCoinBase())
@@ -2379,7 +2379,9 @@ static void ExtractPubkeysFromBlock(const CBlock &block,
             if (!pubKey.IsValid() || !pubKey.IsCompressed())
                 continue;
 
-            vResults.emplace_back(pubKey.GetID(), pubKey);
+            if (!mapResults.emplace(pubKey.GetID(), pubKey).second) {
+                nDedupedOut++;
+            }
         }
     }
 }
@@ -2401,12 +2403,13 @@ bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, ui
 
     LogPrintf("SMSG: Scanning %u blocks using %d threads.\n", nBlocks, nThreads);
 
-    // Per-thread results: vector of extracted (CKeyID, CPubKey) pairs.
-    std::vector<std::vector<std::pair<CKeyID, CPubKey>>> vThreadResults(nThreads);
+    // Per-thread results: one entry per unique key seen in that thread's chunk.
+    std::vector<std::map<CKeyID, CPubKey>> vThreadResults(nThreads);
     const Consensus::Params &consensus = Params().GetConsensus();
 
     // Per-thread last-processed block index (exclusive upper bound within chunk).
     std::vector<uint32_t> vThreadProcessed(nThreads, 0);
+    std::vector<uint32_t> vThreadDeduped(nThreads, 0);
 
     // Shared progress counter for all threads.
     std::atomic<uint32_t> nBlocksProcessed{0};
@@ -2419,7 +2422,6 @@ bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, ui
         uint32_t nTo = (threadIdx == nThreads - 1) ? nBlocks : nFrom + nPerThread;
 
         auto &results = vThreadResults[threadIdx];
-        results.reserve((nTo - nFrom) * 2); // rough estimate
 
         uint32_t nLocal = 0;
         for (uint32_t i = nFrom; i < nTo; i++) {
@@ -2432,7 +2434,7 @@ bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, ui
                           vBlockPos[i].ToString());
                 continue;
             }
-            ExtractPubkeysFromBlock(block, results);
+            ExtractPubkeysFromBlock(block, results, vThreadDeduped[threadIdx]);
             nLocal++;
 
             uint32_t nDone = nBlocksProcessed.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -2479,6 +2481,9 @@ bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, ui
     // active batch does a fast O(log N) LevelDB Get.
     uint32_t nPubkeys    = 0;
     uint32_t nDuplicates = 0;
+    for (uint32_t nDeduped : vThreadDeduped) {
+        nDuplicates += nDeduped;
+    }
 
     {
         LOCK(cs_smsgDB);
@@ -2506,8 +2511,8 @@ bool CSMSG::ScanChainForPublicKeys(const std::vector<FlatFilePos> &vBlockPos, ui
             return true;
         };
 
-        for (auto &results : vThreadResults) {
-            for (auto &[hashKey, pubKey] : results) {
+        for (const auto &results : vThreadResults) {
+            for (const auto &[hashKey, pubKey] : results) {
                 if (addrpkdb.ExistsPK(hashKey)) {
                     nDuplicates++;
                     continue;
@@ -3050,19 +3055,22 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
     }
 
     if (fIsTopic) {
-        // Topic routing: resolve hash → single key — O(1) instead of O(K)
+        // Topic routing: try every locally subscribed key for a colliding hash.
         uint32_t topicHash;
         memcpy(&topicHash, psmsg_scan->nonce, 4);
-        CKeyID topicKeyID;
+        std::vector<CKeyID> topicKeyIDs;
         {
             LOCK(cs_smsgSubs);
-            auto it = m_topicHashToKeyID.find(topicHash);
-            if (it != m_topicHashToKeyID.end()) topicKeyID = it->second;
+            auto it = m_topicHashToKeyIDs.find(topicHash);
+            if (it != m_topicHashToKeyIDs.end()) topicKeyIDs = it->second;
         }
-        if (!topicKeyID.IsNull()) {
+        if (!topicKeyIDs.empty()) {
             LOCK(smsgModule.keyStore.cs_KeyStore);
-            auto kit = smsgModule.keyStore.mapKeys.find(topicKeyID);
-            if (kit != smsgModule.keyStore.mapKeys.end()) {
+            for (const CKeyID &topicKeyID : topicKeyIDs) {
+                auto kit = smsgModule.keyStore.mapKeys.find(topicKeyID);
+                if (kit == smsgModule.keyStore.mapKeys.end()) {
+                    continue;
+                }
                 const auto &key = kit->second;
                 if ((key.nFlags & SMK_RECEIVE_ON) && key.key.IsValid()) {
                     // Full decrypt: sTopic populated in single pass
@@ -3072,6 +3080,7 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
                         }
                         fOwnMessage = true;
                         addressTo = topicKeyID;
+                        break;
                     }
                 }
             }
@@ -5625,7 +5634,7 @@ bool CSMSG::SubscribeTopic(const std::string &topic, std::string &sError)
         uint32_t h = SMSGTopicHash(topic);
         m_subscribed_topic_hashes.insert(h);
         if (!topicKeyID.IsNull()) {
-            m_topicHashToKeyID[h] = topicKeyID;
+            m_topicHashToKeyIDs[h].push_back(topicKeyID);
         }
     }
     m_fSubsDirty.store(true, std::memory_order_relaxed);
@@ -5643,12 +5652,12 @@ bool CSMSG::UnsubscribeTopic(const std::string &topic, std::string &sError)
         m_subscribed_topics.erase(topic);
         // Rebuild the hash set and routing map from remaining subscriptions
         m_subscribed_topic_hashes.clear();
-        m_topicHashToKeyID.clear();
+        m_topicHashToKeyIDs.clear();
         for (const auto &t : m_subscribed_topics) {
             uint32_t h = SMSGTopicHash(t);
             m_subscribed_topic_hashes.insert(h);
             CKey k = GetTopicSharedKey(t);
-            if (k.IsValid()) m_topicHashToKeyID[h] = k.GetPubKey().GetID();
+            if (k.IsValid()) m_topicHashToKeyIDs[h].push_back(k.GetPubKey().GetID());
         }
     }
     m_fSubsDirty.store(true, std::memory_order_relaxed);
@@ -5660,7 +5669,7 @@ bool CSMSG::LoadTopicSubs()
     LOCK(cs_smsgSubs);
     m_subscribed_topics.clear();
     m_subscribed_topic_hashes.clear();
-    m_topicHashToKeyID.clear();
+    m_topicHashToKeyIDs.clear();
 
     fs::path fpath = GetDataDir() / "smsgstore" / "topic_subs.dat";
     if (!fs::exists(fpath)) {
@@ -5686,7 +5695,7 @@ bool CSMSG::LoadTopicSubs()
             uint32_t h = SMSGTopicHash(line);
             m_subscribed_topic_hashes.insert(h);
             CKeyID topicKeyID = ImportTopicKey(line);
-            if (!topicKeyID.IsNull()) m_topicHashToKeyID[h] = topicKeyID;
+            if (!topicKeyID.IsNull()) m_topicHashToKeyIDs[h].push_back(topicKeyID);
         }
     }
 

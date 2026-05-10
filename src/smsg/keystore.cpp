@@ -44,6 +44,23 @@ bool SecMsgKeyStore::GetPubKey(const CKeyID &idk, CPubKey &pk)
     return false;
 };
 
+std::vector<std::pair<CKeyID, SecMsgKey>> SecMsgKeyStore::Snapshot() const
+{
+    LOCK(cs_KeyStore);
+    std::vector<std::pair<CKeyID, SecMsgKey>> snapshot;
+    snapshot.reserve(mapKeys.size());
+    for (const auto &entry : mapKeys) {
+        snapshot.emplace_back(entry.first, entry.second);
+    }
+    return snapshot;
+}
+
+size_t SecMsgKeyStore::Size() const
+{
+    LOCK(cs_KeyStore);
+    return mapKeys.size();
+}
+
 bool SecMsgKeyStore::Clear()
 {
     LOCK(cs_KeyStore);

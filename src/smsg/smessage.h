@@ -620,10 +620,10 @@ public:
     static CKey GetTopicSharedKey(const std::string &topic);
     CKeyID ImportTopicKey(const std::string &topic);
 
-    mutable CCriticalSection cs_smsgSubs; // guards m_subscribed_topics, m_subscribed_topic_hashes, m_topicHashToKeyID
+    mutable CCriticalSection cs_smsgSubs; // guards m_subscribed_topics, m_subscribed_topic_hashes, m_topicHashToKeyIDs
     std::set<std::string> m_subscribed_topics;              // full topic strings
     std::set<uint32_t>    m_subscribed_topic_hashes;        // FNV-1a hashes for fast cleartext routing
-    std::map<uint32_t, CKeyID> m_topicHashToKeyID;          // topic hash → keystore CKeyID for O(1) ScanMessage routing
+    std::map<uint32_t, std::vector<CKeyID>> m_topicHashToKeyIDs; // topic hash → candidate keystore CKeyIDs for ScanMessage routing
 
     CCriticalSection cs_smsg; // all except inbox and outbox
 
@@ -661,4 +661,3 @@ protected:
 extern smsg::CSMSG smsgModule;
 
 #endif // OMEGA_SMSG_SMESSAGE_H
-

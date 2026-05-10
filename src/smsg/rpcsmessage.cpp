@@ -249,66 +249,68 @@ static UniValue smsglocalkeys(const JSONRPCRequest &request)
     if (mode == "whitelist"
         || mode == "all")
     {
-        LOCK(smsgModule.cs_smsg);
         uint32_t nKeys = 0;
         int all = mode == "all" ? 1 : 0;
 
         UniValue keys(UniValue::VARR);
-#ifdef ENABLE_WALLET
-        if (smsgModule.pwallet)
         {
-            for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it)
+            LOCK(smsgModule.cs_smsg);
+#ifdef ENABLE_WALLET
+            if (smsgModule.pwallet)
             {
-                if (!all
-                    && !it->fReceiveEnabled)
-                    continue;
-
-                CKeyID &keyID = it->address;
-                std::string sPublicKey;
-                CPubKey pubKey;
-
-                if (smsgModule.pwallet)
+                for (auto it = smsgModule.addresses.begin(); it != smsgModule.addresses.end(); ++it)
                 {
-                    LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*smsgModule.pwallet);
-                    if (!spk_man.GetPubKey(keyID, pubKey)) {
-                        LogPrintf("%s: GetPubKey failed for %s — key in addresses but not in wallet\n",
-                            __func__, EncodeDestination(PKHash(keyID)));
+                    if (!all
+                        && !it->fReceiveEnabled)
                         continue;
-                    }
-                    if (!pubKey.IsValid()
-                        || !pubKey.IsCompressed())
+
+                    CKeyID &keyID = it->address;
+                    std::string sPublicKey;
+                    CPubKey pubKey;
+
+                    if (smsgModule.pwallet)
                     {
-                        continue;
+                        LegacyScriptPubKeyMan& spk_man = EnsureLegacyScriptPubKeyMan(*smsgModule.pwallet);
+                        if (!spk_man.GetPubKey(keyID, pubKey)) {
+                            LogPrintf("%s: GetPubKey failed for %s — key in addresses but not in wallet\n",
+                                __func__, EncodeDestination(PKHash(keyID)));
+                            continue;
+                        }
+                        if (!pubKey.IsValid()
+                            || !pubKey.IsCompressed())
+                        {
+                            continue;
+                        };
+                        sPublicKey = EncodeBase58(pubKey.begin(), pubKey.end());
                     };
-                    sPublicKey = EncodeBase58(pubKey.begin(), pubKey.end());
+
+                    UniValue objM(UniValue::VOBJ);
+                    std::string sInfo, sLabel;
+                    PKHash pkh = PKHash(keyID);
+                    sLabel = smsgModule.LookupLabel(pkh);
+                    if (all) {
+                        sInfo = std::string("Receive ") + (it->fReceiveEnabled ? "on,  " : "off, ");
+                    }
+                    sInfo += std::string("Anon ") + (it->fReceiveAnon ? "on" : "off");
+                    //result.pushKV("key", it->sAddress + " - " + sPublicKey + " " + sInfo + " - " + sLabel);
+                    objM.pushKV("address", EncodeDestination(PKHash(keyID)));
+                    objM.pushKV("public_key", sPublicKey);
+                    objM.pushKV("receive", (it->fReceiveEnabled ? "1" : "0"));
+                    objM.pushKV("anon", (it->fReceiveAnon ? "1" : "0"));
+                    objM.pushKV("label", sLabel);
+                    keys.push_back(objM);
+
+                    nKeys++;
                 };
-
-                UniValue objM(UniValue::VOBJ);
-                std::string sInfo, sLabel;
-                PKHash pkh = PKHash(keyID);
-                sLabel = smsgModule.LookupLabel(pkh);
-                if (all) {
-                    sInfo = std::string("Receive ") + (it->fReceiveEnabled ? "on,  " : "off, ");
-                }
-                sInfo += std::string("Anon ") + (it->fReceiveAnon ? "on" : "off");
-                //result.pushKV("key", it->sAddress + " - " + sPublicKey + " " + sInfo + " - " + sLabel);
-                objM.pushKV("address", EncodeDestination(PKHash(keyID)));
-                objM.pushKV("public_key", sPublicKey);
-                objM.pushKV("receive", (it->fReceiveEnabled ? "1" : "0"));
-                objM.pushKV("anon", (it->fReceiveAnon ? "1" : "0"));
-                objM.pushKV("label", sLabel);
-                keys.push_back(objM);
-
-                nKeys++;
+                result.pushKV("wallet_keys", keys);
             };
-            result.pushKV("wallet_keys", keys);
-        };
 #endif
+        }
 
         keys = UniValue(UniValue::VARR);
-        for (auto &p : smsgModule.keyStore.mapKeys)
+        for (const auto &p : smsgModule.keyStore.Snapshot())
         {
-            auto &key = p.second;
+            const auto &key = p.second;
             UniValue objM(UniValue::VOBJ);
             CPubKey pk = key.key.GetPubKey();
             objM.pushKV("address", EncodeDestination(PKHash(p.first)));
@@ -2294,6 +2296,7 @@ static UniValue smsgdebug(const JSONRPCRequest &request)
     } else
     if (mode == "none") {
         // Return summary info
+        size_t nKeyStoreKeys = smsgModule.keyStore.Size();
         LOCK(smsgModule.cs_smsg);
         uint32_t nBuckets = smsgModule.buckets.size();
         uint32_t nMessages = 0;
@@ -2305,7 +2308,7 @@ static UniValue smsgdebug(const JSONRPCRequest &request)
         result.pushKV("active_messages", (int)nMessages);
         result.pushKV("purged", (int)smsgModule.setPurged.size());
         result.pushKV("addresses", (int)smsgModule.addresses.size());
-        result.pushKV("keystore_keys", (int)smsgModule.keyStore.mapKeys.size());
+        result.pushKV("keystore_keys", (int)nKeyStoreKeys);
     } else {
         result.pushKV("error", "Unknown command.");
         result.pushKV("expected", "clearbanned|dumpids");
@@ -2354,34 +2357,36 @@ static UniValue trollboxsend(const JSONRPCRequest &request)
 
     // Find first available sender address
     CKeyID kiFrom;
+    CKeyID trollboxAddress;
     {
         LOCK(smsgModule.cs_smsg);
+        trollboxAddress = smsgModule.trollboxAddress;
 #ifdef ENABLE_WALLET
         if (smsgModule.pwallet) {
             for (auto& a : smsgModule.addresses) {
-                if (a.fReceiveEnabled && a.address != smsgModule.trollboxAddress) {
+                if (a.fReceiveEnabled && a.address != trollboxAddress) {
                     kiFrom = a.address;
                     break;
                 }
             }
         }
 #endif
-        if (kiFrom.IsNull()) {
-            for (auto& p : smsgModule.keyStore.mapKeys) {
-                if (p.first == smsgModule.trollboxAddress) continue;
-                auto& key = p.second;
-                if (!(key.nFlags & smsg::SMK_RECEIVE_ON)) continue;
-                if (key.nFlags & smsg::SMK_CONTACT_ONLY) continue;
-                kiFrom = p.first;
-                break;
-            }
+    }
+    if (kiFrom.IsNull()) {
+        for (const auto& p : smsgModule.keyStore.Snapshot()) {
+            if (p.first == trollboxAddress) continue;
+            const auto& key = p.second;
+            if (!(key.nFlags & smsg::SMK_RECEIVE_ON)) continue;
+            if (key.nFlags & smsg::SMK_CONTACT_ONLY) continue;
+            kiFrom = p.first;
+            break;
         }
     }
 
     if (kiFrom.IsNull())
         throw JSONRPCError(RPC_WALLET_ERROR, "No sending address available. Generate an SMSG key first.");
 
-    CKeyID kiTo = smsgModule.trollboxAddress;
+    CKeyID kiTo = trollboxAddress;
     std::string sError;
     smsg::SecureMessage smsgOut;
 

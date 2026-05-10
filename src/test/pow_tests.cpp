@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(lwma_fix_activation_boundary)
     auto post_fix = consensus;
     post_fix.nPowLWMAFixHeight = FIX_HEIGHT;
 
-    const unsigned int expected_old = ExpectedLwmaWorkRequired(&blocks.back(), post_fix, false);
+    const unsigned int expected_old = ExpectedLwmaWorkRequired(&blocks.back(), pre_fix, false);
     const unsigned int expected_new = ExpectedLwmaWorkRequired(&blocks.back(), post_fix, true);
 
     BOOST_CHECK_EQUAL(GetNextWorkRequired(&blocks.back(), &next_block, pre_fix), expected_old);

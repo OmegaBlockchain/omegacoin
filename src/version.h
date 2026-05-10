@@ -12,16 +12,16 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70231;
+static const int PROTOCOL_VERSION = 70232;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
 
 //! disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 70210;
+static const int MIN_PEER_PROTO_VERSION = 70232;
 
 //! minimum proto version of masternode to accept in DKGs
-static const int MIN_MASTERNODE_PROTO_VERSION = 70227;
+static const int MIN_MASTERNODE_PROTO_VERSION = 70232;
 
 //! nTime field added to CAddress, starting with this version;
 //! if possible, avoid requesting addresses nodes older than this
@@ -61,7 +61,7 @@ static const int SMNLE_VERSIONED_PROTO_VERSION = 70228;
 static const int SMSG_PROTO_VERSION = 70229;
 
 //! Minimum protocol version required once the block 3,200,000 fork enforcement height is reached
-static const int FORK_3200000_MIN_PROTO_VERSION = 70231;
+static const int FORK_3200000_MIN_PROTO_VERSION = 70232;
 
 // Make sure that none of the values above collide with `ADDRV2_FORMAT`.
 

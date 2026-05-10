@@ -1184,13 +1184,6 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
         nInbound--;
     }
 
-    // don't accept incoming connections until blockchain is synced
-    if(fMasternodeMode && !::masternodeSync->IsBlockchainSynced()) {
-        LogPrint(BCLog::NET, "AcceptConnection -- blockchain is not synced yet, skipping inbound connection attempt\n");
-        CloseSocket(hSocket);
-        return;
-    }
-
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
     CAddress addr_bind = GetBindAddress(hSocket);
@@ -2210,6 +2203,15 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
     // Initiate network connections
     int64_t nStart = GetTime();
 
+    // Always seed addrman with hardcoded nodes so they are available as
+    // connection candidates even when peers.dat is populated with stale entries.
+    {
+        CNetAddr local;
+        local.SetInternal("fixedseeds");
+        addrman.Add(convertSeed6(Params().FixedSeeds()), local);
+        LogPrintf("Added fixed seed nodes to address manager.\n");
+    }
+
     // Minimum time before next feeler connection (in microseconds).
     int64_t nNextFeeler = PoissonNextSend(nStart*1000*1000, FEELER_INTERVAL);
     while (!interruptNet)
@@ -2222,21 +2224,6 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         CSemaphoreGrant grant(*semOutbound);
         if (interruptNet)
             return;
-
-        // Add seed nodes if DNS seeds are all down (an infrastructure attack?).
-        // Note that we only do this if we started with an empty peers.dat,
-        // (in which case we will query DNS seeds immediately) *and* the DNS
-        // seeds have not returned any results.
-        if (addrman.size() == 0 && (GetTime() - nStart > 60)) {
-            static bool done = false;
-            if (!done) {
-                LogPrintf("Adding fixed seed nodes as DNS doesn't seem to be available.\n");
-                CNetAddr local;
-                local.SetInternal("fixedseeds");
-                addrman.Add(convertSeed6(Params().FixedSeeds()), local);
-                done = true;
-            }
-        }
 
         //
         // Choose an address to connect to based on most recently seen

@@ -179,7 +179,7 @@ public:
         consensus.nPowKGWHeight = 0;
         consensus.nPowDGWHeight = 0;
         consensus.nPowLWMAHeight = 3200000;
-        consensus.nPowLWMAFixHeight = 3200070; // activate immediately after the last known pre-fix mainnet block
+        consensus.nPowLWMAFixHeight = 3200075; // activate immediately after the last known pre-fix mainnet block
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing

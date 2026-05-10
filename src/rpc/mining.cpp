@@ -145,6 +145,27 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock& block, uint64_t& 
     return true;
 }
 
+//! Minimum peer count required before the node will accept mining RPCs on
+//! networks where blocks are not produced on demand (i.e. anything other than
+//! regtest). The cap exists to stop a partitioned node from mining a private
+//! fork while it has too few peers to detect the canonical chain.
+static constexpr size_t MIN_PEERS_FOR_MINING = 3;
+
+static void CheckPeerCountForMining(const JSONRPCRequest& request)
+{
+    if (Params().MineBlocksOnDemand()) return;
+    const NodeContext& node = EnsureNodeContext(request.context);
+    if (!node.connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+    const size_t nPeers = node.connman->GetNodeCount(CConnman::CONNECTIONS_ALL);
+    if (nPeers < MIN_PEERS_FOR_MINING) {
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED,
+            strprintf("Refusing to mine: only %u peer(s) connected, at least %u required.",
+                      (unsigned)nPeers, (unsigned)MIN_PEERS_FOR_MINING));
+    }
+}
+
 static UniValue generateBlocks(ChainstateManager& chainman, const CTxMemPool& mempool, CEvoDB& evodb,
                         llmq::CQuorumBlockProcessor& quorum_block_processor, llmq::CChainLocksHandler& clhandler,
                         llmq::CInstantSendManager& isman, const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries)
@@ -234,6 +255,8 @@ static UniValue generatetodescriptor(const JSONRPCRequest& request)
     }
         .Check(request);
 
+    CheckPeerCountForMining(request);
+
     const int num_blocks{request.params[0].get_int()};
     const int64_t max_tries{request.params[2].isNull() ? 100000000 : request.params[2].get_int()};
 
@@ -271,6 +294,8 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
         + "If you are running the Omega Core wallet, you can get a new address to send the newly generated coins to with:\n"
             + HelpExampleCli("getnewaddress", "")},
     }.Check(request);
+
+    CheckPeerCountForMining(request);
 
     int nGenerate = request.params[0].get_int();
     uint64_t nMaxTries = 100000000;
@@ -318,6 +343,8 @@ static UniValue generateblock(const JSONRPCRequest& request)
             + HelpExampleCli("generateblock", R"("myaddress" '["rawtx", "mempool_txid"]')")
         },
     }.Check(request);
+
+    CheckPeerCountForMining(request);
 
     const auto address_or_descriptor = request.params[0].get_str();
     CScript coinbase_script;

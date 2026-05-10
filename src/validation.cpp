@@ -3820,7 +3820,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
                             REJECT_INVALID, "bad-diffbits");
     } else {
         if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
-            return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits", strprintf("incorrect proof of work at %d", nHeight));
+            return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "bad-diffbits", strprintf("incorrect proof of work at %d (block.nBits=0x%08x expected=0x%08x prev=%s)", nHeight, block.nBits, GetNextWorkRequired(pindexPrev, &block, consensusParams), pindexPrev->GetBlockHash().ToString()));
     }
 
     // Check against checkpoints

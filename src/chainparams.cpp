@@ -179,6 +179,7 @@ public:
         consensus.nPowKGWHeight = 0;
         consensus.nPowDGWHeight = 0;
         consensus.nPowLWMAHeight = 3200000;
+        consensus.nPowLWMAFixHeight = 3200066; // activate immediately after the last known pre-fix mainnet block
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
@@ -397,6 +398,7 @@ public:
         consensus.nPowKGWHeight = 15200;
         consensus.nPowDGWHeight = 34140;
         consensus.nPowLWMAHeight = 0;
+        consensus.nPowLWMAFixHeight = 0;
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1080; // 75% of 1440
         consensus.nMinerConfirmationWindow = 1440; // nPowTargetTimespan / nPowTargetSpacing
@@ -571,6 +573,7 @@ public:
         consensus.nPowKGWHeight = 4001; // nPowKGWHeight >= nPowDGWHeight means "no KGW"
         consensus.nPowDGWHeight = 4001;
         consensus.nPowLWMAHeight = 4001;
+        consensus.nPowLWMAFixHeight = 0;
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1512; // 75% for testchains
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
@@ -863,6 +866,7 @@ public:
         consensus.nPowKGWHeight = 15200; // same as mainnet
         consensus.nPowDGWHeight = 34140; // same as mainnet
         consensus.nPowLWMAHeight = 0;
+        consensus.nPowLWMAFixHeight = 0;
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)

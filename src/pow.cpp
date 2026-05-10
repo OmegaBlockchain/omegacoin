@@ -169,6 +169,11 @@ unsigned int static LwmaCalculateNextWorkRequired(const CBlockIndex* pindexLast,
     if (t < N * T / 20) { t = N * T / 20; }
 
     arith_uint256 nextTarget = t * sumTarget / k;
+    // sumTarget accumulated target/N^2 per block for overflow safety; multiply by N to
+    // restore correct LWMA-1 formula (avg_target * t/k) from nPowLWMAFixHeight onwards.
+    if (height + 1 >= params.nPowLWMAFixHeight) {
+        nextTarget *= (uint32_t)N;
+    }
     if (nextTarget > powLimit) { nextTarget = powLimit; }
 
     return nextTarget.GetCompact();

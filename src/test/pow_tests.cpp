@@ -11,6 +11,54 @@
 
 BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
 
+static unsigned int ExpectedLwmaWorkRequired(const CBlockIndex* pindexLast, const Consensus::Params& params, bool apply_fix)
+{
+    const int64_t T = params.nPowTargetSpacing;
+    const int64_t N = params.nLWMAWindow;
+    const int64_t k = N * (N + 1) * T / 2;
+    const int height = pindexLast->nHeight;
+    const arith_uint256 pow_limit = UintToArith256(params.powLimit);
+
+    if (height < N) {
+        return pow_limit.GetCompact();
+    }
+
+    arith_uint256 sum_target;
+    int64_t t = 0;
+    int64_t j = 0;
+
+    const CBlockIndex* block_previous_timestamp = pindexLast->GetAncestor(height - N);
+    int64_t previous_timestamp = block_previous_timestamp->GetBlockTime();
+
+    for (int64_t i = height - N + 1; i <= height; ++i) {
+        const CBlockIndex* block = pindexLast->GetAncestor(i);
+        const int64_t this_timestamp = block->GetBlockTime() > previous_timestamp
+            ? block->GetBlockTime()
+            : previous_timestamp + 1;
+        const int64_t solve_time = std::min(6 * T, this_timestamp - previous_timestamp);
+        previous_timestamp = this_timestamp;
+        ++j;
+        t += solve_time * j;
+
+        arith_uint256 target;
+        target.SetCompact(block->nBits);
+        sum_target += target / (N * N);
+    }
+
+    if (t < N * T / 20) {
+        t = N * T / 20;
+    }
+
+    arith_uint256 next_target = t * sum_target / k;
+    if (apply_fix) {
+        next_target *= static_cast<uint32_t>(N);
+    }
+    if (next_target > pow_limit) {
+        next_target = pow_limit;
+    }
+    return next_target.GetCompact();
+}
+
 /* Test calculation of next difficulty target with DGW */
 BOOST_AUTO_TEST_CASE(get_next_work)
 {
@@ -137,6 +185,40 @@ BOOST_AUTO_TEST_CASE(get_next_work)
     BOOST_CHECK_EQUAL(GetNextWorkRequired(&blockIndexLast, &blockHeader, chainParamsDev->GetConsensus()), 0x207fffffU); // Block #123457 has 0x207fffff
     blockHeader.nTime = 1408743289; // Block #123457 (3h)
     BOOST_CHECK_EQUAL(GetNextWorkRequired(&blockIndexLast, &blockHeader, chainParamsDev->GetConsensus()), 0x207fffffU); // Block #123457 has 0x207fffff
+}
+
+BOOST_AUTO_TEST_CASE(lwma_fix_activation_boundary)
+{
+    auto consensus = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();
+    consensus.nPowKGWHeight = 0;
+    consensus.nPowDGWHeight = 0;
+    consensus.nPowLWMAHeight = 0;
+    consensus.nLWMAWindow = 60;
+
+    constexpr int FIX_HEIGHT = 100;
+    std::vector<CBlockIndex> blocks(FIX_HEIGHT);
+    for (int i = 0; i < FIX_HEIGHT; ++i) {
+        blocks[i].nHeight = i;
+        blocks[i].nTime = 1'700'000'000 + i * consensus.nPowTargetSpacing;
+        blocks[i].nBits = 0x1d0682ffU;
+        blocks[i].pprev = i > 0 ? &blocks[i - 1] : nullptr;
+        blocks[i].BuildSkip();
+    }
+
+    CBlockHeader next_block;
+    next_block.nTime = blocks.back().nTime + consensus.nPowTargetSpacing;
+
+    auto pre_fix = consensus;
+    pre_fix.nPowLWMAFixHeight = FIX_HEIGHT + 1;
+    auto post_fix = consensus;
+    post_fix.nPowLWMAFixHeight = FIX_HEIGHT;
+
+    const unsigned int expected_old = ExpectedLwmaWorkRequired(&blocks.back(), post_fix, false);
+    const unsigned int expected_new = ExpectedLwmaWorkRequired(&blocks.back(), post_fix, true);
+
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&blocks.back(), &next_block, pre_fix), expected_old);
+    BOOST_CHECK_EQUAL(GetNextWorkRequired(&blocks.back(), &next_block, post_fix), expected_new);
+    BOOST_CHECK(expected_old != expected_new);
 }
 
 /* Test the constraint on the upper bound for next work */

@@ -124,6 +124,7 @@ struct Params {
     int nPowKGWHeight;
     int nPowDGWHeight;
     int nPowLWMAHeight;
+    int nPowLWMAFixHeight; // height at which LWMA result is multiplied by N to compensate loop dividing by N^2 instead of N
     int nLWMAWindow;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     /** Time at which paid SMSG becomes active */

@@ -179,7 +179,7 @@ public:
         consensus.nPowKGWHeight = 0;
         consensus.nPowDGWHeight = 0;
         consensus.nPowLWMAHeight = 3200000;
-        consensus.nPowLWMAFixHeight = 3200067; // activate immediately after the last known pre-fix mainnet block
+        consensus.nPowLWMAFixHeight = 3200070; // activate immediately after the last known pre-fix mainnet block
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
@@ -257,10 +257,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_V19].nFalloffCoeff = 5;            // this corresponds to 10 periods
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
+        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000be5cd302cea693352"); // block 3200071
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0x0000000000000000000000000000000000000000000000000000000000000000");
+        consensus.defaultAssumeValid = uint256S("0x000000008600ce9577664f04edbc20fcefbf2de8c4a3b868230c4dbac9f9a404"); // block 3200071
 
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -338,14 +338,19 @@ public:
         checkpointData = {
             {
                 {0, genesis.GetHash()},
+                {3199000, uint256S("0x000000eee9a622824a5a416de84fa580c447e55def92a841d438c688cb7be465")},
+                {3200000, uint256S("0x000000019d2575f794ab0c919dfe47d629621db42824ef1912223d577850887c")}, // fork activation
+                {3200066, uint256S("0x0000000013a07b98d1ff76d574b8e05759048fec25cca242d65583e7aa6fdd2d")}, // last block with original LWMA formula
+                {3200067, uint256S("0x0000000078dce5b9f8372ef9627e9dc82d25e57562be89562eca7dd756d0d9f6")}, // first block with corrected LWMA formula
+                {3200071, uint256S("0x000000008600ce9577664f04edbc20fcefbf2de8c4a3b868230c4dbac9f9a404")},
             }
         };
 
-        // getchaintxstats 17280 000001ffaca7093c2144636d514c9b6c1fc3059a95ed8155901a5d52f5d0d5da
+        // getchaintxstats 17280 000000008600ce9577664f04edbc20fcefbf2de8c4a3b868230c4dbac9f9a404
         chainTxData = ChainTxData{
-                1772692774, // * UNIX timestamp of last known number of transactions (Block 3138974)
-                3702605,    // * total number of transactions between genesis and that timestamp
-                0.0231489930142416, // * estimated number of transactions per second after that timestamp
+                1778404858, // * UNIX timestamp of last known number of transactions (Block 3200071)
+                3793400,    // * total number of transactions between genesis and that timestamp
+                0.01435421776032911, // * estimated number of transactions per second after that timestamp
         };
     }
 };

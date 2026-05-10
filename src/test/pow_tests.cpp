@@ -221,45 +221,6 @@ BOOST_AUTO_TEST_CASE(lwma_fix_activation_boundary)
     BOOST_CHECK(expected_old != expected_new);
 }
 
-/* Test the constraint on the upper bound for next work */
-// BOOST_AUTO_TEST_CASE(get_next_work_pow_limit)
-// {
-//     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-
-//     int64_t nLastRetargetTime = 1231006505; // Block #0
-//     CBlockIndex pindexLast;
-//     pindexLast.nHeight = 2015;
-//     pindexLast.nTime = 1233061996;  // Block #2015
-//     pindexLast.nBits = 0x1d00ffff;
-//     BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1d00ffffU);
-// }
-
-/* Test the constraint on the lower bound for actual time taken */
-// BOOST_AUTO_TEST_CASE(get_next_work_lower_limit_actual)
-// {
-//     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-
-//     int64_t nLastRetargetTime = 1279008237; // Block #66528
-//     CBlockIndex pindexLast;
-//     pindexLast.nHeight = 68543;
-//     pindexLast.nTime = 1279297671;  // Block #68543
-//     pindexLast.nBits = 0x1c05a3f4;
-//     BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1c0168fdU);
-// }
-
-/* Test the constraint on the upper bound for actual time taken */
-// BOOST_AUTO_TEST_CASE(get_next_work_upper_limit_actual)
-// {
-//     const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
-
-//     int64_t nLastRetargetTime = 1263163443; // NOTE: Not an actual block time
-//     CBlockIndex pindexLast;
-//     pindexLast.nHeight = 46367;
-//     pindexLast.nTime = 1269211443;  // Block #46367
-//     pindexLast.nBits = 0x1c387f6f;
-//     BOOST_CHECK_EQUAL(CalculateNextWorkRequired(&pindexLast, nLastRetargetTime, chainParams->GetConsensus()), 0x1d00e1fdU);
-// }
-
 BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_negative_target)
 {
     const auto consensus = CreateChainParams(CBaseChainParams::MAIN)->GetConsensus();

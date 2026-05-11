@@ -9,6 +9,7 @@
 #include <consensus/params.h>
 #include <net.h>
 #include <sync.h>
+#include <txorphanage.h>
 #include <validationinterface.h>
 
 class CTxMemPool;
@@ -32,7 +33,13 @@ private:
     CTxMemPool& m_mempool;
     std::unique_ptr<LLMQContext>& m_llmq_ctx;
 
+    TxOrphanage m_orphanage;
+
     bool MaybeDiscourageAndDisconnect(CNode& pnode);
+
+    /** Reconsider orphans for a peer's work set.
+     *  Returns true if more work remains. */
+    bool ProcessOrphanTx(NodeId node_id) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
 public:
     PeerLogicValidation(CConnman& connman, BanMan* banman, CScheduler &scheduler, ChainstateManager& chainman, CTxMemPool& pool,

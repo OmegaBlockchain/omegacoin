@@ -238,7 +238,9 @@ BITCOIN_CORE_H = \
   miner.h \
   net.h \
   net_permissions.h \
+  headerssync.h \
   net_processing.h \
+  txorphanage.h \
   net_types.h \
   netaddress.h \
   netbase.h \
@@ -442,7 +444,10 @@ libbitcoin_server_a_SOURCES = \
   miner.cpp \
   net.cpp \
   netfulfilledman.cpp \
+  headerssync.cpp \
   net_processing.cpp \
+  txorphanage.cpp \
+  node/blockstorage.cpp \
   node/coin.cpp \
   node/coinstats.cpp \
   node/context.cpp \

@@ -223,10 +223,10 @@ public:
     // When removing NO_THREAD_SAFETY_ANALYSIS be aware of the following lock order requirements:
     // * CheckForStaleTipAndEvictPeers locks cs_main before indirectly calling GetExtraOutboundCount
     //   which locks cs_vNodes.
-    // * ProcessMessage locks cs_main and g_cs_orphans before indirectly calling ForEachNode which
+    // * ProcessMessage locks cs_main before indirectly calling ForEachNode which
     //   locks cs_vNodes.
     //
-    // Thus the implicit locking order requirement is: (1) cs_main, (2) g_cs_orphans, (3) cs_vNodes.
+    // Thus the implicit locking order requirement is: (1) cs_main, (2) cs_vNodes.
     void Stop() NO_THREAD_SAFETY_ANALYSIS;
 
     void Interrupt();
@@ -1120,8 +1120,6 @@ public:
     std::atomic<bool> fSendRecSigs{false};
     // If true, we will send him all quorum related messages, even if he is not a member of our quorums
     std::atomic<bool> qwatch{false};
-
-    std::set<uint256> orphan_work_set;
 
     CNode(NodeId id, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn, SOCKET hSocketIn, const CAddress &addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress &addrBindIn, const std::string &addrNameIn = "", bool fInboundIn = false, bool block_relay_only = false);
     ~CNode();

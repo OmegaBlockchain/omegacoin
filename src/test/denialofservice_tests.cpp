@@ -42,20 +42,10 @@ struct CConnmanTest : public CConnman {
     }
 };
 
-// Tests these internal-to-net_processing.cpp methods:
-extern bool AddOrphanTx(const CTransactionRef& tx, NodeId peer);
-extern void EraseOrphansFor(NodeId peer);
-extern unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans);
+#include <txorphanage.h>
+
 // We don't need this, since we kept declaration in net_processing.h when backporting (#13417)
 // extern void Misbehaving(NodeId nodeid, int howmuch, const std::string& message="");
-
-struct COrphanTx {
-    CTransactionRef tx;
-    NodeId fromPeer;
-    int64_t nTimeExpire;
-};
-extern CCriticalSection g_cs_orphans;
-extern std::map<uint256, COrphanTx> mapOrphanTransactions GUARDED_BY(g_cs_orphans);
 
 static CService ip(uint32_t i)
 {
@@ -364,14 +354,10 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
     peerLogic->FinalizeNode(dummyNode.GetId(), dummy);
 }
 
-static CTransactionRef RandomOrphan()
+static CTransactionRef RandomOrphan(const std::vector<CTransactionRef>& orphans)
 {
-    std::map<uint256, COrphanTx>::iterator it;
-    LOCK2(cs_main, g_cs_orphans);
-    it = mapOrphanTransactions.lower_bound(InsecureRand256());
-    if (it == mapOrphanTransactions.end())
-        it = mapOrphanTransactions.begin();
-    return it->second.tx;
+    size_t idx = InsecureRandRange(orphans.size());
+    return orphans[idx];
 }
 
 static void MakeNewKeyWithFastRandomContext(CKey& key)
@@ -392,12 +378,15 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     // signature's R and S values have leading zeros.
     g_insecure_rand_ctx = FastRandomContext(ArithToUint256(arith_uint256(33)));
 
+    TxOrphanage orphanage;
+
     CKey key;
     MakeNewKeyWithFastRandomContext(key);
     FillableSigningProvider keystore;
     BOOST_CHECK(keystore.AddKey(key));
 
     // 50 orphan transactions:
+    std::vector<CTransactionRef> baseOrphans;
     for (int i = 0; i < 50; i++)
     {
         CMutableTransaction tx;
@@ -409,13 +398,15 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         tx.vout[0].nValue = 1*CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
 
-        AddOrphanTx(MakeTransactionRef(tx), i);
+        auto ref = MakeTransactionRef(tx);
+        orphanage.AddTx(ref, i);
+        baseOrphans.push_back(ref);
     }
 
     // ... and 50 that depend on other orphans:
     for (int i = 0; i < 50; i++)
     {
-        CTransactionRef txPrev = RandomOrphan();
+        CTransactionRef txPrev = RandomOrphan(baseOrphans);
 
         CMutableTransaction tx;
         tx.vin.resize(1);
@@ -426,13 +417,13 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
         BOOST_CHECK(SignSignature(keystore, *txPrev, tx, 0, SIGHASH_ALL));
 
-        AddOrphanTx(MakeTransactionRef(tx), i);
+        orphanage.AddTx(MakeTransactionRef(tx), i);
     }
 
     // This really-big orphan should be ignored:
     for (int i = 0; i < 10; i++)
     {
-        CTransactionRef txPrev = RandomOrphan();
+        CTransactionRef txPrev = RandomOrphan(baseOrphans);
 
         CMutableTransaction tx;
         tx.vout.resize(1);
@@ -450,25 +441,26 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         for (unsigned int j = 1; j < tx.vin.size(); j++)
             tx.vin[j].scriptSig = tx.vin[0].scriptSig;
 
-        BOOST_CHECK(!AddOrphanTx(MakeTransactionRef(tx), i));
+        BOOST_CHECK(!orphanage.AddTx(MakeTransactionRef(tx), i));
     }
 
-    LOCK2(cs_main, g_cs_orphans);
-    // Test EraseOrphansFor:
+    // Test EraseForPeer:
     for (NodeId i = 0; i < 3; i++)
     {
-        size_t sizeBefore = mapOrphanTransactions.size();
-        EraseOrphansFor(i);
-        BOOST_CHECK(mapOrphanTransactions.size() < sizeBefore);
+        size_t sizeBefore = orphanage.Size();
+        orphanage.EraseForPeer(i);
+        BOOST_CHECK(orphanage.Size() < sizeBefore);
     }
 
-    // Test LimitOrphanTxSize() function:
-    LimitOrphanTxSize(40);
-    BOOST_CHECK(mapOrphanTransactions.size() <= 40);
-    LimitOrphanTxSize(10);
-    BOOST_CHECK(mapOrphanTransactions.size() <= 10);
-    LimitOrphanTxSize(0);
-    BOOST_CHECK(mapOrphanTransactions.empty());
+    // Test LimitOrphans(): small byte limits force eviction
+    // Small txs are ~200 bytes; limits of 40*200 and 10*200 mirror the original
+    // LimitOrphanTxSize(40) / LimitOrphanTxSize(10) byte-limit semantics.
+    orphanage.LimitOrphans(40 * 200);
+    BOOST_CHECK(orphanage.Size() <= 40);
+    orphanage.LimitOrphans(10 * 200);
+    BOOST_CHECK(orphanage.Size() <= 10);
+    orphanage.LimitOrphans(0);
+    BOOST_CHECK(orphanage.Size() == 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

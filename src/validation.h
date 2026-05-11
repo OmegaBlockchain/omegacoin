@@ -21,6 +21,7 @@
 #include <sync.h>
 #include <txdb.h>
 #include <txmempool.h> // For CTxMemPool::cs
+#include <util/translation.h>
 #include <versionbits.h>
 #include <serialize.h>
 #include <spentindex.h>
@@ -78,6 +79,10 @@ static const unsigned int DEFAULT_DESCENDANT_SIZE_LIMIT = 101;
 static const unsigned int EXTRA_DESCENDANT_TX_SIZE_LIMIT = 10000;
 /** Default for -mempoolexpiry, expiration time for mempool transactions in hours */
 static const unsigned int DEFAULT_MEMPOOL_EXPIRY = 336;
+/** The pre-allocation chunk size for blk?????.dat files (since 0.8) */
+static const unsigned int BLOCKFILE_CHUNK_SIZE = 0x1000000; // 16 MiB
+/** The pre-allocation chunk size for rev?????.dat files (since 0.8) */
+static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
 /** The maximum size of a blk?????.dat file (since 0.8) */
 static const unsigned int MAX_BLOCKFILE_SIZE = 0x8000000; // 128 MiB
 /** Maximum number of dedicated script-checking threads allowed */
@@ -215,8 +220,8 @@ CAmount GetMasternodePayment(int nHeight, CAmount blockValue, int nReallocActiva
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
 double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex* pindex);
 
-/** Calculate the amount of disk space the block & undo files currently use */
-uint64_t CalculateCurrentUsage();
+bool AbortNode(const std::string& strMessage, bilingual_str user_message = bilingual_str());
+bool AbortNode(CValidationState& state, const std::string& strMessage, const bilingual_str& userMessage = bilingual_str());
 
 /**
  *  Actually unlink the specified files
@@ -378,6 +383,23 @@ struct CBlockIndexWorkComparator
  * candidate tips is not maintained here.
  */
 class BlockManager {
+    friend class CChainState;
+    friend class ChainstateManager;
+
+    CCriticalSection m_cs_last_blockfile;
+    std::vector<CBlockFileInfo> m_blockfile_info;
+    int m_last_blockfile{0};
+    bool m_check_for_pruning{false};
+    std::set<CBlockIndex*> m_dirty_blockindex;
+    std::set<int> m_dirty_fileinfo;
+
+    void FlushUndoFile(int block_file, bool finalize = false);
+    void FlushBlockFile(bool fFinalize = false, bool finalize_undo = false);
+    bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown = false);
+    bool FindUndoPos(CValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
+    void FindFilesToPruneManual(std::set<int>& setFilesToPrune, int nManualPruneHeight);
+    void FindFilesToPrune(std::set<int>& setFilesToPrune, uint64_t nPruneAfterHeight);
+
 public:
     BlockMap m_block_index GUARDED_BY(cs_main);
     PrevBlockMap m_prev_block_index GUARDED_BY(cs_main);
@@ -437,6 +459,15 @@ public:
         CValidationState& state,
         const CChainParams& chainparams,
         CBlockIndex** ppindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+
+    //! Mark one block file as pruned (modify associated database entries)
+    void PruneOneBlockFile(const int fileNumber) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+
+    bool WriteUndoDataForBlock(const CBlockUndo& blockundo, CValidationState& state, CBlockIndex* pindex, const CChainParams& chainparams);
+    FlatFilePos SaveBlockToDisk(const CBlock& block, int nHeight, const CChainParams& chainparams, const FlatFilePos* dbp);
+
+    uint64_t CalculateCurrentUsage();
+    CBlockFileInfo* GetBlockFileInfo(size_t n);
 };
 
 /**
@@ -950,9 +981,6 @@ public:
      */
     bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& block, CValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex = nullptr, CBlockHeader* first_invalid = nullptr) LOCKS_EXCLUDED(cs_main);
 
-    //! Mark one block file as pruned (modify associated database entries)
-    void PruneOneBlockFile(const int fileNumber) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-
     //! Load the block tree and coins database from disk, initializing state if we're running with -reindex
     bool LoadBlockIndex(const CChainParams& chainparams) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
@@ -1006,9 +1034,6 @@ bool GetBlockHash(uint256& hashRet, int nBlockHeight = -1);
 static const unsigned int REJECT_INTERNAL = 0x100;
 /** Too high fee. Can not be triggered by P2P transactions */
 static const unsigned int REJECT_HIGHFEE = 0x100;
-
-/** Get block file info entry for one block file */
-CBlockFileInfo* GetBlockFileInfo(size_t n);
 
 /** Dump the mempool to disk. */
 bool DumpMempool(const CTxMemPool& pool);

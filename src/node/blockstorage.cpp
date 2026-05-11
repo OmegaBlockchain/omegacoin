@@ -105,7 +105,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus
 
 static bool UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos, const uint256& hashBlock, const CMessageHeader::MessageStartChars& messageStart)
 {
-    CAutoFile fileout(OpenUndoFile(pos), SER_DISK, CLIENT_VERSION);
+    CAutoFile fileout(OpenUndoFile(pos, false), SER_DISK, CLIENT_VERSION);
     if (fileout.IsNull())
         return error("%s: OpenUndoFile failed", __func__);
 

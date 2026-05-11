@@ -387,11 +387,15 @@ class BlockManager {
     friend class ChainstateManager;
 
     CCriticalSection m_cs_last_blockfile;
+    bool m_check_for_pruning{false};
+
+public:
     std::vector<CBlockFileInfo> m_blockfile_info;
     int m_last_blockfile{0};
-    bool m_check_for_pruning{false};
     std::set<CBlockIndex*> m_dirty_blockindex;
     std::set<int> m_dirty_fileinfo;
+
+private:
 
     void FlushUndoFile(int block_file, bool finalize = false);
     void FlushBlockFile(bool fFinalize = false, bool finalize_undo = false);

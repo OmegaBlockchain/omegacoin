@@ -20,6 +20,7 @@
 #include <net.h>
 #include <qt/networkstyle.h>
 #include <qt/optionsmodel.h>
+#include <qt/snapshotrecovery.h>
 #include <qt/splashscreen.h>
 #include <qt/utilitydialog.h>
 #include <qt/winshutdownmonitor.h>
@@ -83,6 +84,102 @@ static QString GetLangTerritory()
     // 3) -lang command line argument
     lang_territory = QString::fromStdString(gArgs.GetArg("-lang", lang_territory.toStdString()));
     return lang_territory;
+}
+
+static void CleanupSnapshotTempDirs(const fs::path& dataDir)
+{
+    boost::system::error_code ec;
+    fs::directory_iterator it(dataDir, ec);
+    fs::directory_iterator end;
+    if (ec)
+        return;
+    for (; it != end; it.increment(ec)) {
+        if (ec)
+            break;
+        const std::string name = it->path().filename().string();
+        if (name.find(".snapshot-work-") != 0 && name.find(".snapshot-recovery-") != 0)
+            continue;
+        boost::system::error_code stEc;
+        fs::file_status st = fs::symlink_status(it->path(), stEc);
+        if (stEc || fs::is_symlink(st) || !fs::is_directory(st)) {
+            LogPrintf("SnapshotRecovery: refusing to remove non-directory leftover entry: %s\n",
+                      it->path().string());
+            continue;
+        }
+        LogPrintf("SnapshotRecovery: removing leftover temp dir: %s\n", it->path().string());
+        boost::system::error_code removeEc;
+        fs::remove_all(it->path(), removeEc);
+        if (removeEc)
+            LogPrintf("SnapshotRecovery: failed to remove %s: %s\n",
+                      it->path().string(), removeEc.message());
+    }
+}
+
+static bool CheckSnapshotRecoveryRequired(const fs::path& dataDir, bool& needsRecovery, QString& error)
+{
+    static const char* requiredDirs[] = {"blocks", "chainstate", "evodb", "indexes", "llmq", "smsgdb", NULL};
+    needsRecovery = false;
+    bool symlinkedDirSeen = false;
+
+    for (int i = 0; requiredDirs[i] != NULL; ++i) {
+        fs::path path = dataDir / requiredDirs[i];
+        boost::system::error_code ec;
+        fs::file_status st = fs::symlink_status(path, ec);
+        if (ec && ec == boost::system::errc::no_such_file_or_directory) {
+            needsRecovery = true;
+            continue;
+        }
+        if (ec) {
+            error = QObject::tr("Cannot inspect blockchain directory \"%1\": %2")
+                        .arg(QString::fromStdString(path.string()), QString::fromStdString(ec.message()));
+            return false;
+        }
+        if (st.type() == fs::file_not_found || !fs::exists(st)) {
+            needsRecovery = true;
+            continue;
+        }
+        if (fs::is_symlink(st)) {
+            symlinkedDirSeen = true;
+            fs::file_status targetStatus = fs::status(path, ec);
+            if (ec) {
+                error = QObject::tr("Cannot resolve symlinked blockchain directory \"%1\": %2")
+                            .arg(QString::fromStdString(path.string()), QString::fromStdString(ec.message()));
+                return false;
+            }
+            if (!fs::is_directory(targetStatus)) {
+                needsRecovery = true;
+                continue;
+            }
+            fs::directory_iterator it(path, ec);
+            (void)it;
+            if (ec) {
+                error = QObject::tr("Cannot read symlinked blockchain directory \"%1\": %2")
+                            .arg(QString::fromStdString(path.string()), QString::fromStdString(ec.message()));
+                return false;
+            }
+            continue;
+        }
+        if (!fs::is_directory(st)) {
+            needsRecovery = true;
+            continue;
+        }
+
+        fs::directory_iterator it(path, ec);
+        (void)it;
+        if (ec) {
+            error = QObject::tr("Cannot read blockchain directory \"%1\": %2")
+                        .arg(QString::fromStdString(path.string()), QString::fromStdString(ec.message()));
+            return false;
+        }
+    }
+
+    if (needsRecovery && symlinkedDirSeen) {
+        error = QObject::tr("Snapshot recovery cannot safely delete symlinked blockchain directories. "
+                            "Move or restore the missing blockchain directories manually, then restart.");
+        return false;
+    }
+
+    return true;
 }
 
 /** Set up translations */
@@ -599,6 +696,51 @@ int GuiMain(int argc, char* argv[])
         app.createPaymentServer();
     }
 #endif // ENABLE_WALLET
+
+    /// 8b. Snapshot recovery: check for missing blockchain dirs, offer download if incomplete
+    {
+        fs::path dataDir = GetDataDir();
+        fs::path pathLockFile = dataDir / ".lock";
+        FILE* fp = fsbridge::fopen(pathLockFile, "a");
+        if (fp) fclose(fp);
+
+        fsbridge::FileLock recoveryLock(pathLockFile);
+        if (!recoveryLock.TryLock()) {
+            QMessageBox::critical(nullptr, PACKAGE_NAME,
+                QObject::tr("Cannot obtain a lock on data directory \"%1\". %2 is probably already running.")
+                    .arg(QString::fromStdString(dataDir.string()), PACKAGE_NAME));
+            return EXIT_FAILURE;
+        }
+
+        CleanupSnapshotTempDirs(dataDir);
+
+        bool needsRecovery = false;
+        QString recoveryCheckError;
+        if (!CheckSnapshotRecoveryRequired(dataDir, needsRecovery, recoveryCheckError)) {
+            QMessageBox::critical(nullptr, PACKAGE_NAME,
+                QObject::tr("Snapshot recovery safety check failed: %1").arg(recoveryCheckError));
+            return EXIT_FAILURE;
+        }
+        if (needsRecovery) {
+            QMessageBox::StandardButton answer = QMessageBox::question(
+                nullptr,
+                QObject::tr("Incomplete blockchain data"),
+                QObject::tr("Incomplete blockchain data detected. Recover from snapshot?"),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::Yes);
+            if (answer == QMessageBox::Yes) {
+                SnapshotRecoveryDialog dlg(dataDir);
+                dlg.exec();
+                if (!dlg.recoverySucceeded() && !dlg.recoveryCancelled()) {
+                    QMessageBox::critical(nullptr, PACKAGE_NAME,
+                        QObject::tr("Snapshot recovery failed. Startup aborted: %1").arg(dlg.failureReason()));
+                    return EXIT_FAILURE;
+                }
+                // Cancelled or succeeded: fall through to normal startup.
+            }
+        }
+        // recoveryLock destructor releases the lock; AppInit2 reacquires it later.
+    }
 
     /// 9. Main GUI initialization
     // Install global event filter that makes sure that out-of-focus labels do not contain text cursor.

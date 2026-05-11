@@ -343,14 +343,17 @@ public:
                 {3200066, uint256S("0x0000000013a07b98d1ff76d574b8e05759048fec25cca242d65583e7aa6fdd2d")}, // last block with original LWMA formula
                 {3200067, uint256S("0x0000000078dce5b9f8372ef9627e9dc82d25e57562be89562eca7dd756d0d9f6")}, // first block with corrected LWMA formula
                 {3200071, uint256S("0x000000008600ce9577664f04edbc20fcefbf2de8c4a3b868230c4dbac9f9a404")},
+                {3200074, uint256S("0x0000000097bfccfe6f3a81cdcecd92da15ff214204491d12bba61402251a28cf")},
+                {3200075, uint256S("0x00000021e0261e8d64f0f1f4451464557f24a40b46cd76d053318272e102258f")},
+                {3200198, uint256S("0x000001c56087db34feaff291bb6afdb862f70a210bee6431b9f5dde822e3d729")},
             }
         };
 
-        // getchaintxstats 17280 000000008600ce9577664f04edbc20fcefbf2de8c4a3b868230c4dbac9f9a404
+        // getchaintxstats 17280 000001c56087db34feaff291bb6afdb862f70a210bee6431b9f5dde822e3d729
         chainTxData = ChainTxData{
-                1778404858, // * UNIX timestamp of last known number of transactions (Block 3200071)
-                3793400,    // * total number of transactions between genesis and that timestamp
-                0.01435421776032911, // * estimated number of transactions per second after that timestamp
+                1778470314, // * UNIX timestamp of last known number of transactions (Block 3200198)
+                3793579,    // * total number of transactions between genesis and that timestamp
+                0.01387510358669931, // * estimated number of transactions per second after that timestamp
         };
     }
 };

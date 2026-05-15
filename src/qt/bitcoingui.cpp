@@ -361,7 +361,7 @@ void BitcoinGUI::stopConnectingAnimation()
 void BitcoinGUI::createActions()
 {
     sendCoinsMenuAction = new QAction(tr("&Send"), this);
-    sendCoinsMenuAction->setStatusTip(tr("Send coins to a Dash address"));
+    sendCoinsMenuAction->setStatusTip(tr("Send coins to an Omega address."));
     sendCoinsMenuAction->setToolTip(sendCoinsMenuAction->statusTip());
 
     QString strCoinJoinName = QString::fromStdString(gCoinJoinName);

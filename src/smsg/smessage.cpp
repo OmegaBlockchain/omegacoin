@@ -4403,18 +4403,34 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
                         .Write((const uint8_t*)&feeLE, 4)
                         .Finalize(expectedCommitment.begin());
 
+                    // A funding output funds exactly one message (FundMsg emits a
+                    // single commitment per OP_RETURN). Reject outputs carrying more
+                    // than one commitment so a single burned value cannot be shared
+                    // across several messages (fee dilution).
                     size_t n = (vData.size()-1) / 20;
+                    if (n != 1) {
+                        continue;
+                    }
                     for (size_t k = 0; k < n; ++k) {
                         uint160 commitTx;
                         memcpy(commitTx.begin(), &vData[1+k*20], 20);
-                        if (commitTx == expectedCommitment) {
+                        // The message fee is burned as the OP_RETURN output value
+                        // (see FundMsg). A matching commitment alone is not enough:
+                        // require the actual burned amount to cover nExpectFee,
+                        // otherwise a 0-value output funds the message for free.
+                        if (commitTx == expectedCommitment && v.nValue >= nExpectFee) {
                             fFound = true;
                             break;
                         }
                     }
                 } else if (vData[0] == DO_FUND_MSG && vData.size() >= 25) {
                     // Legacy plaintext format: 'F' <20-byte msgId> <4-byte fee>
+                    // One funding output funds exactly one message; reject outputs
+                    // carrying more than one entry (fee dilution).
                     size_t n = (vData.size()-1) / 24;
+                    if (n != 1) {
+                        continue;
+                    }
                     for (size_t k = 0; k < n; ++k) {
                         uint160 msgIdTx;
                         memcpy(msgIdTx.begin(), &vData[1+k*24], 20);
@@ -4422,8 +4438,12 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
                         memcpy(&nAmount, &vData[1+k*24+20], 4);
 
                         if (msgIdTx == msgId) {
-                            if (nAmount < nExpectFee) {
-                                LogPrintf("%s: Transaction %s underfunded message %s, expected %d paid %d.\n", __func__, txid.ToString(), msgId.ToString(), nExpectFee, nAmount);
+                            // nAmount is only the *declared* fee in the OP_RETURN data;
+                            // the real fee is the burned OP_RETURN output value. Require
+                            // both to cover nExpectFee so a 0-value output cannot fund the
+                            // message for free.
+                            if (nAmount < nExpectFee || v.nValue < nExpectFee) {
+                                LogPrintf("%s: Transaction %s underfunded message %s, expected %d declared %d burned %d.\n", __func__, txid.ToString(), msgId.ToString(), nExpectFee, nAmount, v.nValue);
                                 return SMSG_FUND_FAILED;
                             }
                             fFound = true;

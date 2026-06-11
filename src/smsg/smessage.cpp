@@ -5403,7 +5403,16 @@ int CSMSG::DecryptWithR(bool fTestOnly, const CKey &keyDest, const CKeyID &addre
             return errorN(SMSG_GENERAL_ERROR, "%s: Could not decompress message data.", __func__);
         }
     } else {
-        // Plaintext
+        // Plaintext.
+        // lenPlain comes from the (attacker-crafted) decrypted payload and is only
+        // bounded against maxPlain above, never against the data actually present.
+        // Without this check a sender can declare lenPlain > lenData and over-read
+        // up to ~128 bytes past the decrypted payload buffer (remote OOB heap read:
+        // crash / memory disclosure on every recipient, incl. all topic subscribers).
+        // Legitimate uncompressed messages always have lenPlain == lenData.
+        if (lenPlain > lenData) {
+            return errorN(SMSG_GENERAL_ERROR, "%s: lenPlain %u exceeds available data %u.", __func__, lenPlain, lenData);
+        }
         memcpy(&msg.vchMessage[0], pMsgData, lenPlain);
     }
 

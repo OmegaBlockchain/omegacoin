@@ -169,6 +169,11 @@ public:
         consensus.nSmsgRoomHeight = 3200000;
         consensus.nConfidentialSmsgHeight = 3144000;
         consensus.nHPMasternodeHeight = 3200000;
+        // One-time phantom-masternode purge. PROVISIONAL height — must be set with
+        // adequate operator upgrade lead time before release (current tip ~3,247,000).
+        // The exclusion list (src/evo/phantom_exclusions.h) must also be finalised per
+        // Step 1 of PHANTOM_MN_REMEDIATION_PLAN.md before shipping. 0 disables the purge.
+        consensus.nPhantomPurgeHeight = 3300000;
         consensus.nForkEnforcementHeight = 3190000;
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
@@ -400,6 +405,7 @@ public:
         consensus.nSmsgRoomHeight = 100;
         consensus.nConfidentialSmsgHeight = 100;
         consensus.nHPMasternodeHeight = 100;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
         consensus.nForkEnforcementHeight = 90;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
@@ -575,6 +581,7 @@ public:
         consensus.nSmsgRoomHeight = 1;
         consensus.nConfidentialSmsgHeight = 1;
         consensus.nHPMasternodeHeight = 1;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
         consensus.nForkEnforcementHeight = 1;
         consensus.MinBIP9WarningHeight = 300 + 2016; // v19 activation height + miner confirmation window
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
@@ -868,6 +875,7 @@ public:
         consensus.nSmsgRoomHeight = 1;
         consensus.nConfidentialSmsgHeight = 1;
         consensus.nHPMasternodeHeight = 1;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
         consensus.nForkEnforcementHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1

@@ -173,6 +173,7 @@ BITCOIN_CORE_H = \
   evo/dmnstate.h \
   evo/evodb.h \
   evo/mnauth.h \
+  evo/phantom_exclusions.h \
   evo/mnhftx.h \
   evo/providertx.h \
   evo/smsgroomtx.h \

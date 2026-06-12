@@ -5,6 +5,7 @@
 #include <evo/deterministicmns.h>
 #include <evo/dmn_types.h>
 #include <evo/dmnstate.h>
+#include <evo/phantom_exclusions.h>
 #include <evo/providertx.h>
 #include <evo/simplifiedmns.h>
 #include <evo/specialtx.h>
@@ -782,6 +783,37 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
                           dmn->pdmnState->nRegisteredHeight, dmn->pdmnState->nLastPaidHeight);
             }
         }
+    }
+
+    // One-time phantom-masternode purge at nPhantomPurgeHeight.
+    // The payment-based ghost cleanup above and the quorum-based liveness sweep below
+    // both fail against the "fake VPS IP" phantoms: phantoms still receive payments
+    // (every listed MN is paid in turn) and the real population is too small to ever
+    // form an LLMQ quorum, so neither on-chain signal distinguishes them. The only
+    // reliable signal is off-chain reachability, captured once in a hard-coded
+    // proTxHash exclusion set (src/evo/phantom_exclusions.h). We apply it exactly once,
+    // at a fixed height, so the action is deterministic, replay-safe and reorg-safe.
+    // A wrongly-listed operator can revive with a ProUpServTx once their service is online.
+    if (ghostParams.nPhantomPurgeHeight > 0 && nHeight == ghostParams.nPhantomPurgeHeight) {
+        std::vector<uint256> toPhantomBan;
+        newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
+            if (mainnetPhantomExclusions.count(dmn.proTxHash)) {
+                toPhantomBan.emplace_back(dmn.proTxHash);
+            }
+        });
+        for (const auto& proTxHash : toPhantomBan) {
+            auto dmn = newList.GetMN(proTxHash);
+            assert(dmn);
+            auto newState = std::make_shared<CDeterministicMNState>(*dmn->pdmnState);
+            newState->BanIfNotBanned(nHeight);
+            newList.UpdateMN(proTxHash, newState);
+            if (debugLogs) {
+                LogPrintf("CDeterministicMNManager::%s -- phantom MN %s banned at purge height %d\n",
+                          __func__, proTxHash.ToString(), nHeight);
+            }
+        }
+        LogPrintf("CDeterministicMNManager::%s -- phantom purge at height %d: banned %d of %d listed phantoms\n",
+                  __func__, nHeight, (int)toPhantomBan.size(), (int)mainnetPhantomExclusions.size());
     }
 
     // we skip the coinbase

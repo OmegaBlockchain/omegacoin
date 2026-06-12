@@ -100,6 +100,9 @@ struct Params {
     int nConfidentialSmsgHeight;
     /** Block height at which High Performance masternodes (10000 OMEGA, 10 votes) become active */
     int nHPMasternodeHeight;
+    /** Block height of the one-time phantom-masternode purge (hard-coded proTxHash exclusion).
+     *  0 disables the purge. See PHANTOM_MN_REMEDIATION_PLAN.md. */
+    int nPhantomPurgeHeight;
     /** Block height at which peers below FORK_3200000_MIN_PROTO_VERSION are disconnected */
     int nForkEnforcementHeight;
     /** Don't warn about unknown BIP 9 activations below this height.

@@ -79,6 +79,31 @@ The 5 reachable masternodes (handshake completed):
 > intersect the DOWN sets, so a real-but-temporarily-unreachable node is never wrongly banned
 > (the conservative-bias rule).
 
+### Step 1 progress (2026-06-12)
+
+- **ICMP cross-check** of the 285 DOWN hosts: 71 `host_alive` (VPS up, MN port closed — textbook
+  phantoms), 214 `no_icmp`. Subnet clustering: 152.67.0.0/16 (Oracle) = 187 of 285; a handful of /16s
+  cover the rest — consistent with bulk insider registration, not organic operators.
+- **Live partition cross-check** against the chain: all 285 committed phantoms are currently
+  registered valid MNs (0 stale); none of the 5 reachable nodes are in the list; 285 + 5 = 290 exact.
+- **Heavier re-probe of the 214 `no_icmp` group** (5 attempts × 8 s handshake): **0 responded** —
+  all 214 confirmed unreachable. Recorded in `phantom_probe_evidence.tsv` (`reprobe = down_5x8s`).
+- **Remaining gap (downgraded):** all probes so far are from a SINGLE vantage point. Originally
+  flagged as a hard prerequisite, but the architectural argument supersedes it:
+  - The probed address is each MN's on-chain `service`/`addr` (providertx.h) — the *single canonical
+    address the whole network uses*. There is no alternate path; the probe is functionally identical
+    to what every node and quorum member does. "Unreachable from the probe" ≈ "unreachable from the
+    network," and a masternode the network cannot reach cannot serve quorums/ChainLocks/InstantSend —
+    it is functionally useless regardless of whether the host is powered on.
+  - The only false-DOWN mode left is **asymmetric routing** (this host/AS route-broken to a node the
+    rest of the internet reaches). With the quorum layer OFF and only 5 live MNs, even such a node
+    contributes nothing today.
+  - **Self-correcting safety valve:** a PoSe-banned MN revives automatically via `ProUpServTx`
+    → `Revive(nHeight)` (deterministicmns.cpp:927). A genuinely-operational false positive recovers
+    with one transaction, no coordination required.
+  - **Conclusion:** a second independent vantage point is now *recommended belt-and-suspenders*, not a
+    blocker. The exclusion list is justified on functional-uselessness grounds with a one-tx recovery.
+
 ### Quorum size reference (from `src/llmq/params.h`)
 
 | LLMQ type   | size | minSize | threshold |
@@ -150,6 +175,28 @@ Smallest production-grade type needs **22** live members. With ~5 real nodes, **
   (Path A only — to enable SPORK_17), it is signed from the offline key and pushed via
   `spork <name> <value>` / `sporkupdate` from a node temporarily holding it, or the signed message is
   relayed. No further verification needed on this node.
+
+---
+
+## Step 4b — Protocol-version bump + fork enforcement (clean cutover)
+
+The purge changes `merkleRootMNList` (via `CSimplifiedMNListEntry::isValid = !IsBanned()`), so a block
+produced post-purge is rejected by pre-purge nodes with `bad-cbtx-mnmerkleroot`. The original phantom
+fix did **not** bump the protocol version, so pre- and post-fix binaries both reported 70232 and could
+not be told apart by the existing fork-enforcement disconnect — risking a *connected-but-conflicting*
+split. Fixed (2026-06-12):
+
+- `PROTOCOL_VERSION` 70232 → **70233** (`src/version.h`).
+- New `FORK_3255000_MIN_PROTO_VERSION = 70233` (`src/version.h`).
+- New `consensus.nPhantomForkEnforcementHeight = 3254000` on mainnet (~1000 blocks / ~20h before the
+  3,255,000 purge; 0 on testnet/devnet/regtest). `src/chainparams.cpp`, `src/consensus/params.h`.
+- Two disconnect checks added in `src/net_processing.cpp` (inbound version handler + connected-peer
+  sweep), mirroring the existing `FORK_3200000` pattern: peers below 70233 are dropped once the
+  enforcement height is reached, so the network partitions by version **before** the merkle change.
+- `MIN_PEER_PROTO_VERSION` left at 70232 deliberately — pre-purge peers stay connected until the
+  enforcement height rather than being rejected network-wide immediately.
+- Client/release version bumped 0.20.7 → **0.20.8** (`configure.ac`). Requires re-running
+  autogen/configure for the new version to compile in.
 
 ---
 

@@ -12,7 +12,7 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70232;
+static const int PROTOCOL_VERSION = 70233;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -62,6 +62,11 @@ static const int SMSG_PROTO_VERSION = 70229;
 
 //! Minimum protocol version required once the block 3,200,000 fork enforcement height is reached
 static const int FORK_3200000_MIN_PROTO_VERSION = 70232;
+
+//! Minimum protocol version required once the phantom-masternode purge enforcement height is reached.
+//! Bumped so pre-purge nodes (which still report 70232) are disconnected before the purge height,
+//! avoiding a connected-but-conflicting chain split on merkleRootMNList. See nPhantomForkEnforcementHeight.
+static const int FORK_3255000_MIN_PROTO_VERSION = 70233;
 
 // Make sure that none of the values above collide with `ADDRV2_FORMAT`.
 

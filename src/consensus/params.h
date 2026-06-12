@@ -103,6 +103,9 @@ struct Params {
     /** Block height of the one-time phantom-masternode purge (hard-coded proTxHash exclusion).
      *  0 disables the purge. See PHANTOM_MN_REMEDIATION_PLAN.md. */
     int nPhantomPurgeHeight;
+    /** Block height at which peers below FORK_3255000_MIN_PROTO_VERSION are disconnected.
+     *  Set below nPhantomPurgeHeight so pre-purge nodes fall off before the split. 0 disables. */
+    int nPhantomForkEnforcementHeight;
     /** Block height at which peers below FORK_3200000_MIN_PROTO_VERSION are disconnected */
     int nForkEnforcementHeight;
     /** Don't warn about unknown BIP 9 activations below this height.

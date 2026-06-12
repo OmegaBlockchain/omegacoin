@@ -2603,6 +2603,15 @@ void PeerLogicValidation::ProcessMessage(
                 pfrom.fDisconnect = true;
                 return;
             }
+            // Disconnect peers running pre-phantom-purge software once its enforcement height is reached
+            const int nPhantomEnforceHeight = Params().GetConsensus().nPhantomForkEnforcementHeight;
+            if (nPhantomEnforceHeight > 0 && ::ChainActive().Height() >= nPhantomEnforceHeight &&
+                nVersion < FORK_3255000_MIN_PROTO_VERSION) {
+                LogPrint(BCLog::NET, "peer=%d using pre-purge version %i; disconnecting (phantom enforcement height %d reached)\n",
+                         pfrom.GetId(), nVersion, nPhantomEnforceHeight);
+                pfrom.fDisconnect = true;
+                return;
+            }
         }
 
         if (!vRecv.empty())
@@ -4370,6 +4379,20 @@ void PeerLogicValidation::CheckForStaleTipAndEvictPeers(const Consensus::Params 
             if (pnode->nVersion < FORK_3200000_MIN_PROTO_VERSION) {
                 LogPrint(BCLog::NET, "peer=%d using pre-fork version %i; disconnecting (enforcement height %d reached)\n",
                          pnode->GetId(), pnode->nVersion, nEnforceHeight);
+                pnode->fDisconnect = true;
+            }
+        });
+    }
+
+    // Disconnect any already-connected peers running pre-phantom-purge software
+    const int nPhantomEnforceHeight = consensusParams.nPhantomForkEnforcementHeight;
+    if (nPhantomEnforceHeight > 0 && ::ChainActive().Height() >= nPhantomEnforceHeight) {
+        m_connman.ForEachNode([&](CNode* pnode) {
+            AssertLockHeld(cs_main);
+            if (pnode->fDisconnect) return;
+            if (pnode->nVersion < FORK_3255000_MIN_PROTO_VERSION) {
+                LogPrint(BCLog::NET, "peer=%d using pre-purge version %i; disconnecting (phantom enforcement height %d reached)\n",
+                         pnode->GetId(), pnode->nVersion, nPhantomEnforceHeight);
                 pnode->fDisconnect = true;
             }
         });

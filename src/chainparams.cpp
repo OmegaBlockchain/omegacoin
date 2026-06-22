@@ -170,13 +170,14 @@ public:
         consensus.nConfidentialSmsgHeight = 3144000;
         consensus.nHPMasternodeHeight = 3200000;
         // One-time phantom-masternode purge. PROVISIONAL height — must be set with
-        // adequate operator upgrade lead time before release (current tip ~3,247,000).
+        // adequate operator upgrade lead time before release (current tip ~3,261,600,
+        // ~38k blocks / ~27 days of lead before the purge height).
         // The exclusion list (src/evo/phantom_exclusions.h) must also be finalised per
         // Step 1 of PHANTOM_MN_REMEDIATION_PLAN.md before shipping. 0 disables the purge.
-        consensus.nPhantomPurgeHeight = 3255000;
+        consensus.nPhantomPurgeHeight = 3300000;
         // Disconnect pre-purge peers ~1000 blocks (~20h) before the purge so the network is
         // partitioned by protocol version before the merkleRootMNList change, not during it.
-        consensus.nPhantomForkEnforcementHeight = 3254000;
+        consensus.nPhantomForkEnforcementHeight = 3299000;
         consensus.nForkEnforcementHeight = 3190000;
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");

@@ -187,9 +187,9 @@ not be told apart by the existing fork-enforcement disconnect — risking a *con
 split. Fixed (2026-06-12):
 
 - `PROTOCOL_VERSION` 70232 → **70233** (`src/version.h`).
-- New `FORK_3255000_MIN_PROTO_VERSION = 70233` (`src/version.h`).
-- New `consensus.nPhantomForkEnforcementHeight = 3254000` on mainnet (~1000 blocks / ~20h before the
-  3,255,000 purge; 0 on testnet/devnet/regtest). `src/chainparams.cpp`, `src/consensus/params.h`.
+- New `FORK_3300000_MIN_PROTO_VERSION = 70233` (`src/version.h`).
+- New `consensus.nPhantomForkEnforcementHeight = 3299000` on mainnet (~1000 blocks / ~20h before the
+  3,300,000 purge; 0 on testnet/devnet/regtest). `src/chainparams.cpp`, `src/consensus/params.h`.
 - Two disconnect checks added in `src/net_processing.cpp` (inbound version handler + connected-peer
   sweep), mirroring the existing `FORK_3200000` pattern: peers below 70233 are dropped once the
   enforcement height is reached, so the network partitions by version **before** the merkle change.

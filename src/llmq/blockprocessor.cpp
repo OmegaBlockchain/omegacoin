@@ -424,6 +424,20 @@ bool CQuorumBlockProcessor::GetCommitmentsFromBlock(const CBlock& block, const C
                 return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-qc-commitment-type");
             }
 
+            // LLMQ_5_3 exists only from the phantom purge fork. A pre-fork binary
+            // (protocol 70232) does not know the type at all and rejects any block
+            // containing a commitment for it, so we must reject it here too: the
+            // enabled-quorum count checks in ProcessBlock only cover types enabled
+            // at the previous block, which would otherwise let a crafted (even
+            // null) LLMQ_5_3 commitment into a pre-fork block on patched nodes
+            // only, splitting them from unpatched nodes before the coordinated
+            // fork height. Allowed from nPhantomPurgeHeight + 1 to match the
+            // enabled-at-previous-block rule used for mining and counting.
+            if (qc.commitment.llmqType == Consensus::LLMQType::LLMQ_5_3 &&
+                    (consensus.nPhantomPurgeHeight <= 0 || pindex->nHeight <= consensus.nPhantomPurgeHeight)) {
+                return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-qc-commitment-type");
+            }
+
             // only allow one commitment per type and per block (This was changed with rotation)
             if (!utils::IsQuorumRotationEnabled(llmq_params_opt.value(), pindex)) {
                 if (ret.count(qc.commitment.llmqType) != 0) {

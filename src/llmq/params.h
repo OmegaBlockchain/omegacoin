@@ -20,6 +20,9 @@ enum class LLMQType : uint8_t {
     LLMQ_100_67 = 4, // 100 members, 67 (67%) threshold, one per hour
     LLMQ_60_75 = 5,  // 60 members, 45 (75%) threshold, one every 12 hours
     LLMQ_25_67 = 6, // 25 members, 67 (67%) threshold, one per hour
+    LLMQ_5_3 = 7,   // 5 members, 3 (60%) threshold, one per hour. PoSe quorum for the small
+                    // post-phantom-purge Omega masternode population; active from
+                    // Consensus::nPhantomPurgeHeight only (see IsQuorumTypeEnabledInternal)
 
     // for testing only
     LLMQ_TEST = 100, // 3 members, 2 (66%) threshold, one per hour. Params might differ when -llmqtestparams is used
@@ -114,7 +117,7 @@ static_assert(std::is_trivially_copyable_v<Consensus::LLMQParams>, "LLMQParams i
 static_assert(std::is_trivially_assignable_v<Consensus::LLMQParams, Consensus::LLMQParams>, "LLMQParams is not trivially assignable");
 
 
-static constexpr std::array<LLMQParams, 14> available_llmqs = {
+static constexpr std::array<LLMQParams, 15> available_llmqs = {
 
     /**
      * llmq_test
@@ -444,6 +447,34 @@ static constexpr std::array<LLMQParams, 14> available_llmqs = {
 
         .keepOldConnections = 25,
         .recoveryMembers = 50,
+    },
+
+    /**
+     * llmq_5_3
+     * PoSe quorum for the small post-phantom-purge Omega masternode population
+     * (~5 real nodes). Its finalised commitments feed nPoSeSuccessHeight so the
+     * liveness sweep in BuildNewListFromBlock can operate. Deployed on mainnet
+     * but only enabled from Consensus::nPhantomPurgeHeight, and dormant until
+     * SPORK_17_QUORUM_DKG_ENABLED is set.
+     */
+    LLMQParams{
+        .type = LLMQType::LLMQ_5_3,
+        .name = "llmq_5_3",
+        .useRotation = false,
+        .size = 5,
+        .minSize = 4,
+        .threshold = 3,
+
+        .dkgInterval = 24, // one DKG per ~30 minutes at 74s blocks
+        .dkgPhaseBlocks = 2,
+        .dkgMiningWindowStart = 10, // dkgPhaseBlocks * 5 = after finalization
+        .dkgMiningWindowEnd = 18,
+        .dkgBadVotesThreshold = 4,
+
+        .signingActiveQuorumCount = 4,
+
+        .keepOldConnections = 5,
+        .recoveryMembers = 4,
     },
 
     /**

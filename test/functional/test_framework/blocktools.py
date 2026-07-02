@@ -19,8 +19,8 @@ from io import BytesIO
 
 MAX_BLOCK_SIGOPS = 20000
 
-# Genesis block time (regtest)
-TIME_GENESIS_BLOCK = 1417713337
+# Genesis block time (regtest) — Omega's regtest genesis (Dash's was 1417713337)
+TIME_GENESIS_BLOCK = 1517519966
 
 def create_block(hashprev, coinbase, ntime=None, *, version=1):
     """Create a block (with regtest difficulty)."""

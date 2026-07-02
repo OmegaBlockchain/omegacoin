@@ -3,6 +3,9 @@
 todo.txt
 reset-files.bash
 
+# Private engineering notes — MUST NOT be published (contains open security weaknesses)
+future_works.md
+
 *.tar.gz
 
 *.exe

@@ -12,7 +12,7 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70232;
+static const int PROTOCOL_VERSION = 70233;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
@@ -20,8 +20,11 @@ static const int INIT_PROTO_VERSION = 209;
 //! disconnect from peers older than this proto version
 static const int MIN_PEER_PROTO_VERSION = 70232;
 
-//! minimum proto version of masternode to accept in DKGs
-static const int MIN_MASTERNODE_PROTO_VERSION = 70232;
+//! minimum proto version of masternode to accept in DKGs. 70233 = the phantom-purge
+//! fork protocol: DKGs only run once SPORK_17 is signed after the purge fork, by which
+//! point every masternode must run the 0.20.9 binary anyway, so a lingering pre-fork
+//! node is marked a bad member instead of stalling LLMQ_5_3 sessions.
+static const int MIN_MASTERNODE_PROTO_VERSION = 70233;
 
 //! nTime field added to CAddress, starting with this version;
 //! if possible, avoid requesting addresses nodes older than this
@@ -62,6 +65,11 @@ static const int SMSG_PROTO_VERSION = 70229;
 
 //! Minimum protocol version required once the block 3,200,000 fork enforcement height is reached
 static const int FORK_3200000_MIN_PROTO_VERSION = 70232;
+
+//! Minimum protocol version required once the phantom-masternode purge enforcement height is reached.
+//! Bumped so pre-purge nodes (which still report 70232) are disconnected before the purge height,
+//! avoiding a connected-but-conflicting chain split on merkleRootMNList. See nPhantomForkEnforcementHeight.
+static const int FORK_3300000_MIN_PROTO_VERSION = 70233;
 
 // Make sure that none of the values above collide with `ADDRV2_FORMAT`.
 

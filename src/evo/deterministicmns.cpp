@@ -5,6 +5,7 @@
 #include <evo/deterministicmns.h>
 #include <evo/dmn_types.h>
 #include <evo/dmnstate.h>
+#include <evo/phantom_exclusions.h>
 #include <evo/providertx.h>
 #include <evo/simplifiedmns.h>
 #include <evo/specialtx.h>
@@ -784,6 +785,40 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
         }
     }
 
+    // One-time phantom-masternode purge at nPhantomPurgeHeight.
+    // The payment-based ghost cleanup above and the quorum-based liveness sweep below
+    // both fail against the "fake VPS IP" phantoms: phantoms still receive payments
+    // (every listed MN is paid in turn) and the real population is too small to ever
+    // form an LLMQ quorum, so neither on-chain signal distinguishes them. The only
+    // reliable signal is off-chain reachability, captured once in a hard-coded
+    // proTxHash exclusion set (src/evo/phantom_exclusions.h). We apply it exactly once,
+    // at a fixed height, so the action is deterministic, replay-safe and reorg-safe.
+    // The ban is permanent: ProUpServTx revival and same-collateral ProRegTx replacement
+    // are both rejected for a listed proTxHash from this height. A wrongly-listed
+    // operator recovers by spending the collateral and re-registering under a new
+    // proTxHash; the collateral itself is never at risk.
+    if (ghostParams.nPhantomPurgeHeight > 0 && nHeight == ghostParams.nPhantomPurgeHeight) {
+        std::vector<uint256> toPhantomBan;
+        newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
+            if (IsPhantomExcluded(dmn.proTxHash)) {
+                toPhantomBan.emplace_back(dmn.proTxHash);
+            }
+        });
+        for (const auto& proTxHash : toPhantomBan) {
+            auto dmn = newList.GetMN(proTxHash);
+            assert(dmn);
+            auto newState = std::make_shared<CDeterministicMNState>(*dmn->pdmnState);
+            newState->BanIfNotBanned(nHeight);
+            newList.UpdateMN(proTxHash, newState);
+            if (debugLogs) {
+                LogPrintf("CDeterministicMNManager::%s -- phantom MN %s banned at purge height %d\n",
+                          __func__, proTxHash.ToString(), nHeight);
+            }
+        }
+        LogPrintf("CDeterministicMNManager::%s -- phantom purge at height %d: banned %d of %d listed phantoms\n",
+                  __func__, nHeight, (int)toPhantomBan.size(), (int)GetPhantomExclusions().size());
+    }
+
     // we skip the coinbase
     for (int i = 1; i < (int)block.vtx.size(); i++) {
         const CTransaction& tx = *block.vtx[i];
@@ -823,6 +858,13 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
 
             auto replacedDmn = newList.GetMNByCollateral(dmn->collateralOutpoint);
             if (replacedDmn != nullptr) {
+                // Phantom-purge permanent exclusion: CheckProRegTx already rejects a
+                // same-collateral replacement of a listed phantom from the purge height
+                // (bad-protx-phantom-collateral); this is defence in depth on the block path.
+                if (ghostParams.nPhantomPurgeHeight > 0 && nHeight >= ghostParams.nPhantomPurgeHeight &&
+                        IsPhantomExcluded(replacedDmn->proTxHash)) {
+                    return _state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-protx-phantom-collateral");
+                }
                 // This might only happen with a ProRegTx that refers an external collateral
                 // In that case the new ProRegTx will replace the old one. This means the old one is removed
                 // and the new one is added like a completely fresh one, which is also at the bottom of the payment list
@@ -890,8 +932,14 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
                 newState->platformHTTPPort = proTx.platformHTTPPort;
             }
             if (newState->IsBanned()) {
+                // Phantom-purge permanent exclusion: a listed proTxHash must never revive.
+                // CheckProUpServTx already rejects such a ProUpServTx from the purge height
+                // onward (bad-protx-phantom-banned); this is defence in depth so that even a
+                // tx bypassing that check cannot restore a phantom to the valid set.
+                const bool fPhantomExcluded = ghostParams.nPhantomPurgeHeight > 0 &&
+                        nHeight >= ghostParams.nPhantomPurgeHeight && IsPhantomExcluded(proTx.proTxHash);
                 // only revive when all keys are set
-                if (newState->pubKeyOperator.Get().IsValid() && !newState->keyIDVoting.IsNull() && !newState->keyIDOwner.IsNull()) {
+                if (!fPhantomExcluded && newState->pubKeyOperator.Get().IsValid() && !newState->keyIDVoting.IsNull() && !newState->keyIDOwner.IsNull()) {
                     newState->Revive(nHeight);
                     if (debugLogs) {
                         LogPrintf("CDeterministicMNManager::%s -- MN %s revived at height %d\n",
@@ -1009,6 +1057,15 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
     if (nHeight > ghostParams.nHPMasternodeHeight) {
         const int nLivenessPeriod   = ghostParams.nSuperblockCycle / 4;
         const int nLivenessLookback = ghostParams.nSuperblockCycle / 2;
+        // From the phantom purge fork the new-registration grace is tightened from a full
+        // superblock cycle (~30 days) to 1/8 of it, so a newly registered node reaches its
+        // first liveness check sooner while still getting a realistic chance to appear in a
+        // DKG first. The sweep only acts while quorums are demonstrably active (see the
+        // quorumsActive guard below). A revived MN gets the same grace measured from
+        // nPoSeRevivedHeight, so a genuine operator recovering via ProUpServTx is not
+        // re-banned before it has had a realistic chance to appear in a DKG.
+        const bool fPostPhantomPurge = ghostParams.nPhantomPurgeHeight > 0 && nHeight >= ghostParams.nPhantomPurgeHeight;
+        const int nRegistrationGrace = fPostPhantomPurge ? ghostParams.nSuperblockCycle / 8 : ghostParams.nSuperblockCycle;
         if ((nHeight % nLivenessPeriod) == 0) {
             bool quorumsActive = false;
             newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
@@ -1020,7 +1077,8 @@ bool CDeterministicMNManager::BuildNewListFromBlock(const CBlock& block, const C
                 std::vector<uint256> toLivenessBan;
                 newList.ForEachMN(true /* onlyValid */, [&](const auto& dmn) {
                     if (dmn.pdmnState->confirmedHash.IsNull()) return;
-                    if (dmn.pdmnState->nRegisteredHeight >= nHeight - ghostParams.nSuperblockCycle) return;
+                    if (dmn.pdmnState->nRegisteredHeight >= nHeight - nRegistrationGrace) return;
+                    if (fPostPhantomPurge && dmn.pdmnState->nPoSeRevivedHeight >= nHeight - nRegistrationGrace) return;
                     if (dmn.pdmnState->nPoSeSuccessHeight >= nHeight - nLivenessLookback) return;
                     toLivenessBan.emplace_back(dmn.proTxHash);
                 });
@@ -1782,6 +1840,19 @@ bool CheckProRegTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CValid
     if (pindexPrev) {
         auto mnList = deterministicMNManager->GetListForBlock(pindexPrev);
 
+        // Phantom-purge permanent exclusion: from the purge height a listed phantom's
+        // entry cannot be replaced in-place by a ProRegTx referencing the same collateral,
+        // which would re-register it under a fresh, unlisted proTxHash without ever
+        // spending the collateral. The collateral must be spent first (removing the entry
+        // from the list), so re-entry always leaves an on-chain collateral movement.
+        const auto& phantomParams = Params().GetConsensus();
+        if (phantomParams.nPhantomPurgeHeight > 0 && pindexPrev->nHeight + 1 >= phantomParams.nPhantomPurgeHeight) {
+            auto replacedDmn = mnList.GetMNByCollateral(collateralOutpoint);
+            if (replacedDmn && IsPhantomExcluded(replacedDmn->proTxHash)) {
+                return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-phantom-collateral");
+            }
+        }
+
         // only allow reusing of addresses when it's for the same collateral (which replaces the old MN)
         if (mnList.HasUniqueProperty(ptx.addr) && mnList.GetUniquePropertyMN(ptx.addr)->collateralOutpoint != collateralOutpoint) {
             return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_DUPLICATE, "bad-protx-dup-addr");
@@ -1857,6 +1928,16 @@ bool CheckProUpServTx(const CTransaction& tx, const CBlockIndex* pindexPrev, CVa
         auto mn = mnList.GetMN(ptx.proTxHash);
         if (!mn) {
             return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-protx-hash");
+        }
+
+        // Phantom-purge permanent exclusion: from the purge height onward a listed
+        // proTxHash can never be updated or revived via ProUpServTx. Recovery for a
+        // wrongly-listed operator is to spend the collateral and re-register under a
+        // new proTxHash. Height-gated so pre-fork tx validity is unchanged.
+        const auto& phantomParams = Params().GetConsensus();
+        if (phantomParams.nPhantomPurgeHeight > 0 && pindexPrev->nHeight + 1 >= phantomParams.nPhantomPurgeHeight &&
+                IsPhantomExcluded(ptx.proTxHash)) {
+            return state.Invalid(ValidationInvalidReason::TX_BAD_SPECIAL, false, REJECT_INVALID, "bad-protx-phantom-banned");
         }
 
         // don't allow updating to addresses already used by other MNs

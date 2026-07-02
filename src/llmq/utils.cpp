@@ -971,6 +971,15 @@ bool IsQuorumTypeEnabledInternal(Consensus::LLMQType llmqType, const CQuorumMana
                 return false;
             }
             break;
+        case Consensus::LLMQType::LLMQ_5_3:
+            // Phantom-purge PoSe quorum: must stay disabled before the purge fork height so
+            // that pre-fork binaries (which do not know this type) and post-fork binaries
+            // agree on the per-block commitment requirement for every pre-fork block.
+            if (consensusParams.nPhantomPurgeHeight <= 0 || pindex == nullptr ||
+                    pindex->nHeight < consensusParams.nPhantomPurgeHeight) {
+                return false;
+            }
+            break;
         default:
             throw std::runtime_error(strprintf("%s: Unknown LLMQ type %d", __func__, ToUnderlying(llmqType)));
     }

@@ -173,6 +173,7 @@ BITCOIN_CORE_H = \
   evo/dmnstate.h \
   evo/evodb.h \
   evo/mnauth.h \
+  evo/phantom_exclusions.h \
   evo/mnhftx.h \
   evo/providertx.h \
   evo/smsgroomtx.h \
@@ -685,6 +686,7 @@ libbitcoin_common_a_SOURCES = \
   compressor.cpp \
   core_read.cpp \
   core_write.cpp \
+  evo/phantom_exclusions.cpp \
   hdchain.cpp \
   key.cpp \
   key_io.cpp \

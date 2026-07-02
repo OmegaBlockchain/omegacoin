@@ -9,6 +9,7 @@
 
 #include <chainparamsseeds.h>
 #include <consensus/merkle.h>
+#include <evo/phantom_exclusions.h>
 #include <llmq/params.h>
 #include <tinyformat.h>
 #include <util/ranges.h>
@@ -169,6 +170,19 @@ public:
         consensus.nSmsgRoomHeight = 3200000;
         consensus.nConfidentialSmsgHeight = 3144000;
         consensus.nHPMasternodeHeight = 3200000;
+        // One-time phantom-masternode purge. PROVISIONAL height — must be set with
+        // adequate operator upgrade lead time before release (current tip ~3,261,600,
+        // ~38k blocks / ~27 days of lead before the purge height).
+        // The exclusion list (src/evo/phantom_exclusions.h) must also be finalised per
+        // Step 1 of PHANTOM_MN_REMEDIATION_PLAN.md before shipping. 0 disables the purge.
+        consensus.nPhantomPurgeHeight = 3300000;
+        // The purge height must stay a multiple of the LLMQ_5_3 dkgInterval (24) so the
+        // first post-fork DKG cycle starts exactly at the fork with the freshly purged
+        // list; a misaligned height wastes the first cycle on a forced null commitment.
+        assert(consensus.nPhantomPurgeHeight % 24 == 0);
+        // Disconnect pre-purge peers ~1000 blocks (~20h) before the purge so the network is
+        // partitioned by protocol version before the merkleRootMNList change, not during it.
+        consensus.nPhantomForkEnforcementHeight = 3299000;
         consensus.nForkEnforcementHeight = 3190000;
         consensus.MinBIP9WarningHeight = 1899072 + 2016; // V19 activation height + miner confirmation window
         consensus.powLimit = uint256S("00000fffff000000000000000000000000000000000000000000000000000000");
@@ -312,6 +326,10 @@ public:
         AddLLMQ(Consensus::LLMQType::LLMQ_400_60);
         AddLLMQ(Consensus::LLMQType::LLMQ_400_85);
         AddLLMQ(Consensus::LLMQType::LLMQ_100_67);
+        // PoSe quorum for the post-phantom-purge population (~5 real MNs). Enabled from
+        // nPhantomPurgeHeight only (see IsQuorumTypeEnabledInternal) and dormant until
+        // SPORK_17 is set, so pre-fork block validity is unchanged.
+        AddLLMQ(Consensus::LLMQType::LLMQ_5_3);
         consensus.llmqTypeChainLocks = Consensus::LLMQType::LLMQ_50_60;   // reduced from LLMQ_400_60: network has <300 MNs
         consensus.llmqTypeInstantSend = Consensus::LLMQType::LLMQ_50_60;
         consensus.llmqTypeDIP0024InstantSend = Consensus::LLMQType::LLMQ_60_75;
@@ -400,6 +418,8 @@ public:
         consensus.nSmsgRoomHeight = 100;
         consensus.nConfidentialSmsgHeight = 100;
         consensus.nHPMasternodeHeight = 100;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
+        consensus.nPhantomForkEnforcementHeight = 0; // disabled (no purge on this network)
         consensus.nForkEnforcementHeight = 90;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
@@ -575,6 +595,8 @@ public:
         consensus.nSmsgRoomHeight = 1;
         consensus.nConfidentialSmsgHeight = 1;
         consensus.nHPMasternodeHeight = 1;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
+        consensus.nPhantomForkEnforcementHeight = 0; // disabled (no purge on this network)
         consensus.nForkEnforcementHeight = 1;
         consensus.MinBIP9WarningHeight = 300 + 2016; // v19 activation height + miner confirmation window
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
@@ -868,6 +890,8 @@ public:
         consensus.nSmsgRoomHeight = 1;
         consensus.nConfidentialSmsgHeight = 1;
         consensus.nHPMasternodeHeight = 1;
+        consensus.nPhantomPurgeHeight = 0; // phantom exclusion list is mainnet-only; disabled here
+        consensus.nPhantomForkEnforcementHeight = 0; // disabled (no purge on this network)
         consensus.nForkEnforcementHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
         consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 1
@@ -877,8 +901,12 @@ public:
         consensus.fPowNoRetargeting = true;
         consensus.nPowKGWHeight = 15200; // same as mainnet
         consensus.nPowDGWHeight = 34140; // same as mainnet
-        consensus.nPowLWMAHeight = 0;
-        consensus.nPowLWMAFixHeight = 0;
+        // LWMA disabled on regtest: fPowNoRetargeting already bypasses the LWMA difficulty
+        // algorithm, so the only effect of activating it here was the minimum block-time
+        // delta (nPowTargetSpacing/2) in ContextualCheckBlockHeader, which made rapid
+        // `generate` calls fail (time-too-close) and broke the functional test suite.
+        consensus.nPowLWMAHeight = 999999999;
+        consensus.nPowLWMAFixHeight = 999999999;
         consensus.nLWMAWindow = 60;
         consensus.nRuleChangeActivationThreshold = 108; // 75% for testchains
         consensus.nMinerConfirmationWindow = 144; // Faster than normal for regtest (144 instead of 2016)
@@ -954,10 +982,17 @@ public:
         UpdateDIP3ParametersFromArgs(args);
         UpdateDIP8ParametersFromArgs(args);
         UpdateBudgetParametersFromArgs(args);
+        UpdatePhantomParametersFromArgs(args);
 
-        genesis = CreateGenesisBlock(1517519966, 869501, 0x1e0ffff0, 1, 50 * COIN);
+        // Regtest genesis uses trivial difficulty (0x207fffff, the Bitcoin/Dash regtest
+        // standard) instead of the mainnet genesis nBits 0x1e0ffff0. With
+        // fPowNoRetargeting every block inherits the genesis difficulty, and 0x1e0ffff0
+        // made regtest mining take ~1M hash attempts per block (grinding at 100% CPU and
+        // frequently exhausting generatetoaddress's nMaxTries), which broke `generate`
+        // under mocktime and with it the whole functional test suite.
+        genesis = CreateGenesisBlock(1517519966, 0, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x0000041a9498884aa2506b9dc832af53de1cbee3dca196a8d7b4319ee3a0f27c"));
+        assert(consensus.hashGenesisBlock == uint256S("0x1ccae0d405b41447b3e682498893d6aaabc118996e61116dc6552b71d79b3ad4"));
         assert(genesis.hashMerkleRoot == uint256S("0xf1c12dcba82d19825180cba39bcc19781d3474c486073977a8dbbcc35901c042"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
@@ -1014,6 +1049,8 @@ public:
         AddLLMQ(Consensus::LLMQType::LLMQ_TEST_V17);
         AddLLMQ(Consensus::LLMQType::LLMQ_TEST_DIP0024);
         AddLLMQ(Consensus::LLMQType::LLMQ_TEST_PLATFORM);
+        // Available for phantom-purge tests; stays disabled while -phantompurgeheight is unset
+        AddLLMQ(Consensus::LLMQType::LLMQ_5_3);
         consensus.llmqTypeChainLocks = Consensus::LLMQType::LLMQ_TEST;
         consensus.llmqTypeInstantSend = Consensus::LLMQType::LLMQ_TEST_INSTANTSEND;
         consensus.llmqTypeDIP0024InstantSend = Consensus::LLMQType::LLMQ_TEST_DIP0024;
@@ -1077,6 +1114,15 @@ public:
         consensus.nSuperblockStartBlock = nSuperblockStartBlock;
     }
     void UpdateBudgetParametersFromArgs(const ArgsManager& args);
+
+    /**
+     * Allows modifying the phantom-masternode purge parameters (regtest-only).
+     */
+    void UpdatePhantomParameters(int nPurgeHeight)
+    {
+        consensus.nPhantomPurgeHeight = nPurgeHeight;
+    }
+    void UpdatePhantomParametersFromArgs(const ArgsManager& args);
 
     /**
      * Allows modifying parameters of the test LLMQ
@@ -1221,6 +1267,31 @@ void CRegTestParams::UpdateBudgetParametersFromArgs(const ArgsManager& args)
     }
     LogPrintf("Setting budget parameters to masternode=%ld, budget=%ld, superblock=%ld\n", nMasternodePaymentsStartBlock, nBudgetPaymentsStartBlock, nSuperblockStartBlock);
     UpdateBudgetParameters(nMasternodePaymentsStartBlock, nBudgetPaymentsStartBlock, nSuperblockStartBlock);
+}
+
+void CRegTestParams::UpdatePhantomParametersFromArgs(const ArgsManager& args)
+{
+    if (args.IsArgSet("-phantomexclude")) {
+        std::set<uint256> exclusions;
+        for (const std::string& strHash : args.GetArgs("-phantomexclude")) {
+            if (strHash.size() != 64 || !IsHex(strHash)) {
+                throw std::runtime_error(strprintf("Invalid -phantomexclude proTxHash (%s)", strHash));
+            }
+            exclusions.insert(uint256S(strHash));
+        }
+        LogPrintf("Setting phantom exclusion set to %d injected proTxHashes\n", (int)exclusions.size());
+        SetPhantomExclusionsForTesting(std::move(exclusions));
+    }
+
+    if (args.IsArgSet("-phantompurgeheight")) {
+        int nPurgeHeight;
+        const std::string strHeight = args.GetArg("-phantompurgeheight", "");
+        if (!ParseInt32(strHeight, &nPurgeHeight) || nPurgeHeight < 0) {
+            throw std::runtime_error(strprintf("Invalid -phantompurgeheight (%s)", strHeight));
+        }
+        LogPrintf("Setting phantom purge height to %d\n", nPurgeHeight);
+        UpdatePhantomParameters(nPurgeHeight);
+    }
 }
 
 void CRegTestParams::UpdateLLMQTestParametersFromArgs(const ArgsManager& args, const Consensus::LLMQType llmqType)

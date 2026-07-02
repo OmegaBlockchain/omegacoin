@@ -626,6 +626,8 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
     CProRegTx ptx;
     ptx.nType = mnType;
 
+    bool fCollateralWasLocked{false};
+
     if (isFundRegister) {
         CTxDestination collateralDest = DecodeDestination(request.params[paramIdx].get_str());
         if (!IsValidDestination(collateralDest)) {
@@ -649,12 +651,17 @@ static UniValue protx_register_common_wrapper(const JSONRPCRequest& request,
         paramIdx += 2;
 
         LOCK(wallet->cs_wallet);
+        fCollateralWasLocked = wallet->IsLockedCoin(collateralHash, (uint32_t)collateralIndex);
         wallet->LockCoin(ptx.collateralOutpoint);
     }
 
-    // Guard: unlock collateral if anything below throws
+    // Guard: unlock collateral if anything below throws — but only if this RPC locked
+    // it. The outpoint may already be locked because it is an active masternode's
+    // collateral (AutoLockMasternodeCollaterals); unlocking it on failure would expose
+    // that collateral to accidental spending by later wallet transactions, destroying
+    // the masternode.
     auto unlockCollateralOnFailure = [&]() {
-        if (!isFundRegister && !ptx.collateralOutpoint.IsNull()) {
+        if (!isFundRegister && !fCollateralWasLocked && !ptx.collateralOutpoint.IsNull()) {
             LOCK(wallet->cs_wallet);
             wallet->UnlockCoin(ptx.collateralOutpoint);
         }

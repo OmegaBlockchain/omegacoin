@@ -77,6 +77,7 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
         if (notificationInterface->Initialize()) {
             return notificationInterface.release();
         }
+        LogPrintf("zmq: Failed to initialise notifications (is the address already in use?). ZMQ publishing is disabled.\n");
     }
 
     return nullptr;

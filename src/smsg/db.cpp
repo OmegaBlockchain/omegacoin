@@ -480,6 +480,43 @@ bool SecMsgDB::NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8
     }
 };
 
+bool SecMsgDB::PrevSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored)
+{
+    // Mirror of NextSmesg walking from the newest record of prefix backwards.
+    if (!pdb || prefix.size() != 2 || (uint8_t)prefix[1] == 0xff)
+        return false;
+
+    if (!it->Valid()) {
+        std::string upper(prefix);
+        upper[1] = (char)((uint8_t)upper[1] + 1);
+        it->Seek(upper);
+        if (it->Valid())
+            it->Prev();
+        else
+            it->SeekToLast();
+    } else {
+        it->Prev();
+    }
+
+    for (;;) {
+        if (!(it->Valid()
+            && it->key().size() == 30
+            && memcmp(it->key().data(), prefix.data(), 2) == 0))
+            return false;
+
+        memcpy(chKey, it->key().data(), 30);
+
+        try {
+            CDataStream ssValue(it->value().data(), it->value().data() + it->value().size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> smsgStored;
+            return true;
+        } catch (std::exception &e) {
+            LogPrintf("%s: Skipping corrupt record: %s.\n", __func__, e.what());
+        }
+        it->Prev();
+    }
+};
+
 bool SecMsgDB::NextSmesgKey(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey)
 {
     if (!pdb)

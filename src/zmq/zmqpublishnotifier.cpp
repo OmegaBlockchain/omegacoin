@@ -115,6 +115,7 @@ bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
         {
             zmqError("Failed to set outbound message high water mark");
             zmq_close(psocket);
+            psocket = nullptr;
             return false;
         }
 
@@ -123,6 +124,7 @@ bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
         if (rc != 0) {
             zmqError("Failed to set SO_KEEPALIVE");
             zmq_close(psocket);
+            psocket = nullptr;
             return false;
         }
 
@@ -131,6 +133,7 @@ bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
         {
             zmqError("Failed to bind address");
             zmq_close(psocket);
+            psocket = nullptr;
             return false;
         }
 
@@ -152,7 +155,9 @@ bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
 
 void CZMQAbstractPublishNotifier::Shutdown()
 {
-    assert(psocket);
+    // Nothing to release if Initialize was never called or failed, which is
+    // the case for every notifier after one fails to bind.
+    if (!psocket) return;
 
     int count = mapPublishNotifiers.count(address);
 

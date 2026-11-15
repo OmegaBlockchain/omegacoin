@@ -27,7 +27,9 @@ Notes:
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
+#include <array>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <errno.h>
 #include <limits>
@@ -272,6 +274,49 @@ static void MaybeAutoCommitAnchors(const int64_t now)
 #endif
 }
 
+static void PruneTrollbox(const int64_t now)
+{
+    // Trollbox rows are keyed "tb" + big-endian timestamp + hash, so expired
+    // rows sort first. Bounded per pass to keep the DB lock short.
+    static const size_t MAX_PRUNE_PER_PASS = 5000;
+    const int64_t cutoff = now - (int64_t)TROLLBOX_RETENTION;
+
+    LOCK(cs_smsgDB);
+    SecMsgDB db;
+    if (!db.Open("cr+")) {
+        return;
+    }
+
+    std::vector<std::array<uint8_t, 30> > vExpired;
+    {
+        std::string sPrefix("tb");
+        uint8_t chKey[30];
+        std::unique_ptr<leveldb::Iterator> it(db.pdb->NewIterator(leveldb::ReadOptions()));
+        while (vExpired.size() < MAX_PRUNE_PER_PASS && db.NextSmesgKey(it.get(), sPrefix, chKey)) {
+            int64_t nKeyTime = 0;
+            for (int i = 0; i < 8; ++i) {
+                nKeyTime = (int64_t)(((uint64_t)nKeyTime << 8) | chKey[2 + i]);
+            }
+            if (nKeyTime >= cutoff) {
+                break;
+            }
+            std::array<uint8_t, 30> key;
+            memcpy(key.data(), chKey, 30);
+            vExpired.push_back(key);
+        }
+    }
+
+    if (vExpired.empty() || !db.TxnBegin()) {
+        return;
+    }
+    for (const auto &key : vExpired) {
+        db.EraseSmesg(key.data());
+    }
+    if (db.TxnCommit()) {
+        LogPrint(BCLog::SMSG, "Pruned %u expired trollbox messages.\n", (unsigned int)vExpired.size());
+    }
+}
+
 void ThreadSecureMsg(const CBlockIndex* pindex)
 {
     // Bucket management thread
@@ -387,6 +432,10 @@ void ThreadSecureMsg(const CBlockIndex* pindex)
         }
 
         MaybeAutoCommitAnchors(now);
+
+        if (nLoop % 10 == 1) {
+            PruneTrollbox(now);
+        }
 
         if (smsgModule.m_fIniDirty.exchange(false, std::memory_order_relaxed)) {
             LogPrint(BCLog::SMSG, "ThreadSecureMsg: flushing smsg.ini\n");
@@ -1707,6 +1756,13 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
                     continue;
                 }
 
+                // Store() refuses anything beyond the cap, so requesting more
+                // would only make the peer resend messages that get dropped.
+                if (it_lb != buckets.end() && it_lb->second.setTokens.size() >= SMSG_MAX_BUCKET_TOKENS) {
+                    LogPrint(BCLog::SMSG, "Bucket %d is full, not requesting more.\n", time);
+                    continue;
+                }
+
                 // If this node has more than the peer node, peer node will pull from this
                 //  if then peer node has more this node will pull from peer
                 uint32_t nLocalActive = (it_lb != buckets.end()) ? it_lb->second.nActive : 0;
@@ -1728,6 +1784,20 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
 
         // TODO: should include hash?
         memcpy(&vchDataOut[0], &nShowBuckets, 4);
+        if (nShowBuckets > 0) {
+            // Remember which buckets were requested so smsgHave is only
+            // accepted for them. Keys are bucket-aligned times inside the
+            // retention window (checked above) and expired ones are dropped
+            // here, so the map stays bounded.
+            LOCK(pfrom->smsgData.cs_smsg_net);
+            std::map<int64_t, int64_t> &mapShown = pfrom->smsgData.m_buckets_last_shown;
+            mapShown.erase(mapShown.begin(), mapShown.lower_bound(now - (int64_t)SMSG_RETENTION));
+            for (uint32_t i = 0; i < nShowBuckets; ++i) {
+                int64_t shown;
+                memcpy(&shown, &vchDataOut[4 + (size_t)i * 8], 8);
+                mapShown[shown] = now;
+            }
+        }
         if (vchDataOut.size() > 4) {
             g_connman->PushMessage(pfrom,
                 CNetMsgMaker(INIT_PROTO_VERSION).Make("smsgShow", vchDataOut));
@@ -1839,6 +1909,19 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
             LogPrint(BCLog::SMSG, "Not interested in peer bucket %d, in the future.\n", time);
             Misbehaving(pfrom->GetId(), 1);
             return SMSG_GENERAL_ERROR;
+        }
+
+        {
+            // Only act on a bucket this node asked this peer for (smsgShow).
+            // An unsolicited smsgHave could otherwise lock any bucket, create
+            // arbitrary bucket entries and inflate m_num_want_sent.
+            LOCK(pfrom->smsgData.cs_smsg_net);
+            auto it_shown = pfrom->smsgData.m_buckets_last_shown.find(time);
+            if (it_shown == pfrom->smsgData.m_buckets_last_shown.end()) {
+                LogPrint(BCLog::SMSG, "Ignoring unsolicited smsgHave for bucket %d from peer %d.\n", time, pfrom->GetId());
+                return SMSG_GENERAL_ERROR;
+            }
+            pfrom->smsgData.m_buckets_last_shown.erase(it_shown);
         }
 
         std::vector<uint8_t> vchDataOut;
@@ -4029,7 +4112,9 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
 
 int CSMSG::CheckPurged(const SecureMessage *psmsg, const uint8_t *pPayload)
 {
-    if (setPurgedTimestamps.find(psmsg->timestamp) != setPurgedTimestamps.end()) {
+    // Prefilter: only a message whose timestamp matches a purged one can be a
+    // purged message, everything else skips the msgid hash and DB lookup.
+    if (setPurgedTimestamps.find(psmsg->timestamp) == setPurgedTimestamps.end()) {
         return SMSG_NO_ERROR;
     }
 
@@ -4169,6 +4254,13 @@ int CSMSG::Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayl
         return SMSG_GENERAL_ERROR;
     }
 
+    // smsgHave/smsgWant exchange at most SMSG_MAX_BUCKET_TOKENS tokens per
+    // bucket, so anything beyond that cannot sync and only consumes disk.
+    if (tokenSet.size() >= SMSG_MAX_BUCKET_TOKENS) {
+        LogPrint(BCLog::SMSG, "%s: Bucket %d is full.\n", __func__, bucketTime);
+        return SMSG_GENERAL_ERROR;
+    }
+
     FILE *fp;
     bool bOwnFp = (fpBatch == nullptr);
     if (bOwnFp) {
@@ -4293,6 +4385,12 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
 {
     // return SecureMessageCodes
     SecureMessage *psmsg = (SecureMessage*) pHeader;
+
+    // Later stages (HashMsg, GetMsgID, funding lookups) read psmsg->nPayload
+    // bytes from pPayload, so the header field must equal the real length.
+    if (psmsg->nPayload != nPayload) {
+        return errorN(SMSG_GENERAL_ERROR, "%s: Header payload length %u does not match data length %u.", __func__, psmsg->nPayload, nPayload);
+    }
 
     if (psmsg->IsPaidVersion()) {
         if (nPayload > SMSG_MAX_MSG_BYTES_PAID)

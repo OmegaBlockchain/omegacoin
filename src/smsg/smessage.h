@@ -74,6 +74,7 @@ const unsigned int SMSG_THREAD_DELAY   = 30;
 const unsigned int SMSG_THREAD_LOG_GAP = 6;
 
 const unsigned int SMSG_TIME_LEEWAY    = 24;
+const unsigned int SMSG_MAX_BUCKET_TOKENS = 16384;         // most tokens one smsgHave/smsgWant carries, also the per-bucket storage cap
 const unsigned int SMSG_TIME_IGNORE    = 90;                // seconds a peer is ignored for if they fail to deliver messages for a smsgWant
 
 

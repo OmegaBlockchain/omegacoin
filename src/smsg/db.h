@@ -62,6 +62,7 @@ public:
     bool ErasePK(const CKeyID &addr);
 
     bool NextSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored);
+    bool PrevSmesg(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey, SecMsgStored &smsgStored);
     bool NextSmesgKey(leveldb::Iterator *it, const std::string &prefix, uint8_t *chKey);
     bool ReadSmesg(const uint8_t *chKey, SecMsgStored &smsgStored);
     bool WriteSmesg(const uint8_t *chKey, SecMsgStored &smsgStored);

@@ -2159,6 +2159,11 @@ static UniValue smsgimport(const JSONRPCRequest &request)
     const uint8_t *pPayload = vData.data() + smsg::SMSG_HDR_LEN;
     uint32_t nPayload = vData.size() - smsg::SMSG_HDR_LEN;
 
+    // The header length field is hashed by GetMsgID/HashMsg; it must describe
+    // exactly the bytes supplied or those readers run past the buffer.
+    if (((const smsg::SecureMessage*)pHeader)->nPayload != nPayload)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Header payload length does not match data length.");
+
     int rv = smsgModule.Validate(pHeader, pPayload, nPayload);
     if (rv != smsg::SMSG_NO_ERROR)
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Validation failed: %s", smsg::GetString(rv)));
@@ -2440,9 +2445,20 @@ static UniValue trollboxlist(const JSONRPCRequest &request)
         smsg::SecMsgStored smsgStored;
         smsg::MessageData msg;
 
+        // Walk newest-first and stop at the requested count or the retention
+        // edge, so the cost does not grow with the number of stored rows.
+        const int64_t nOldest = GetAdjustedTime() - (int64_t)smsg::TROLLBOX_RETENTION;
+        int nScanned = 0;
         leveldb::Iterator* it = db.pdb->NewIterator(leveldb::ReadOptions());
-        while (db.NextSmesg(it, sPrefix, chKey, smsgStored))
+        while ((int)msgs.size() < nCount
+            && nScanned++ < 4 * nCount
+            && db.PrevSmesg(it, sPrefix, chKey, smsgStored))
         {
+            int64_t nKeyTime = 0;
+            for (int i = 0; i < 8; ++i)
+                nKeyTime = (int64_t)(((uint64_t)nKeyTime << 8) | chKey[2 + i]);
+            if (nKeyTime < nOldest)
+                break;
             if (smsgStored.vchMessage.size() < smsg::SMSG_HDR_LEN)
                 continue;
             uint8_t* pHeader = &smsgStored.vchMessage[0];
@@ -2461,10 +2477,8 @@ static UniValue trollboxlist(const JSONRPCRequest &request)
         delete it;
     }
 
-    // Keep only most recent N
-    if ((int)msgs.size() > nCount) {
-        msgs.erase(msgs.begin(), msgs.begin() + (msgs.size() - nCount));
-    }
+    // Collected newest-first; callers expect oldest-first.
+    std::reverse(msgs.begin(), msgs.end());
 
     UniValue result(UniValue::VARR);
     for (const auto& m : msgs) {

@@ -173,4 +173,43 @@ BOOST_AUTO_TEST_CASE(prevsmesg_walks_prefix_newest_first)
     }
 }
 
+// BUG-02: SendData() announces a bucket to a peer only when timeChanged >=
+// the peer's lastMatched, which is GetTime(). timeChanged used to be
+// GetAdjustedTime(), so a node with a negative peer time offset never (offset
+// <= -2) or only sometimes (offset -1) announced its own or relayed messages.
+// The global time offset cannot be set here without breaking timedata_tests,
+// so the clock is passed in explicitly.
+BOOST_AUTO_TEST_CASE(bucket_change_time_uses_local_clock)
+{
+    const int64_t now = 1800000000;
+    SetMockTime(now);
+
+    const uint8_t sample1[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint8_t sample2[8] = {9, 10, 11, 12, 13, 14, 15, 16};
+    smsg::SecMsgBucket bkt;
+    bkt.setTokens.insert(smsg::SecMsgToken(now - 60, sample1, 8, 0, 2));
+
+    bkt.hashBucket(now - 10);
+    BOOST_CHECK_EQUAL(bkt.timeChanged, now - 10);
+    BOOST_CHECK_EQUAL(bkt.nActive, 1U);
+
+    // Same content: the change time is kept.
+    bkt.hashBucket(now + 50);
+    BOOST_CHECK_EQUAL(bkt.timeChanged, now - 10);
+
+    // New content through the default overload: stamped with GetTime(), the
+    // clock SendData() uses for lastMatched, not the adjusted time.
+    bkt.setTokens.insert(smsg::SecMsgToken(now - 30, sample2, 8, 0, 2));
+    bkt.hashBucket();
+    BOOST_CHECK_EQUAL(bkt.timeChanged, GetTime());
+    BOOST_CHECK_EQUAL(bkt.nActive, 2U);
+
+    // The SendData() condition: a change in the same second as the last
+    // send cycle (lastMatched == timeChanged) must still be announced.
+    const int64_t lastMatched = GetTime();
+    BOOST_CHECK(!(bkt.timeChanged < lastMatched));
+
+    SetMockTime(0);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -393,7 +393,11 @@ public:
         nActive         = 0;
     };
 
+    //! Rehash the bucket; on change, stamp timeChanged with the local clock.
     void hashBucket();
+    //! nowLocal must come from GetTime(): SendData() compares timeChanged with
+    //! the per-peer lastMatched, which is GetTime(). Exposed for tests.
+    void hashBucket(int64_t nowLocal);
     size_t CountActive();
 
     int64_t               timeChanged;

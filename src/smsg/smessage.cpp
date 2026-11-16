@@ -172,6 +172,11 @@ std::string SecMsgToken::ToString() const
 
 void SecMsgBucket::hashBucket()
 {
+    hashBucket(GetTime());
+}
+
+void SecMsgBucket::hashBucket(int64_t nowLocal)
+{
     void *state = XXH32_init(1);
 
     int64_t now = GetAdjustedTime();
@@ -196,7 +201,12 @@ void SecMsgBucket::hashBucket()
         LogPrint(BCLog::SMSG, "Bucket hash updated from %u to %u.\n", hash, hash_new);
 
         hash = hash_new;
-        timeChanged = GetAdjustedTime();
+        // Same clock as lastMatched (GetTime() in SendData). GetAdjustedTime()
+        // here made a node with a negative peer time offset skip announcing a
+        // changed bucket whenever the last send cycle fell in the same second
+        // (offset -1), or always (offset <= -2): its own and relayed messages
+        // never left it.
+        timeChanged = nowLocal;
     }
 
     LogPrint(BCLog::SMSG, "Hashed %u messages, hash %u\n", nActive, hash_new);

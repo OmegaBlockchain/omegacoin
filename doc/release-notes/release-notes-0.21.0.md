@@ -28,6 +28,16 @@ Users on 0.20.4–0.20.9 can work around the bug by starting with
 `-smsgsaddnewkeys=1`, which re-registers every wallet address (note: this
 enables SMSG receiving on all wallet addresses).
 
+### Messages from some nodes were never relayed (BUG-02)
+
+A node whose clock is behind its peers' clocks (negative `timeoffset` in
+`getnetworkinfo`) did not announce new messages to its peers: with an offset of
+-1 second about half of its messages stayed on the node, with -2 or lower all
+of them, including messages it should have relayed. Such a node still received
+messages normally. Fixed by using the same clock for both sides of the
+announcement check. Until upgraded, an affected node can push a stuck message
+by reconnecting a peer (`disconnectnode "<peer>"`) or restarting.
+
 ### Secure messaging hardening
 
 - `smsgimport` rejects a message whose header payload length does not match

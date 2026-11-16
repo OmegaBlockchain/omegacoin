@@ -9,7 +9,7 @@ ok()  { PASS=$((PASS+1)); echo "PASS: $1"; }
 bad() { FAIL=$((FAIL+1)); echo "FAIL: $1"; }
 check() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (got '$2', want '$3')"; fi; }
 c1="$PB/omega-cli -datadir=$W/n1"; c2="$PB/omega-cli -datadir=$W/n2"; c3="$UB/omega-cli -datadir=$W/n3"
-stopall() { for n in n1 n2 n3 n4 n5; do $PB/omega-cli -datadir=$W/$n stop >/dev/null 2>&1; done; nap 4; pkill -f "omegad -datadir=$W/" 2>/dev/null; }
+stopall() { for n in n1 n2 n3 n4 n5 n6; do $PB/omega-cli -datadir=$W/$n stop >/dev/null 2>&1; done; nap 4; pkill -f "omegad -datadir=$W/" 2>/dev/null; }
 trap stopall EXIT
 nmsgs() { $1 smsgbuckets 2>/dev/null | python3 -I -c "import sys,json; d=json.load(sys.stdin); print(d['total']['messages'] if isinstance(d.get('total'),dict) and 'messages' in d['total'] else sum(int(b.get('no. messages', b.get('active messages',0))) for b in d.get('buckets',[])))" 2>/dev/null; }
 nbkts() { $1 smsgbuckets 2>/dev/null | python3 -I -c "import sys,json; print(json.load(sys.stdin)['total']['numbuckets'])" 2>/dev/null; }
@@ -45,14 +45,16 @@ grep -q "Ignoring unsolicited smsgHave" $W/n1/regtest/debug.log && ok "unsolicit
 grep -q "Locking bucket" $W/n1/regtest/debug.log && bad "a bucket was locked" || ok "no bucket locked"
 check "no bucket created by smsgHave" "$(nbkts "$c1")" "1"
 
-echo "== sync still works: patched<->patched and patched<->unpatched"
+echo "== sync: patched<->patched; unpatched nodes are kept out of SMSG (protocol 70234)"
 waitmsgs "$c2" 1 90 && ok "patched n2 pulled message from patched n1" || bad "n2 has $(nmsgs "$c2") messages"
-waitmsgs "$c3" 1 90 && ok "unpatched n3 pulled message from patched n1" || bad "n3 has $(nmsgs "$c3") messages"
-hex=$(python3 -I $POC/mk.py 0 2>/dev/null); $c3 smsgimport "$hex" >/dev/null 2>&1
-waitmsgs "$c1" 2 120 && ok "patched n1 pulled message from unpatched n3" || bad "n1 has $(nmsgs "$c1") messages"
-waitmsgs "$c2" 2 120 && ok "patched n2 received it via n1" || bad "n2 has $(nmsgs "$c2") messages"
 hex=$(python3 -I $POC/mk.py 0 2>/dev/null); $c2 smsgimport "$hex" >/dev/null 2>&1
-waitmsgs "$c3" 3 120 && ok "unpatched n3 received a message relayed n2->n1->n3" || bad "n3 has $(nmsgs "$c3") messages"
+waitmsgs "$c1" 2 120 && ok "patched n1 pulled message from patched n2" || bad "n1 has $(nmsgs "$c1") messages"
+hex=$(python3 -I $POC/mk.py 0 2>/dev/null); $c3 smsgimport "$hex" >/dev/null 2>&1
+nap 60
+check "patched n1 does not pull from unpatched n3" "$(nmsgs "$c1")" "2"
+check "unpatched n3 does not pull from patched nodes" "$(nmsgs "$c3")" "1"
+check "unpatched n3 is not an SMSG peer of n1" "$($c1 smsgpeers 2>/dev/null | grep -c ':19582')" "0"
+check "patched n2 is an SMSG peer of n1" "$($c1 smsgpeers 2>/dev/null | grep -c ':19572')" "1"
 
 echo "== SEC-05 trollbox listing and pruning"
 $c1 smsgdisable >/dev/null 2>&1; $c1 smsgenable w 2>&1 | tr -d '\n' | cut -c1-80; echo
@@ -101,6 +103,17 @@ purge_roundtrip "$c3" "$UB" "$W/n3"
 # re-import. SEC-10 therefore restores the cheap prefilter; it was not a bypass.
 case "$OUT" in *"Storefailed"*) ok "unpatched node also refuses it (kept bucket token)";; *) bad "unexpected baseline result: ${OUT:0:120}";; esac
 
+echo "== SEC-19 smsgShow is answered only for advertised buckets, once"
+# A bucket that still holds active messages (n1's expired in the SEC-05 step).
+activebucket() { $1 smsgbuckets 2>/dev/null | python3 -I -c "import sys,json; print(next(b['time'] for b in json.load(sys.stdin)['buckets'] if int(b['active messages']) > 0))" 2>/dev/null; }
+field() { echo "$1" | tr ' ' '\n' | sed -n "s/^$2://p"; }
+out=$(python3 -I $POC/show.py 19572 "$(activebucket "$c2")"); echo "  patched:   $out"
+check "unsolicited smsgShow (one bucket x100) gets no smsgHave" "$(field "$out" unsolicited)" "0"
+[ "$(field "$out" honest)" -ge 1 ] 2>/dev/null && ok "advertised buckets are still answered" || bad "honest smsgShow not answered: $out"
+check "repeating the same smsgShow gets nothing more" "$(field "$out" repeat)" "0"
+out=$(python3 -I $POC/show.py 19582 "$(activebucket "$c3")"); echo "  unpatched: $out"
+check "unpatched node answers all 100 duplicates (amplification is real)" "$(field "$out" unsolicited)" "100"
+
 echo "== SEC-17 ZMQ address already in use"
 c4="$PB/omega-cli -datadir=$W/n4"; c5="$UB/omega-cli -datadir=$W/n5"
 mkconf $W/n4 19591 19592 19573; mkconf $W/n5 19601 19602 19573   # 19573 is held by n2
@@ -147,6 +160,25 @@ check "topic subscription restored after a restart" "$SUB_AFTER" "1"
 grep -q "Loaded addresses from SMSG.ini" $W/n1/regtest/debug.log && ok "addresses loaded from smsg.ini at start" || bad "no 'Loaded addresses from SMSG.ini' log line"
 bug01 "$c3" "$UB" "$W/n3"
 check "unpatched node loses the registration on restart (bug is real)" "$REG_AFTER" "0"
+
+echo "== SEC-09 topic messages are stored and relayed by nodes that do not subscribe"
+# n1 -> n2 (not subscribed) -> n6 (subscribed). Before 0.21.0, n2 dropped the
+# message, and no node matched it anyway because PoW overwrote the topic hint.
+c6="$PB/omega-cli -datadir=$W/n6"; mkconf $W/n6 19611 19612 19613
+$PB/omegad -datadir=$W/n6 -daemon >/dev/null 2>&1; waitup "$c6"
+$c6 addnode 127.0.0.1:19572 onetry >/dev/null 2>&1
+$c1 addnode 127.0.0.1:19572 onetry >/dev/null 2>&1
+for i in $(seq 1 60); do [ "$($c6 getblockcount 2>/dev/null)" = "1" ] && break; nap 1; done
+check "n6 synced the chain from n2" "$($c6 getblockcount 2>&1)" "1"
+$c6 smsgsubscribe "omega.sec09" >/dev/null 2>&1
+n2before=$(nmsgs "$c2")
+tf=$($c1 getnewaddress); $c1 smsgaddlocaladdress "$tf" >/dev/null 2>&1
+out=$($c1 smsgsend "$tf" "" "topic hello" false 2 false false false "omega.sec09" "" 2 2>&1 | tr -d '\n' | cut -c1-120); echo "  send: $out"
+waitmsgs "$c2" $((n2before + 1)) 120 && ok "non-subscriber n2 stored the topic message" || bad "n2 has $(nmsgs "$c2") messages (was $n2before)"
+topicmsgs() { local n; n=$($1 smsggetmessages "omega.sec09" 2>/dev/null | python3 -I -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null); echo "${n:-0}"; }
+for i in $(seq 1 120); do [ "$(topicmsgs "$c6")" = "1" ] && break; nap 1; done
+check "subscriber n6 received it through n2" "$(topicmsgs "$c6")" "1"
+check "non-subscriber n2 does not index it" "$(topicmsgs "$c2")" "0"
 
 echo "== baseline: same PoC against the unpatched node"
 out=$(python3 -I $POC/have.py 19582); echo "  $out"

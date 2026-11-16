@@ -23,7 +23,7 @@ def recv_msgs(s, wanted, deadline):
     return seen
 port = int(sys.argv[1])
 s = socket.create_connection(("127.0.0.1", port), timeout=5)
-ver = struct.pack("<iQq", 70233, 0, int(time.time())) + addr() + addr() + os.urandom(8) + b"\x06/poc:/" + struct.pack("<i", 1) + b"\x01"
+ver = struct.pack("<iQq", 70234, 0, int(time.time())) + addr() + addr() + os.urandom(8) + b"\x06/poc:/" + struct.pack("<i", 1) + b"\x01"
 s.sendall(msg("version", ver))
 seen = recv_msgs(s, ["version", "verack"], time.time() + 10)
 s.sendall(msg("verack"))

@@ -170,6 +170,23 @@ std::string SecMsgToken::ToString() const
     return strprintf("%d-%08x", timestamp, *((uint64_t*)sample));
 }
 
+//! SEC-18: a token's 8-byte sample is the start of the message hash (HashMsg:
+//! RIPEMD160 of header and payload without a paid tail, the 20-byte part of
+//! the msgid). It used to be the first 8 payload bytes, which a relay could
+//! copy into a junk message with the same timestamp so the real message was
+//! refused everywhere as "Already have". nPayload is the real buffer length.
+static void TokenSample(const SecureMessage *psmsg, const uint8_t *pPayload, uint32_t nPayload, uint8_t out[8])
+{
+    const uint32_t nTail = psmsg->GetPaidTailSize();
+    const uint32_t nHashed = nPayload >= nTail ? nPayload - nTail : nPayload;
+    uint160 h;
+    CRIPEMD160()
+        .Write((const uint8_t*)psmsg, SMSG_HDR_LEN)
+        .Write(pPayload, nHashed)
+        .Finalize(h.begin());
+    memcpy(out, h.begin(), 8);
+}
+
 void SecMsgBucket::hashBucket()
 {
     hashBucket(GetTime());
@@ -763,6 +780,7 @@ int CSMSG::BuildBucketSet()
 
         size_t nTokenSetSize = 0;
         SecureMessage smsg;
+        std::vector<uint8_t> vchPayload; // reused per message (token sample, SEC-18)
         {
             LOCK(cs_smsg);
 
@@ -791,7 +809,7 @@ int CSMSG::BuildBucketSet()
                 token.timestamp = smsg.timestamp;
 
                 uint32_t nDaysToLive = smsg.version[0] == 0 && smsg.version[1] == 0 ? 0  // Purged message header
-                    : smsg.version[0] < 3 ? 2 : smsg.nonce[0];
+                    : smsg.IsPaidVersion() ? smsg.nonce[0] : 2; // nonce is the PoW counter for free (incl. topic) messages
 
                 token.ttl = nDaysToLive;
                 if (nDaysToLive > 0 && (bucket.nLeastTTL == 0 || nDaysToLive < bucket.nLeastTTL)) {
@@ -806,15 +824,23 @@ int CSMSG::BuildBucketSet()
                     continue;
                 }
 
-                if (fread(token.sample, sizeof(uint8_t), 8, fp) != 8) {
+                // The sample hashes the whole message (SEC-18), so read it all.
+                // A length beyond any valid message means the file is corrupt.
+                if (smsg.nPayload > SMSG_MAX_STORED_PAYLOAD) {
+                    LogPrintf("Bucket file %s: payload length %u too large, stopping.\n", itd->path().string(), smsg.nPayload);
+                    break;
+                }
+                try {
+                    vchPayload.resize(smsg.nPayload);
+                } catch (const std::exception &e) {
+                    LogPrintf("vchPayload.resize %u threw: %s.\n", smsg.nPayload, e.what());
+                    break;
+                }
+                if (fread(vchPayload.data(), sizeof(uint8_t), smsg.nPayload, fp) != smsg.nPayload) {
                     LogPrintf("fread failed: %s\n", strerror(errno));
                     break;
                 }
-
-                if (fseek(fp, smsg.nPayload-8, SEEK_CUR) != 0) {
-                    LogPrintf("fseek failed: %s.\n", strerror(errno));
-                    break;
-                }
+                TokenSample(&smsg, vchPayload.data(), smsg.nPayload, token.sample);
 
                 tokenSet.insert(token);
             }
@@ -1844,15 +1870,42 @@ int CSMSG::ReceiveData(CNode *pfrom, const std::string &strCommand, CDataStream 
 
         LogPrint(BCLog::SMSG, "smsgShow: peer wants to see content of %u buckets.\n", nBuckets);
 
+        // SEC-19: an smsgShow is only ever sent in reply to our smsgInv, for
+        // buckets listed in it. Answer only buckets advertised to this peer,
+        // once per advertisement; repeats and unadvertised buckets are dropped,
+        // so one small request can no longer pull the same large bucket again
+        // and again. Entries outside the retention window are pruned, which
+        // keeps the map bounded.
+        std::vector<int64_t> vAnswer;
+        uint32_t nDropped = 0;
+        {
+            const int64_t now_local = GetTime();
+            LOCK(pfrom->smsgData.cs_smsg_net);
+            std::map<int64_t, int64_t> &mapAdvertised = pfrom->smsgData.m_buckets_advertised;
+            mapAdvertised.erase(mapAdvertised.begin(), mapAdvertised.lower_bound(now_local - (int64_t)SMSG_RETENTION));
+            const uint8_t *pReq = &vchData[4];
+            for (uint32_t i = 0; i < nBuckets; ++i, pReq += 8) {
+                int64_t t;
+                memcpy(&t, pReq, 8);
+                auto it_adv = mapAdvertised.find(t);
+                if (it_adv == mapAdvertised.end()) {
+                    nDropped++;
+                    continue;
+                }
+                mapAdvertised.erase(it_adv);
+                vAnswer.push_back(t);
+            }
+        }
+        if (nDropped > 0) {
+            LogPrint(BCLog::SMSG, "smsgShow: ignoring %u bucket(s) not advertised to peer %d.\n", nDropped, pfrom->GetId());
+        }
+
         std::map<int64_t, SecMsgBucket>::iterator itb;
         std::set<SecMsgToken>::iterator it;
 
         std::vector<uint8_t> vchDataOut;
         vchDataOut.reserve(8 + 16 * 16384); // max tokens per bucket
-        int64_t time;
-        uint8_t *pIn = &vchData[4];
-        for (uint32_t i = 0; i < nBuckets; ++i, pIn += 8) {
-            memcpy(&time, pIn, 8);
+        for (const int64_t time : vAnswer) {
 
             {
                 LOCK(cs_smsg);
@@ -2183,6 +2236,12 @@ bool CSMSG::SendData(CNode *pto, bool fSendTrickle)
         return true;
     }
 
+    // Peers below MIN_SMSG_PROTO_VERSION run other SMSG rules: never ping or
+    // advertise to them (their requests are ignored in ReceiveData anyway).
+    if (pto->nVersion < MIN_SMSG_PROTO_VERSION) {
+        return true;
+    }
+
     LOCK(pto->smsgData.cs_smsg_net);
 
     //LogPrintf("SecureMsgSendData() %s.\n", pto->GetAddrName());
@@ -2272,6 +2331,8 @@ bool CSMSG::SendData(CNode *pto, bool fSendTrickle)
                 memcpy(p+8, &nMessages, 4);
                 memcpy(p+12, &hash, 4);
 
+                // cs_smsg_net of pto is held for the whole of SendData().
+                pto->smsgData.m_buckets_advertised[it->first] = now;
                 nBucketsShown++;
                 //if (fDebug)
                 //    LogPrintf("Sending bucket %d, size %d \n", it->first, it->second.size());
@@ -3149,14 +3210,15 @@ int CSMSG::ScanMessage(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t
     }
 
     if (fIsTopic) {
-        // Topic routing: try every locally subscribed key for a colliding hash.
-        uint32_t topicHash;
-        memcpy(&topicHash, psmsg_scan->nonce, 4);
+        // Try every subscribed topic key. The header carries no usable topic
+        // hint: nonce is ground by the proof of work (it used to hold the
+        // topic hash, which the PoW overwrote, so no topic message matched).
         std::vector<CKeyID> topicKeyIDs;
         {
             LOCK(cs_smsgSubs);
-            auto it = m_topicHashToKeyIDs.find(topicHash);
-            if (it != m_topicHashToKeyIDs.end()) topicKeyIDs = it->second;
+            for (const auto &entry : m_topicHashToKeyIDs) {
+                topicKeyIDs.insert(topicKeyIDs.end(), entry.second.begin(), entry.second.end());
+            }
         }
         if (!topicKeyIDs.empty()) {
             LOCK(smsgModule.keyStore.cs_KeyStore);
@@ -4062,16 +4124,10 @@ int CSMSG::Receive(CNode *pfrom, std::vector<uint8_t> &vchData)
             continue;
         }
 
-        // Topic routing: for version-4 messages, check FNV-1a hash in nonce[0..3]
-        if (psmsg->version[0] == SMSG_VERSION_TOPIC) {
-            uint32_t topicHash;
-            memcpy(&topicHash, psmsg->nonce, 4);
-            LOCK(cs_smsgSubs);
-            if (!IsSubscribedTopicHash(topicHash)) {
-                n += SMSG_HDR_LEN + psmsg->nPayload;
-                continue;
-            }
-        }
+        // SEC-09: topic messages are stored and relayed like any other, whether
+        // or not this node subscribes: dropping them here kept bucket hashes
+        // from ever converging and limited topics to directly connected
+        // subscribers. Subscription only decides what ScanMessage decrypts.
 
         {
             LOCK(cs_smsg);
@@ -4148,7 +4204,7 @@ int CSMSG::CheckPurged(const SecureMessage *psmsg, const uint8_t *pPayload)
         LogPrint(BCLog::SMSG, "%s Found purged %s\n", __func__, HexStr(vMsgId));
 
         // Add sample to purged token
-        memcpy(purged.sample, pPayload, 8);
+        TokenSample(psmsg, pPayload, psmsg->nPayload, purged.sample);
         setPurged.insert(purged);
 
         return SMSG_PURGED_MSG;
@@ -4248,8 +4304,12 @@ int CSMSG::Store(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayl
 
     int64_t bucketTime = psmsg->timestamp - (psmsg->timestamp % SMSG_BUCKET_LEN);
 
-    uint32_t nDaysToLive = psmsg->version[0] < 3 ? 2 : psmsg->nonce[0];
-    SecMsgToken token(psmsg->timestamp, pPayload, nPayload, 0, nDaysToLive);
+    // Only paid messages carry their lifetime in nonce[0]; for free messages,
+    // topic ones included, nonce is the PoW counter.
+    uint32_t nDaysToLive = psmsg->IsPaidVersion() ? psmsg->nonce[0] : 2;
+    uint8_t sample[8];
+    TokenSample(psmsg, pPayload, nPayload, sample);
+    SecMsgToken token(psmsg->timestamp, sample, 8, 0, nDaysToLive);
 
     SecMsgBucket &bucket = buckets[bucketTime];
     std::set<SecMsgToken> &tokenSet = bucket.setTokens;
@@ -4391,6 +4451,18 @@ int CSMSG::Purge(std::vector<uint8_t> &vMsgId, std::string &sError)
 
     return SMSG_NO_ERROR;
 };
+
+//! Free-message proof of work over the PoW HMAC (SEC-05). Strict (messages
+//! from SMSG_POW_V2_TIME on, and everything this node creates): bytes 31 and 30
+//! zero and the low three bits of byte 29 zero, 19 bits. Legacy: the old test,
+//! which only failed when all three low bits of byte 29 were set (~16.2 bits).
+static bool FreeMessagePowMet(const uint8_t *h, bool fStrict)
+{
+    if (h[31] != 0 || h[30] != 0) {
+        return false;
+    }
+    return fStrict ? (h[29] & 7) == 0 : (~h[29] & 7) != 0;
+}
 
 int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nPayload)
 {
@@ -4598,9 +4670,7 @@ int CSMSG::Validate(const uint8_t *pHeader, const uint8_t *pPayload, uint32_t nP
     ctx.Write((uint8_t*) pPayload, nPayload);
     ctx.Finalize(sha256Hash);
 
-    if (sha256Hash[31] == 0
-        && sha256Hash[30] == 0
-        && (~(sha256Hash[29]) & ((1<<0) | (1<<1) | (1<<2)))) {
+    if (FreeMessagePowMet(sha256Hash, psmsg->timestamp >= SMSG_POW_V2_TIME)) {
         LogPrint(BCLog::SMSG, "Hash Valid.\n");
         rv = SMSG_NO_ERROR; // smsg is valid
     }
@@ -4655,10 +4725,8 @@ int CSMSG::SetHash(uint8_t *pHeader, uint8_t *pPayload, uint32_t nPayload)
         ctx.Write((uint8_t*) pPayload, nPayload);
         ctx.Finalize(sha256Hash);
 
-        if (sha256Hash[31] == 0
-            && sha256Hash[30] == 0
-            && (~(sha256Hash[29]) & ((1<<0) | (1<<1) | (1<<2)))) {
-        //    && sha256Hash[29] == 0)
+        // Always the strict rule: such messages are valid for every node.
+        if (FreeMessagePowMet(sha256Hash, true)) {
             found = true;
             //if (fDebugSmsg)
             //    LogPrintf("Match %u\n", nonce);
@@ -4733,7 +4801,18 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
 
     // Public key K is the destination address
     CPubKey cpkDestK;
-    if (GetStoredKey(ckidDest, cpkDestK) != 0
+    // A topic message goes to the topic's deterministic shared key. Derive it
+    // here, so posting to a topic does not require subscribing to it (the key
+    // is only in the keystore of subscribers; importing it would silently make
+    // the sender decrypt and index the whole topic).
+    if (!topic.empty()) {
+        const CPubKey cpkTopic = GetTopicSharedKey(topic).GetPubKey();
+        if (cpkTopic.GetID() == ckidDest) {
+            cpkDestK = cpkTopic;
+        }
+    }
+    if (!cpkDestK.IsValid()
+        && GetStoredKey(ckidDest, cpkDestK) != 0
         && GetLocalKey(ckidDest, cpkDestK) != 0) { // maybe it's a local key (outbox?)
         return errorN(SMSG_PUBKEY_NOT_EXISTS, "%s: Could not get public key for destination address.", __func__);
     }
@@ -4808,9 +4887,7 @@ int CSMSG::Encrypt(SecureMessage &smsg, const CKeyID &addressFrom, const CKeyID 
         }
         smsg.version[0] = SMSG_VERSION_TOPIC;
         smsg.version[1] = 0;
-        // Store FNV-1a hash of topic in nonce[0..3] for cleartext routing
-        uint32_t topicHash = SMSGTopicHash(topic);
-        memcpy(smsg.nonce, &topicHash, 4);
+        // No cleartext topic hint: nonce is the proof-of-work counter (SEC-09).
     }
 
     if (fSendAnonymous) {

@@ -85,8 +85,18 @@ const unsigned int SMSG_MAX_MSG_BYTES_PAID = 512 * 1024;    // the user input pa
 // Max size of payload worst case compression
 const unsigned int SMSG_MAX_MSG_WORST = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES+SMSG_PL_HDR_LEN);
 const unsigned int SMSG_MAX_MSG_WORST_PAID = LZ4_COMPRESSBOUND(SMSG_MAX_MSG_BYTES_PAID+SMSG_PL_HDR_LEN);
+//! Upper bound for a stored payload when loading bucket files; anything larger
+//! means the file is corrupt (generous: worst paid message plus its tail).
+const unsigned int SMSG_MAX_STORED_PAYLOAD = 2 * SMSG_MAX_MSG_WORST_PAID;
 
-static const int MIN_SMSG_PROTO_VERSION = 70200;
+//! SMSG peers must run the 0.21.0 rules (see PROTOCOL_VERSION 70234): mixing
+//! them with older nodes would make bucket contents differ forever.
+static const int MIN_SMSG_PROTO_VERSION = 70234;
+
+//! Free messages timestamped at or after this time need the full 19-bit proof
+//! of work (SEC-05); older ones keep the previous ~16.2-bit rule so messages
+//! already stored stay valid. 2026-12-01 00:00:00 UTC; set to the release date.
+static const int64_t SMSG_POW_V2_TIME = 1796083200;
 
 
 const CAmount nFundingTxnFeePerK = 200000;

@@ -32,6 +32,9 @@ public:
     uint32_t m_ignored_counter = 0;
     std::map<int64_t, SecMsgBucketInfo> m_buckets;
     std::map<int64_t, int64_t> m_buckets_last_shown;
+    //! Buckets this node listed in an smsgInv to the peer (bucket time ->
+    //! time sent). smsgShow is answered only for these, once each (SEC-19).
+    std::map<int64_t, int64_t> m_buckets_advertised;
 };
 
 #endif // OMEGA_SMSG_NET_H

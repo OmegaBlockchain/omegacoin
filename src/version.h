@@ -12,7 +12,11 @@
  */
 
 
-static const int PROTOCOL_VERSION = 70233;
+//! 70234: SMSG network rules of 0.21.0 (19-bit free-message PoW, topic
+//! messages stored and relayed by every node). SMSG is exchanged only with
+//! peers at 70234 or later (MIN_SMSG_PROTO_VERSION); block and transaction
+//! relay is unchanged.
+static const int PROTOCOL_VERSION = 70234;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;

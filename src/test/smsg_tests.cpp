@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <crypto/hmac_sha256.h>
 #include <smsg/db.h>
 #include <smsg/smessage.h>
 #include <test/util/setup_common.h>
@@ -43,6 +44,36 @@ uint64_t KeyTime(const uint8_t *chKey)
         t = (t << 8) | chKey[2 + i];
     }
     return t;
+}
+
+// The free-message PoW HMAC exactly as Validate()/SetHash() compute it.
+void PowHash(std::vector<uint8_t> &v, uint32_t nonce, uint8_t out[32])
+{
+    smsg::SecureMessage *psmsg = (smsg::SecureMessage*)v.data();
+    memcpy(psmsg->nonce, &nonce, 4);
+    uint8_t civ[32];
+    for (int i = 0; i < 32; i += 4) {
+        memcpy(civ + i, &nonce, 4);
+    }
+    CHMAC_SHA256 ctx(civ, 32);
+    ctx.Write(v.data() + 4, smsg::SMSG_HDR_LEN - 4);
+    ctx.Write(v.data() + smsg::SMSG_HDR_LEN, v.size() - smsg::SMSG_HDR_LEN);
+    ctx.Finalize(out);
+}
+
+// Grinds a nonce that meets only the old ~16.2-bit test, then stamps the checksum.
+bool GrindLegacyOnly(std::vector<uint8_t> &v)
+{
+    uint8_t h[32];
+    for (uint32_t n = 0; n < 50000000; ++n) {
+        PowHash(v, n, h);
+        const uint8_t low = h[29] & 7;
+        if (h[31] == 0 && h[30] == 0 && low != 0 && low != 7) {
+            memcpy(v.data(), h, 4);
+            return true;
+        }
+    }
+    return false;
 }
 
 struct SmsgDbTestingSetup : public BasicTestingSetup {
@@ -209,6 +240,99 @@ BOOST_AUTO_TEST_CASE(bucket_change_time_uses_local_clock)
     const int64_t lastMatched = GetTime();
     BOOST_CHECK(!(bkt.timeChanged < lastMatched));
 
+    SetMockTime(0);
+}
+
+// SEC-05: free messages from SMSG_POW_V2_TIME on need the full 19 bits;
+// SetHash() always produces them, so its messages are valid everywhere.
+BOOST_AUTO_TEST_CASE(free_message_pow_is_19_bits_after_activation)
+{
+    const uint32_t nReal = 64;
+    const int64_t act = smsg::SMSG_POW_V2_TIME;
+
+    SetMockTime(act - 600);
+    std::vector<uint8_t> before = MakeMessage(nReal, nReal, act - 1200);
+    BOOST_REQUIRE(GrindLegacyOnly(before));
+    BOOST_CHECK_EQUAL(smsgModule.Validate(before.data(), before.data() + smsg::SMSG_HDR_LEN, nReal), (int)smsg::SMSG_NO_ERROR);
+
+    SetMockTime(act + 600);
+    std::vector<uint8_t> after = MakeMessage(nReal, nReal, act + 60);
+    BOOST_REQUIRE(GrindLegacyOnly(after));
+    BOOST_CHECK_EQUAL(smsgModule.Validate(after.data(), after.data() + smsg::SMSG_HDR_LEN, nReal), (int)smsg::SMSG_INVALID_HASH);
+
+    std::vector<uint8_t> fresh = MakeMessage(nReal, nReal, act + 60);
+    const bool was_enabled = smsg::fSecMsgEnabled;
+    smsg::fSecMsgEnabled = true; // SetHash() stops when SMSG is disabled
+    BOOST_CHECK_EQUAL(smsgModule.SetHash(fresh.data(), fresh.data() + smsg::SMSG_HDR_LEN, nReal), (int)smsg::SMSG_NO_ERROR);
+    smsg::fSecMsgEnabled = was_enabled;
+    BOOST_CHECK_EQUAL(smsgModule.Validate(fresh.data(), fresh.data() + smsg::SMSG_HDR_LEN, nReal), (int)smsg::SMSG_NO_ERROR);
+    uint32_t nonce;
+    memcpy(&nonce, ((smsg::SecureMessage*)fresh.data())->nonce, 4);
+    uint8_t h[32];
+    PowHash(fresh, nonce, h);
+    BOOST_CHECK(h[31] == 0 && h[30] == 0 && (h[29] & 7) == 0);
+
+    SetMockTime(0);
+}
+
+// A topic (version 4) message is free: nonce is its PoW counter, not a
+// lifetime. It used to be stored with nonce[0] days (0..255).
+BOOST_AUTO_TEST_CASE(topic_message_lives_two_days)
+{
+    const int64_t now = 1800000000;
+    SetMockTime(now);
+    std::vector<uint8_t> v = MakeMessage(80, 80, now - 60);
+    smsg::SecureMessage *psmsg = (smsg::SecureMessage*)v.data();
+    psmsg->version[0] = smsg::SMSG_VERSION_TOPIC;
+    psmsg->version[1] = 0;
+    psmsg->nonce[0] = 200;
+    for (size_t i = smsg::SMSG_HDR_LEN; i < v.size(); ++i) {
+        v[i] = (uint8_t)i;
+    }
+
+    const int64_t bucketTime = (now - 60) - ((now - 60) % smsg::SMSG_BUCKET_LEN);
+    {
+        LOCK(smsgModule.cs_smsg);
+        BOOST_REQUIRE_EQUAL(smsgModule.Store(v.data(), v.data() + smsg::SMSG_HDR_LEN, 80, false), (int)smsg::SMSG_NO_ERROR);
+        const auto &tokens = smsgModule.buckets[bucketTime].setTokens;
+        BOOST_REQUIRE_EQUAL(tokens.size(), 1U);
+        BOOST_CHECK_EQUAL((int)tokens.begin()->ttl, 2);
+        smsgModule.buckets.erase(bucketTime);
+    }
+    SetMockTime(0);
+}
+
+// SEC-18: the token sample is the start of the message hash, so a message that
+// only copies another's timestamp and first 8 payload bytes no longer blocks it.
+BOOST_AUTO_TEST_CASE(token_sample_covers_whole_message)
+{
+    const int64_t now = 1800000000;
+    SetMockTime(now);
+    std::vector<uint8_t> real = MakeMessage(80, 80, now - 120);
+    for (size_t i = smsg::SMSG_HDR_LEN; i < real.size(); ++i) {
+        real[i] = (uint8_t)i;
+    }
+    std::vector<uint8_t> junk = real;
+    junk.back() ^= 0xff; // same timestamp, same first 8 payload bytes
+
+    const int64_t bucketTime = (now - 120) - ((now - 120) % smsg::SMSG_BUCKET_LEN);
+    {
+        LOCK(smsgModule.cs_smsg);
+        BOOST_REQUIRE_EQUAL(smsgModule.Store(junk.data(), junk.data() + smsg::SMSG_HDR_LEN, 80, false), (int)smsg::SMSG_NO_ERROR);
+        BOOST_CHECK_EQUAL(smsgModule.Store(real.data(), real.data() + smsg::SMSG_HDR_LEN, 80, false), (int)smsg::SMSG_NO_ERROR);
+        // The very same message is still recognised as a duplicate.
+        BOOST_CHECK(smsgModule.Store(real.data(), real.data() + smsg::SMSG_HDR_LEN, 80, false) != (int)smsg::SMSG_NO_ERROR);
+
+        const auto &tokens = smsgModule.buckets[bucketTime].setTokens;
+        BOOST_REQUIRE_EQUAL(tokens.size(), 2U);
+        const std::vector<uint8_t> id = smsgModule.GetMsgID((const smsg::SecureMessage*)real.data(), real.data() + smsg::SMSG_HDR_LEN);
+        bool found = false;
+        for (const auto &t : tokens) {
+            found |= memcmp(t.sample, id.data() + 8, 8) == 0;
+        }
+        BOOST_CHECK(found);
+        smsgModule.buckets.erase(bucketTime);
+    }
     SetMockTime(0);
 }
 

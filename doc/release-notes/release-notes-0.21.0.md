@@ -3,11 +3,37 @@
 **Status: draft** — release planned for early December 2026. Update this file
 before tagging.
 
-Omega Core 0.21.0 is a security and bug-fix release. It does **not** change
-consensus rules or the network protocol: `PROTOCOL_VERSION` stays `70233`,
-`MIN_PEER_PROTO_VERSION` stays `70232`, and 0.21.0 nodes interoperate with
-0.20.9 nodes (older releases are already split off by the 0.20.9 fork). Upgrading is recommended for all nodes, and strongly
-recommended for anyone using secure messaging (SMSG) or the trollbox.
+Omega Core 0.21.0 is a security and secure-messaging release. It does **not**
+change consensus rules: blocks and transactions are validated and relayed
+exactly as before, `MIN_PEER_PROTO_VERSION` stays `70232`, and 0.21.0 nodes
+sync the chain with 0.20.9 nodes.
+
+It **does** change the secure-messaging (SMSG) network rules, and raises
+`PROTOCOL_VERSION` to `70234`. 0.21.0 nodes exchange SMSG only with other
+0.21.0 nodes; 0.20.x nodes keep messaging among themselves until they upgrade.
+**Upgrade all masternodes and messaging users together** — SMSG reaches
+across the network only through upgraded nodes.
+
+## SMSG network changes (protocol 70234)
+
+- **Topic messages (rooms) work.** Up to 0.20.9 a topic message carried its
+  topic hint in the header `nonce`, which the proof of work then overwrote, so
+  no node ever matched a topic message to its topic; nodes not subscribed to a
+  topic also dropped its messages instead of relaying them. Now every node
+  stores and relays topic messages like any other, and a subscriber finds its
+  messages by trying its subscribed topic keys. Topic messages live 2 days on
+  the network like other free messages (their lifetime used to be read from the
+  PoW counter, i.e. random). Posting to a topic no longer requires subscribing to
+  it.
+- **Free-message proof of work is the documented 19 bits** (it was effectively
+  ~16.2). New messages always carry the 19-bit proof; messages timestamped
+  from 2026-12-01 00:00 UTC on must carry it, older ones stay valid.
+- **Messages can no longer be blocked by a look-alike.** A message is
+  identified for deduplication and sync by its timestamp and a hash of the
+  whole message; it used to be its first 8 payload bytes, which a relay could
+  copy into a junk message to have the real one refused everywhere.
+- **SMSG only between 0.21.0 nodes** (`MIN_SMSG_PROTO_VERSION` 70234), so that
+  old and new rules never meet and re-request each other's messages forever.
 
 ## Fixes
 
@@ -45,6 +71,10 @@ by reconnecting a peer (`disconnectnode "<peer>"`) or restarting.
 - A peer can no longer lock message buckets or inflate request counters with
   unsolicited `smsgHave` messages; only buckets this node asked the peer about
   are acted on.
+- A peer can no longer make the node send the same message index again and
+  again: `smsgShow` is answered only for buckets this node advertised to that
+  peer, once per advertisement (one small request could previously pull the
+  same large bucket hundreds of times).
 - The purged-message check had an inverted condition; purged messages are
   now recognised by the cheap pre-check again.
 - Trollbox: expired rows are pruned from the database; `trollboxlist` reads
@@ -61,13 +91,7 @@ by reconnecting a peer (`disconnectnode "<peer>"`) or restarting.
 ## Operator notes
 
 - No reindex, no wallet upgrade and no configuration change is required.
-- Masternodes: no protocol change; upgrade at your convenience.
+- Masternodes: please upgrade promptly — they carry most SMSG relay. Block
+  relay and LLMQ participation are unaffected by the version bump.
 - Downloads are published under the GitHub tag `v0.21.0` (the in-app update
   check parses the tag numerically).
-
-## Not in this release
-
-The SMSG proof-of-work difficulty for free messages (SEC-05) and storing/
-relaying topic messages regardless of subscription (SEC-09) are network-
-protocol changes that need a coordinated, version-gated upgrade; they are not
-included.

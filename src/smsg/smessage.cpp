@@ -955,9 +955,10 @@ int CSMSG::LoadKeyStore()
 
 int CSMSG::ReadIni()
 {
-    if (!fSecMsgEnabled) {
-        return SMSG_DISABLED;
-    }
+    // No fSecMsgEnabled check here: the only caller is Start(), which runs this
+    // before it sets fSecMsgEnabled. With the check, smsg.ini was never read,
+    // every SMSG address registration was dropped on restart, and Shutdown()
+    // then wrote an empty [Keys] list back (BUG-01, regression from f3b2d042e).
 
     LogPrint(BCLog::SMSG, "%s\n", __func__);
 

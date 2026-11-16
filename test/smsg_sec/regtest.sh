@@ -114,6 +114,40 @@ up5=no; for i in $(seq 1 20); do $c5 getblockcount >/dev/null 2>&1 && { up5=yes;
 if [ "$up5" = no ] && grep -q "Assertion" $W/n5.out; then ok "unpatched node aborts on the same conflict (bug is real)"; else bad "baseline did not reproduce (up=$up5): $(tail -c 120 $W/n5.out)"; fi
 $c5 stop >/dev/null 2>&1
 
+echo "== BUG-01 SMSG address registrations and topic subscriptions survive a restart"
+# Start() used to call ReadIni() before fSecMsgEnabled was set, so smsg.ini was
+# never read and Shutdown() wrote an empty [Keys] list back.
+restart_with_wallet() { # <cli> <bindir> <datadir>
+  $1 stop >/dev/null 2>&1; for i in $(seq 1 30); do pgrep -f "omegad -datadir=$3 " >/dev/null || break; nap 1; done
+  $2/omegad -datadir=$3 -wallet=w -daemon >/dev/null 2>&1; waitup "$1"; nap 2
+}
+listed() { $1 smsglocalkeys 2>/dev/null | grep -c "\"$2\""; }
+subscribed() { $1 smsglisttopics 2>/dev/null | grep -c "\"$2\""; }
+bug01() { # <cli> <bindir> <datadir> -> sets REG_BEFORE INI_HAS REG_AFTER SUB_AFTER
+  $1 createwallet w >/dev/null 2>&1
+  restart_with_wallet "$1" "$2" "$3"
+  local a; a=$($1 getnewaddress)
+  $1 smsgaddlocaladdress "$a" >/dev/null 2>&1
+  $1 smsgsubscribe "omega.bug01" >/dev/null 2>&1
+  REG_BEFORE=$(listed "$1" "$a")
+  restart_with_wallet "$1" "$2" "$3"
+  INI_HAS=$(grep -c "$a" "$3/regtest/smsg.ini")
+  REG_AFTER=$(listed "$1" "$a")
+  SUB_AFTER=$(subscribed "$1" "omega.bug01")
+  # A second restart must not lose it either (the bug wiped smsg.ini on shutdown).
+  restart_with_wallet "$1" "$2" "$3"
+  REG_AFTER2=$(listed "$1" "$a")
+}
+bug01 "$c1" "$PB" "$W/n1"
+check "registration listed before the restart" "$REG_BEFORE" "1"
+check "smsg.ini kept the address over the restart" "$INI_HAS" "1"
+check "registration still listed after a restart" "$REG_AFTER" "1"
+check "registration still listed after a second restart" "$REG_AFTER2" "1"
+check "topic subscription restored after a restart" "$SUB_AFTER" "1"
+grep -q "Loaded addresses from SMSG.ini" $W/n1/regtest/debug.log && ok "addresses loaded from smsg.ini at start" || bad "no 'Loaded addresses from SMSG.ini' log line"
+bug01 "$c3" "$UB" "$W/n3"
+check "unpatched node loses the registration on restart (bug is real)" "$REG_AFTER" "0"
+
 echo "== baseline: same PoC against the unpatched node"
 out=$(python3 -I $POC/have.py 19582); echo "  $out"
 case "$out" in *"got smsgWant back: True"*) ok "unpatched node answers the unsolicited smsgHave (PoC is valid)";; *) bad "baseline PoC did not trigger on unpatched node";; esac

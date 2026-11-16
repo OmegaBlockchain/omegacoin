@@ -12,7 +12,10 @@ def build(fake_delta, payload_len=96):
         assert len(body) == 100
         civ = struct.pack("<I", nonce) * 8
         h = hmac.new(civ, body + payload, hashlib.sha256).digest()
-        if h[31] == 0 and h[30] == 0 and ((~h[29]) & 7):
+        # The strict 19-bit rule (SEC-05). It also satisfies the old test, so
+        # the message is valid for every node and on every date; the old test
+        # alone is refused by 0.21.0 from SMSG_POW_V2_TIME on.
+        if h[31] == 0 and h[30] == 0 and (h[29] & 7) == 0:
             hdr = h[:4] + body
             return hdr, payload, ts
         nonce += 1
